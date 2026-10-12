@@ -1,0 +1,33 @@
+# Secrets/local configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+**/local.properties
+**/keystore.properties
+*.jks
+*.keystore
+*.p12
+*.p8
+*.mobileprovision
+**/GoogleService-Info.plist
+**/google-services.json
+# IDE/build
+.idea/
+.vscode/
+**/.gradle/
+**/.kotlin/
+**/build/
+**/target/
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+.DS_Store
+Thumbs.db
+# local data
+**/postgres-data/
+**/logs/
+*.log
+.venv/
+__pycache__/
+# Never blanket-ignore gradle/wrapper or Maven wrapper configuration.

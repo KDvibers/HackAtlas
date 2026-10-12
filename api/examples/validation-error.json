@@ -1,0 +1,15 @@
+{
+  "type": "about:blank",
+  "title": "Ошибка валидации",
+  "status": 400,
+  "detail": "Проверьте введённые данные.",
+  "instance": "/api/v1/auth/register",
+  "code": "VALIDATION_ERROR",
+  "requestId": "demo-request-001",
+  "fieldErrors": [
+    {
+      "field": "password",
+      "message": "Минимум 12 символов."
+    }
+  ]
+}

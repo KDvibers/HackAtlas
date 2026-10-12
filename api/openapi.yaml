@@ -1,0 +1,1902 @@
+openapi: 3.1.0
+info:
+  title: HackAtlas Mobile API
+  version: 0.1.0
+  description: Проектный контракт для общей реализации. Наличие операции в спецификации
+    не означает, что она реализована. Этап указан в x-phase. Семантика в README.md.
+servers:
+- url: http://localhost:8080/api/v1
+  description: Только локальная разработка; base URL переопределяется под устройство.
+    Production — HTTPS.
+paths:
+  /hackathons:
+    get:
+      operationId: listHackathons
+      summary: Публичный каталог
+      x-phase: B1
+      security: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HackathonPage'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - name: query
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 120
+        description: Поиск по названию, организатору, теме и городу; пустой после
+          trim = без поиска.
+      - name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+          - HYBRID
+        description: ''
+      - name: countryCode
+        in: query
+        required: false
+        schema: &id006
+          type: string
+          pattern: ^[A-Z]{2}$
+        description: Место проведения, не eligibility.
+      - name: city
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+        description: ''
+      - name: topic
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 50
+        description: Один topic id из metadata.
+      - name: registrationStatus
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+          - UPCOMING
+          - UNKNOWN
+        description: ''
+      - name: individualApplicationAllowed
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: true включает только явно true, не unknown.
+      - name: startsFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: ''
+      - name: startsTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: ''
+      - name: sort
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - DEADLINE_ASC
+          - START_ASC
+          - NEWEST
+        description: По умолчанию DEADLINE_ASC; unknown last; tie-breaker id.
+      - &id001
+        name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: ''
+      - &id002
+        name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 20
+        description: ''
+  /hackathons/{id}:
+    get:
+      operationId: getHackathon
+      summary: Подробности публичного события
+      x-phase: B1
+      security: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HackathonDetail'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Не найдено
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - &id003
+        name: id
+        in: path
+        required: true
+        schema: &id007
+          type: string
+          format: uuid
+  /metadata/filters:
+    get:
+      operationId: getFilterMetadata
+      summary: Значения фильтров
+      x-phase: B1
+      security: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FilterMetadata'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /auth/register:
+    post:
+      operationId: register
+      summary: Создать аккаунт HackAtlas
+      x-phase: B2
+      security: []
+      responses:
+        '201':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Доступ запрещён
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Конфликт
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+  /auth/login:
+    post:
+      operationId: login
+      summary: Войти в HackAtlas
+      x-phase: B2
+      security: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Отозвать текущую сессию
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '204':
+          description: Нет содержимого
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /me:
+    get:
+      operationId: getMe
+      summary: Текущий непубличный профиль
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    patch:
+      operationId: updateMe
+      summary: Изменить разрешённые поля профиля
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfile'
+  /me/saved:
+    get:
+      operationId: getSaved
+      summary: Сохранённые события аккаунта
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HackathonPage'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters: &id004
+      - *id001
+      - *id002
+  /me/saved/{id}:
+    put:
+      operationId: saveHackathon
+      summary: Идемпотентно сохранить событие
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '204':
+          description: Нет содержимого
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Не найдено
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - *id003
+    delete:
+      operationId: unsaveHackathon
+      summary: Идемпотентно удалить свою закладку
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '204':
+          description: Нет содержимого
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - *id003
+  /me/applications:
+    get:
+      operationId: listApplicationMarks
+      summary: Личные отметки подачи заявки
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationPage'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters: *id004
+  /me/applications/{id}:
+    put:
+      operationId: markApplied
+      summary: Самостоятельно отметить подачу заявки
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '200':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplicationMark'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Не найдено
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - *id003
+    delete:
+      operationId: unmarkApplied
+      summary: Удалить собственную отметку
+      x-phase: B2
+      security:
+      - BearerSession: []
+      responses:
+        '204':
+          description: Нет содержимого
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      parameters:
+      - *id003
+  /suggestions:
+    post:
+      operationId: suggestHackathon
+      summary: Предложить событие на модерацию
+      x-phase: B3
+      security:
+      - BearerSession: []
+      responses:
+        '202':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionReceipt'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuggestionRequest'
+  /hackathons/{id}/reports:
+    post:
+      operationId: reportHackathon
+      summary: Сообщить об ошибке
+      x-phase: B3
+      security:
+      - BearerSession: []
+      responses:
+        '202':
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionReceipt'
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Не найдено
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+      parameters:
+      - *id003
+  /me/delete-account:
+    post:
+      operationId: deleteAccount
+      summary: Удалить аккаунт с проверкой пароля
+      x-phase: B3
+      security:
+      - BearerSession: []
+      responses:
+        '204':
+          description: Нет содержимого
+        '400':
+          description: Некорректные данные
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Авторизация отсутствует/недействительна
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Лимит запросов
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+          headers:
+            Retry-After:
+              schema:
+                type: string
+              description: Задержка повтора в секундах.
+        '500':
+          description: Ошибка сервера
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
+          description: Сервис недоступен
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteAccountRequest'
+components:
+  securitySchemes:
+    BearerSession:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: Случайная отзываемая серверная сессия. Не JWT.
+  schemas:
+    EventTime:
+      type: object
+      additionalProperties: false
+      required:
+      - precision
+      - date
+      - time
+      - timeZone
+      - instant
+      properties:
+        precision:
+          type: string
+          enum:
+          - DATE
+          - MINUTE
+        date:
+          type: string
+          format: date
+        time:
+          anyOf:
+          - type: string
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          - type: 'null'
+        timeZone:
+          anyOf:
+          - type: string
+            minLength: 1
+          - type: 'null'
+        instant:
+          anyOf:
+          - &id005
+            type: string
+            format: date-time
+          - type: 'null'
+      description: 'DATE: time и instant null. MINUTE: time,timeZone,instant обязательны
+        non-null и согласованы. Не придумывать 23:59.'
+      allOf:
+      - if:
+          properties:
+            precision:
+              const: DATE
+        then:
+          properties:
+            time:
+              type: 'null'
+            instant:
+              type: 'null'
+      - if:
+          properties:
+            precision:
+              const: MINUTE
+        then:
+          properties:
+            time:
+              type: string
+            timeZone:
+              type: string
+              minLength: 1
+            instant: *id005
+    Organizer:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - websiteUrl
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        websiteUrl:
+          anyOf:
+          - &id008
+            type: string
+            format: uri
+            pattern: ^https://
+          - type: 'null'
+    Location:
+      type: object
+      additionalProperties: false
+      required:
+      - countryCode
+      - city
+      - venue
+      properties:
+        countryCode:
+          anyOf:
+          - *id006
+          - type: 'null'
+        city:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        venue:
+          anyOf:
+          - type: string
+            maxLength: 300
+          - type: 'null'
+      description: Место события. География допуска участников хранится отдельно.
+    TeamRules:
+      type: object
+      additionalProperties: false
+      required:
+      - minSize
+      - maxSize
+      - individualApplicationAllowed
+      - soloParticipationAllowed
+      - teamFormationAvailable
+      properties:
+        minSize:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 100
+          - type: 'null'
+        maxSize:
+          anyOf:
+          - type: integer
+            minimum: 1
+            maximum: 100
+          - type: 'null'
+        individualApplicationAllowed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+        soloParticipationAllowed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+        teamFormationAvailable:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+    Prize:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - totalAmount
+      - currency
+      - kind
+      - summary
+      properties:
+        status:
+          type: string
+          enum:
+          - ANNOUNCED
+          - NONE
+          - UNKNOWN
+        totalAmount:
+          anyOf:
+          - type: string
+            pattern: ^[0-9]+(\.[0-9]{1,6})?$
+          - type: 'null'
+        currency:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{3}$
+          - type: 'null'
+        kind:
+          type: string
+          enum:
+          - CASH
+          - NON_CASH
+          - MIXED
+          - UNSPECIFIED
+        summary:
+          anyOf:
+          - type: string
+            maxLength: 500
+          - type: 'null'
+      description: Десятичная строка, не float. null не означает 0. Для mixed фонд
+        не выдавать за только денежный.
+    Tag:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 50
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+    HackathonSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - slug
+      - title
+      - shortDescription
+      - organizer
+      - format
+      - location
+      - starts
+      - ends
+      - registrationDeadline
+      - registrationStatus
+      - eventStatus
+      - topics
+      - prize
+      - team
+      - imageUrl
+      - artworkKey
+      - lastVerifiedAt
+      - updatedAt
+      - isDemo
+      properties:
+        id: *id007
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        shortDescription:
+          type: string
+          maxLength: 350
+        organizer:
+          $ref: '#/components/schemas/Organizer'
+        format:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+          - HYBRID
+        location:
+          $ref: '#/components/schemas/Location'
+        starts:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        ends:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        registrationDeadline:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        registrationStatus:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+          - UPCOMING
+          - UNKNOWN
+        eventStatus:
+          type: string
+          enum:
+          - SCHEDULED
+          - ONGOING
+          - ENDED
+          - POSTPONED
+          - CANCELLED
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          maxItems: 20
+        prize:
+          $ref: '#/components/schemas/Prize'
+        team:
+          $ref: '#/components/schemas/TeamRules'
+        imageUrl:
+          anyOf:
+          - *id008
+          - type: 'null'
+        artworkKey:
+          type: string
+          enum:
+          - AI_BUST
+          - FINTECH_CITY
+          - GAMEPAD
+          - GREENTECH
+          - WIREFRAME
+        lastVerifiedAt:
+          anyOf:
+          - *id005
+          - type: 'null'
+        updatedAt: *id005
+        isDemo:
+          type: boolean
+    Eligibility:
+      type: object
+      additionalProperties: false
+      required:
+      - summary
+      - allowedCountryCodes
+      - minAge
+      - maxAge
+      - studentsOnly
+      - languages
+      properties:
+        summary:
+          anyOf:
+          - type: string
+            maxLength: 3000
+          - type: 'null'
+        allowedCountryCodes:
+          anyOf:
+          - type: array
+            items: *id006
+            uniqueItems: true
+          - type: 'null'
+        minAge:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 120
+          - type: 'null'
+        maxAge:
+          anyOf:
+          - type: integer
+            minimum: 0
+            maximum: 120
+          - type: 'null'
+        studentsOnly:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+        languages:
+          type: array
+          items:
+            type: string
+            maxLength: 80
+          maxItems: 20
+      description: null allowedCountryCodes = неизвестно, [] = явно без географического
+        ограничения. Это не место проведения.
+    Stage:
+      type: object
+      additionalProperties: false
+      required:
+      - title
+      - when
+      - description
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 160
+        when:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+    HackathonDetail:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - slug
+      - title
+      - shortDescription
+      - organizer
+      - format
+      - location
+      - starts
+      - ends
+      - registrationDeadline
+      - registrationStatus
+      - eventStatus
+      - topics
+      - prize
+      - team
+      - imageUrl
+      - artworkKey
+      - lastVerifiedAt
+      - updatedAt
+      - isDemo
+      - description
+      - eligibility
+      - stages
+      - prizeDetails
+      - submissionRequirements
+      - judgingCriteria
+      - officialUrl
+      - registrationUrl
+      - rulesUrl
+      - sourceUrl
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        shortDescription:
+          type: string
+          maxLength: 350
+        organizer:
+          $ref: '#/components/schemas/Organizer'
+        format:
+          type: string
+          enum:
+          - ONLINE
+          - OFFLINE
+          - HYBRID
+        location:
+          $ref: '#/components/schemas/Location'
+        starts:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        ends:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        registrationDeadline:
+          anyOf:
+          - $ref: '#/components/schemas/EventTime'
+          - type: 'null'
+        registrationStatus:
+          type: string
+          enum:
+          - OPEN
+          - CLOSED
+          - UPCOMING
+          - UNKNOWN
+        eventStatus:
+          type: string
+          enum:
+          - SCHEDULED
+          - ONGOING
+          - ENDED
+          - POSTPONED
+          - CANCELLED
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          maxItems: 20
+        prize:
+          $ref: '#/components/schemas/Prize'
+        team:
+          $ref: '#/components/schemas/TeamRules'
+        imageUrl:
+          anyOf:
+          - type: string
+            format: uri
+            pattern: ^https://
+          - type: 'null'
+        artworkKey:
+          type: string
+          enum:
+          - AI_BUST
+          - FINTECH_CITY
+          - GAMEPAD
+          - GREENTECH
+          - WIREFRAME
+        lastVerifiedAt:
+          anyOf:
+          - &id009
+            type: string
+            format: date-time
+          - type: 'null'
+        updatedAt: *id009
+        isDemo:
+          type: boolean
+        description:
+          type: string
+          maxLength: 20000
+        eligibility:
+          $ref: '#/components/schemas/Eligibility'
+        stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stage'
+          maxItems: 30
+        prizeDetails:
+          anyOf:
+          - type: string
+            maxLength: 5000
+          - type: 'null'
+        submissionRequirements:
+          anyOf:
+          - type: string
+            maxLength: 5000
+          - type: 'null'
+        judgingCriteria:
+          anyOf:
+          - type: string
+            maxLength: 5000
+          - type: 'null'
+        officialUrl: *id008
+        registrationUrl:
+          anyOf:
+          - *id008
+          - type: 'null'
+        rulesUrl:
+          anyOf:
+          - *id008
+          - type: 'null'
+        sourceUrl: *id008
+    HackathonPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      - hasNext
+      - asOf
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/HackathonSummary'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+        asOf: *id005
+    FilterMetadata:
+      type: object
+      additionalProperties: false
+      required:
+      - topics
+      - formats
+      - countries
+      - cities
+      - interests
+      properties:
+        topics:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+        formats:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - id
+            - label
+            properties:
+              id:
+                type: string
+                enum:
+                - ONLINE
+                - OFFLINE
+                - HYBRID
+              label:
+                type: string
+        countries:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - code
+            - label
+            properties:
+              code: *id006
+              label:
+                type: string
+        cities:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - countryCode
+            - name
+            properties:
+              countryCode: *id006
+              name:
+                type: string
+        interests:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+    Profile:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - email
+      - displayName
+      - city
+      - countryCode
+      - roleLabel
+      - avatarKey
+      - interests
+      - stats
+      properties:
+        id: *id007
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 60
+        city:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        countryCode:
+          anyOf:
+          - *id006
+          - type: 'null'
+        roleLabel:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        avatarKey:
+          type: string
+          enum:
+          - HOODED
+          - INITIALS
+        interests:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
+          uniqueItems: true
+        stats:
+          type: object
+          additionalProperties: false
+          required:
+          - savedCount
+          - appliedCount
+          - interestsCount
+          properties:
+            savedCount:
+              type: integer
+              minimum: 0
+            appliedCount:
+              type: integer
+              minimum: 0
+            interestsCount:
+              type: integer
+              minimum: 0
+    UpdateProfile:
+      type: object
+      additionalProperties: false
+      required: []
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 60
+        city:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        countryCode:
+          anyOf:
+          - *id006
+          - type: 'null'
+        roleLabel:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+        avatarKey:
+          type: string
+          enum:
+          - HOODED
+          - INITIALS
+        interests:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+          maxItems: 20
+          uniqueItems: true
+      minProperties: 1
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+          writeOnly: true
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      - password
+      - displayName
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 12
+          maxLength: 256
+          writeOnly: true
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 60
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - tokenType
+      - accessToken
+      - expiresAt
+      - user
+      properties:
+        tokenType:
+          type: string
+          enum:
+          - Bearer
+        accessToken:
+          type: string
+          minLength: 32
+        expiresAt: *id005
+        user:
+          $ref: '#/components/schemas/Profile'
+      description: Opaque session token. Не JWT, не хранить в обычных settings. Cache-Control:no-store.
+    ApplicationMark:
+      type: object
+      additionalProperties: false
+      required:
+      - hackathonId
+      - status
+      - selfReported
+      - markedAt
+      properties:
+        hackathonId: *id007
+        status:
+          type: string
+          enum:
+          - APPLIED
+        selfReported:
+          type: boolean
+          const: true
+        markedAt: *id005
+    ApplicationPage:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - page
+      - size
+      - totalElements
+      - totalPages
+      - hasNext
+      - asOf
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApplicationMark'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+        totalElements:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+        hasNext:
+          type: boolean
+        asOf: *id005
+    Problem:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
+      - code
+      - requestId
+      - fieldErrors
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          enum:
+          - VALIDATION_ERROR
+          - AUTH_REQUIRED
+          - INVALID_CREDENTIALS
+          - FORBIDDEN
+          - NOT_FOUND
+          - EMAIL_ALREADY_EXISTS
+          - RATE_LIMITED
+          - INTERNAL_ERROR
+          - SERVICE_UNAVAILABLE
+        requestId:
+          type: string
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - message
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+    SuggestionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - url
+      - comment
+      properties:
+        url: *id008
+        comment:
+          anyOf:
+          - type: string
+            maxLength: 2000
+          - type: 'null'
+    ReportRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - reason
+      - message
+      properties:
+        reason:
+          type: string
+          enum:
+          - DATES
+          - LINK
+          - PRIZE
+          - ELIGIBILITY
+          - DUPLICATE
+          - OTHER
+        message:
+          type: string
+          minLength: 5
+          maxLength: 2000
+    SubmissionReceipt:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      properties:
+        id: *id007
+        status:
+          type: string
+          enum:
+          - PENDING
+    DeleteAccountRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - password
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 256
+          writeOnly: true
+security: []

@@ -1,0 +1,104 @@
+{
+  "topics": [
+    {
+      "id": "ai-ml",
+      "label": "AI / ML"
+    },
+    {
+      "id": "fintech",
+      "label": "Fintech"
+    },
+    {
+      "id": "gamedev",
+      "label": "GameDev"
+    },
+    {
+      "id": "greentech",
+      "label": "GreenTech"
+    },
+    {
+      "id": "web",
+      "label": "Web"
+    }
+  ],
+  "formats": [
+    {
+      "id": "ONLINE",
+      "label": "Онлайн"
+    },
+    {
+      "id": "OFFLINE",
+      "label": "Очно"
+    },
+    {
+      "id": "HYBRID",
+      "label": "Смешанный"
+    }
+  ],
+  "countries": [
+    {
+      "code": "KZ",
+      "label": "Казахстан"
+    }
+  ],
+  "cities": [
+    {
+      "countryCode": "KZ",
+      "name": "Астана"
+    }
+  ],
+  "interests": [
+    {
+      "id": "ai-ml",
+      "label": "AI / ML"
+    },
+    {
+      "id": "fintech",
+      "label": "Fintech"
+    },
+    {
+      "id": "gamedev",
+      "label": "GameDev"
+    },
+    {
+      "id": "greentech",
+      "label": "GreenTech"
+    },
+    {
+      "id": "web",
+      "label": "Web"
+    },
+    {
+      "id": "java",
+      "label": "Java"
+    },
+    {
+      "id": "kotlin",
+      "label": "Kotlin"
+    },
+    {
+      "id": "python",
+      "label": "Python"
+    },
+    {
+      "id": "backend",
+      "label": "Backend"
+    },
+    {
+      "id": "frontend",
+      "label": "Frontend"
+    },
+    {
+      "id": "mobile",
+      "label": "Mobile"
+    },
+    {
+      "id": "design",
+      "label": "Design"
+    },
+    {
+      "id": "product",
+      "label": "Product"
+    }
+  ]
+}

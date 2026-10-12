@@ -1,0 +1,20 @@
+{
+  "id": "ea2154a6-8b18-51e5-8280-820e564655f5",
+  "email": "demo@example.com",
+  "displayName": "devnull",
+  "city": "Астана",
+  "countryCode": "KZ",
+  "roleLabel": "Разработчик",
+  "avatarKey": "HOODED",
+  "interests": [
+    "java",
+    "kotlin",
+    "backend",
+    "ai-ml"
+  ],
+  "stats": {
+    "savedCount": 3,
+    "appliedCount": 0,
+    "interestsCount": 4
+  }
+}
