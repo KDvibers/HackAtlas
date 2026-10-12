@@ -1,0 +1,8 @@
+{
+  "catalog-page.json": "HackathonPage",
+  "catalog-empty.json": "HackathonPage",
+  "hackathon-detail.json": "HackathonDetail",
+  "profile.json": "Profile",
+  "filter-metadata.json": "FilterMetadata",
+  "validation-error.json": "Problem"
+}
