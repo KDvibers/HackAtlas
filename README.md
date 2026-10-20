@@ -2,7 +2,7 @@
 
 Мобильный каталог хакатонов для Android и iOS: общий клиент на Kotlin Multiplatform + Compose Multiplatform и сервер на Java 21 + Spring Boot.
 
-**Состояние:** G0 объединён в main. Локально завершён B0: каркас Java backend, PostgreSQL/Flyway, health и проверенная сборка с интеграционными тестами. Каталог и авторизация ещё не реализованы; готового API для mobile пока нет. Публикация B0 и предшествующего дополнения с общим планом остаётся за пользователем.
+**Состояние:** G0 объединён в main. Поверх B0 локально реализован B1: публичный API каталога, поиск, фильтры, детали, metadata и явный DEMO seed. Команды запуска и результаты проверок — в [backend README](backend/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Авторизация относится к следующему отдельному этапу B2. Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
 
 Репозиторий: [KDvibers/HackAtlas](https://github.com/KDvibers/HackAtlas). Единственный актуальный комплект — **Starter**. Handoff больше не является спецификацией.
 
@@ -16,6 +16,7 @@
 - [Статус backend](docs/STATUS_BACKEND.md) и [статус mobile](docs/STATUS_MOBILE.md).
 - [Проверка контракта](scripts/README.md).
 - [Сборка и запуск backend](backend/README.md), [точные версии backend](backend/TOOLCHAIN.md) и [локальная PostgreSQL / CI](infra/README.md).
+- [Семантика реализации каталога](backend/CATALOG.md), [Bruno](tools/bruno/README.md) и [проверка работающего API через Schemathesis](scripts/b1/README.md).
 
 Авторизация запланирована через **opaque Bearer sessions**, без JWT и refresh endpoint. Регистрация на хакатон проходит на официальном внешнем сайте.
 
@@ -25,4 +26,4 @@
 | Мобильный разработчик; GitHub handle пока не указан | `mobile/`, мобильные ресурсы и CI |
 | Оба разработчика | `api/`, референс, общие продуктовые решения |
 
-Следующий отдельный этап backend — **B1**, три публичных GET каталога. Он ещё не начат и требует отдельного поручения. Push и создание PR выполняет пользователь.
+Следующий отдельный этап backend — **B2**, аккаунты и opaque Bearer sessions. Он не начат и требует отдельного поручения.

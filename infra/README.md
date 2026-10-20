@@ -1,4 +1,4 @@
-# Локальная инфраструктура B0
+# Локальная инфраструктура B0/B1
 
 Только dev PostgreSQL для HackAtlas. Backend запускается отдельно; production deployment здесь не настроен.
 
@@ -77,7 +77,7 @@ docker compose --env-file infra/.env -f infra/compose.yaml stop postgres
 [backend-ci.yml](../.github/workflows/backend-ci.yml) запускает три проверки на каждом push и pull request без фильтрации путей:
 
 - `Contract check`: Python 3.12, существующие закреплённые dependencies и `scripts/validate_contract.py`.
-- `Backend verify`: Temurin Java 21, Maven Wrapper `verify`, настоящий Docker для Testcontainers. Локальный dev volume и `.env` для тестов не используются.
+- `Backend verify`: Temurin Java 21, Maven Wrapper `verify`, настоящий Docker для Testcontainers; затем JSON Schema проверка реальных HTTP-ответов, Bruno и Schemathesis на собранном JAR с отдельной временной PostgreSQL. [Команды B1](../scripts/b1/README.md). Локальный dev volume и `.env` для тестов не используются.
 - `Gitleaks`: CLI 8.30.1, проверка SHA-256 до распаковки и scan всей загруженной Git-истории с `--redact=100`. Это scan истории на CI, не полный аудит секретов.
 
 Все Actions закреплены полными commit SHA. Workflow имеет только `contents: read`, не сохраняет checkout credentials и не получает production-секреты. Нет публикации, push, создания PR или отключения tests. Настройка required checks в GitHub выполняется отдельно после подтверждённого запуска workflow.
@@ -92,6 +92,7 @@ docker compose --env-file infra/.env -f infra/compose.yaml stop postgres
 | checkout | `v7.0.1` → `3d3c42e5aac5ba805825da76410c181273ba90b1` | [Официальный release](https://github.com/actions/checkout/releases/tag/v7.0.1) |
 | setup-java | `v6.1.0` → `b843ebf9b913146b38da2eaa7aeddf76074ae1ad` | [Официальный release](https://github.com/actions/setup-java/releases/tag/v6.1.0) |
 | setup-python | `v7.0.0` → `5fda3b95a4ea91299a34e894583c3862153e4b97` | [Официальный release](https://github.com/actions/setup-python/releases/tag/v7.0.0) |
+| setup-node | `v7.1.0` → `949feb2413d6458794dcd2491c4babbbce0c15c1` | [Официальный release](https://github.com/actions/setup-node/releases/tag/v7.1.0) |
 | Gitleaks CLI | `8.30.1`, Linux x64 SHA-256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` | [Release](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1), [checksums](https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt) |
 
 Action SHA сверены через `git ls-remote --tags` официальных репозиториев. Архив Gitleaks Linux x64 скачан для проверки в память, его SHA-256 совпал с upstream checksum. При обновлении версии заново проверить связанные SHA/digest и выполнить соответствующие проверки; не заменять их плавающими tags.

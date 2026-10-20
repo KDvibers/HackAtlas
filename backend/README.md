@@ -1,6 +1,8 @@
 # Backend HackAtlas
 
-Реализован B0: Java 21 / Spring Boot, PostgreSQL и Flyway, health endpoints, интеграционные тесты и CI. Каталог B1, авторизация B2 и модерация B3 ещё не реализованы. Единственный контракт будущего API — [OpenAPI](../api/openapi.yaml) и [его семантика](../api/README.md); opaque Bearer sessions остаются решением для B2.
+Реализованы основа B0 и публичный каталог B1: Java 21 / Spring Boot, PostgreSQL/Flyway, три GET endpoint, health, интеграционные тесты и CI. Авторизация B2 и модерация B3 ещё не реализованы. Единственный контракт — [OpenAPI](../api/openapi.yaml) и [его семантика](../api/README.md); opaque Bearer sessions остаются решением для B2.
+
+Параметры каталога, политика статусов и явный DEMO-запуск описаны в [CATALOG](CATALOG.md).
 
 ## Требования и сборка
 
@@ -20,9 +22,23 @@ sh ./mvnw --version
 sh ./mvnw --batch-mode --no-transfer-progress verify
 ```
 
-`verify` компилирует приложение, создаёт исполняемый JAR и запускает `BootstrapIT` через Maven Failsafe. Без работающего Docker проверка завершается ошибкой. Запуск `test` сам по себе не выполняет integration tests.
+`verify` компилирует приложение, создаёт исполняемый JAR и запускает PostgreSQL integration tests через Maven Failsafe. Без работающего Docker проверка завершается ошибкой. Запуск `test` сам по себе не выполняет integration tests.
 
-Тестовая PostgreSQL создаётся Testcontainers на случайном порту и удаляется после завершения. Пароль генерируется для тестового контейнера. Ни локальный dev volume, ни `infra/.env` тестам не нужны. Проверяются новая миграция и повторный запуск, отсутствие доменных таблиц на B0, health без внутренних деталей и закрытые служебные endpoints. Проверки отсутствия API и доменных таблиц относятся к границе B0; при реализации B1 они заменяются проверками каталога.
+Тестовая PostgreSQL создаётся Testcontainers на случайном порту и удаляется после завершения. Пароль генерируется для тестового контейнера. Ни локальный dev volume, ни `infra/.env` тестам не нужны. Проверяются миграции, настоящий HTTP каталог и ошибки, фильтры/пагинация/сортировка, DATE/MINUTE и статусы с фиксированным Clock, ограниченное число SQL-запросов, health и запрет DEMO в prod.
+
+После `verify` проверить экспорт настоящих HTTP-ответов по общей OpenAPI-схеме. Из `backend/`, используя Python-окружение с [зависимостями validator](../scripts/README.md):
+
+```powershell
+..\.venv\Scripts\python.exe src/test/resources/validate_http_contract.py --schema ../api/openapi.yaml --responses target/catalog-contract-responses.json
+```
+
+В bash использовать Python того окружения:
+
+```bash
+python src/test/resources/validate_http_contract.py --schema ../api/openapi.yaml --responses target/catalog-contract-responses.json
+```
+
+Bruno и Schemathesis проверяют отдельно собранный JAR на временной БД; инструкции — в [scripts/b1](../scripts/b1/README.md).
 
 ## Локальный запуск
 
@@ -45,6 +61,8 @@ sh ./mvnw -Dspring-boot.run.profiles=dev spring-boot:run
 java -jar target/hackatlas-backend-0.1.0-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
+По умолчанию каталог пустой. Для явной загрузки общих вымышленных fixtures добавить `--hackatlas.demo.enabled=true`; детали и фиксированная дата DEMO описаны в [CATALOG](CATALOG.md). Production миграции не загружают события.
+
 Профиль `dev` читает `../infra/.env` относительно рабочего каталога, поэтому запускать следует из `backend/`. Значения задаются как простой `KEY=value` без кавычек, подстановок и inline-комментариев. Переменные окружения имеют приоритет. Сервер по умолчанию слушает `127.0.0.1:8080`.
 
 ```powershell
@@ -52,7 +70,7 @@ Invoke-RestMethod http://127.0.0.1:8080/actuator/health
 Invoke-RestMethod http://127.0.0.1:8080/actuator/health/readiness
 ```
 
-В Linux подойдёт `curl --fail http://127.0.0.1:8080/actuator/health`. У готового приложения root health возвращает `{"groups":["liveness","readiness"],"status":"UP"}`, отдельные probes — `{"status":"UP"}`. Readiness включает доступность БД, liveness проверяет состояние приложения; компоненты и внутренние детали не выдаются. `/actuator/env`, `/actuator/configprops` и другие служебные endpoints не доступны. Публичного base URL и каталога для подключения mobile пока нет.
+В Linux подойдёт `curl --fail http://127.0.0.1:8080/actuator/health`. У готового приложения root health возвращает `{"groups":["liveness","readiness"],"status":"UP"}`, отдельные probes — `{"status":"UP"}`. Readiness включает доступность БД, liveness проверяет состояние приложения; компоненты и внутренние детали не выдаются. `/actuator/env`, `/actuator/configprops` и другие служебные endpoints не доступны. Локальный base URL каталога — `http://127.0.0.1:8080/api/v1`; опубликованного staging нет.
 
 ## Окружения и схема
 
@@ -64,7 +82,7 @@ Invoke-RestMethod http://127.0.0.1:8080/actuator/health/readiness
 
 `PORT` переопределяет порт; `HACKATLAS_BIND_ADDRESS` — адрес прослушивания. Production hosting, TLS и выпуск относятся к B4. Не включать внешний bind без подготовки окружения.
 
-Flyway применяет `db/migration/V1__create_application_schema.sql`: создаётся пустая схема `hackatlas`; история миграций хранится в `public.flyway_schema_history`. Hibernate использует `ddl-auto=validate`, Open Session in View отключён. Доменных таблиц, пользователей, seed и DEMO-событий в миграции нет. Существующие миграции после применения не переписывать; изменения добавлять следующей версией.
+Flyway применяет V1 (схема `hackatlas`) и V2 (`catalog_hackathon`, `catalog_tag`, `catalog_hackathon_topic` с ограничениями и индексами); история хранится в `public.flyway_schema_history`. Hibernate использует `ddl-auto=validate`, Open Session in View отключён. Пользователей и seed в миграциях нет. Существующие применённые миграции не переписывать; изменения добавлять следующей версией. Запросы каталога используют read-only транзакцию PostgreSQL `REPEATABLE READ`, чтобы count, страница и детали читались из одного снимка.
 
 ## Проверенный путь на текущей Windows-машине
 

@@ -1,0 +1,19 @@
+meta {
+  name: Error - malformed UUID
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/hackathons/not-a-uuid
+  body: none
+  auth: none
+}
+
+tests {
+  test("Malformed UUID is validation failure, not not-found", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().code).to.equal("VALIDATION_ERROR");
+  });
+}

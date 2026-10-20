@@ -1,4 +1,4 @@
-# Backend toolchain — B0
+# Backend toolchain — B0/B1
 
 Фиксация от 20 октября 2026. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
 
@@ -13,8 +13,11 @@
 | PostgreSQL JDBC | 42.7.13 через Boot BOM |
 | Testcontainers | 2.0.5 через Boot BOM |
 | Maven Surefire / Failsafe | 3.5.6 через Boot parent |
+| Bruno CLI | 4.2.1, npm lock в `tools/bruno/` |
+| Schemathesis | 4.32.2, полный Python lock в `scripts/b1/requirements.txt` |
+| Node.js для Bruno | 24.19.0, отдельный инструмент проверки, не серверный runtime |
 
-Используются Spring MVC, Spring Data JPA, Actuator и Flyway starters. Spring Security подключается при B2; публичные API и аккаунты на B0 отсутствуют. `0.1.0-SNAPSHOT` — версия собственного разрабатываемого приложения, а не предварительная версия сторонних dependencies.
+Используются Spring MVC, Spring Data JPA, Actuator и Flyway starters. B1 добавляет публичный каталог без новых Java dependencies. Spring Security подключается при B2; аккаунты ещё не реализованы. `0.1.0-SNAPSHOT` — версия собственного разрабатываемого приложения, а не предварительная версия сторонних dependencies.
 
 Mockito из `spring-boot-starter-test` запускается явным Java agent в Surefire/Failsafe по [официальной инструкции для Java 21+](https://javadoc.io/static/org.mockito/mockito-core/5.24.0/org.mockito/org/mockito/Mockito.html#0.3). Maven dependency plugin разрешает путь к JAR; late `argLine` сохраняет совместимость с будущими test agents. Это устраняет динамическое self-attach при старте Spring test context; тесты и listeners не отключаются.
 
@@ -56,6 +59,8 @@ sh ./mvnw --batch-mode --no-transfer-progress verify
 ```
 
 Docker должен быть доступен процессу JVM, запускающему tests. Проверенный вызов через WSL из Windows и команды dev-запуска — в [README](README.md), фактические результаты — в [STATUS_BACKEND](../docs/STATUS_BACKEND.md).
+
+Bruno и Schemathesis проверяют собранный JAR в отдельном Linux-окружении с временной PostgreSQL. CI использует Python 3.12, локальный B1 runner — Python 3.14; существующий offline validator также проверен на Windows Python 3.12. Точные команды, pins, источники и границы генеративных проверок — в [scripts/b1/README](../scripts/b1/README.md). Глобальные CLI и платные функции GUI не требуются.
 
 ## Первичные источники
 

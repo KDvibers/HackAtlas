@@ -1,0 +1,23 @@
+meta {
+  name: Catalogue - empty result
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/hackathons?query=__hackatlas_b1_no_matching_event__
+  body: none
+  auth: none
+}
+
+tests {
+  test("Empty page retains the canonical pagination shape", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.items).to.deep.equal([]);
+    expect(body.totalElements).to.equal(0);
+    expect(body.totalPages).to.equal(0);
+    expect(body.hasNext).to.equal(false);
+    expect(body.asOf).to.be.a("string");
+  });
+}
