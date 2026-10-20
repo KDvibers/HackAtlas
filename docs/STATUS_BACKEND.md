@@ -2,7 +2,63 @@
 
 Дата актуального дополнения: 20 октября 2026.
 
-## B0 — основа backend завершена локально
+## B1 — публичный каталог завершён локально
+
+**B1 выполнен, B2 не начат.** Ветка `feat/catalog-api` создана от B0 `208e097`; в начале задания checkout был чистым. Повторный `git fetch origin` подтвердил, что пользователь уже объединил B0: `origin/main=43b11e4` (merge PR #2), `208e097` входит в его историю. База PR B1 — **main**. Merge/rebase текущей ветки не выполнялся.
+
+Все изменения B1 оставлены **без staging и коммита**. Commit, push и PR делает пользователь; в итоговом отчёте дать готовые команды. Read-only GitHub API повторно подтвердил `yergaliuly` и push-доступ к KDvibers/HackAtlas; Git author отдельно — `softache <itsyergaliuly@gmail.com>`. Никакого push/PR/merge/deployment в этом задании не выполнялось.
+
+### Реализовано
+
+- `backend/src/main/java/com/hackatlas/catalog/`: сущности, DTO/mapping, параметризованные запросы каталога, AND-фильтры, стабильная сортировка, BigInteger pagination, metadata, статусы от Clock и идемпотентный явный DEMO seed.
+- `backend/src/main/java/com/hackatlas/web/`, `config/ClockConfiguration.java`: три публичных GET, строгая валидация, безопасный Problem/requestId; фиксированный DEMO Clock разрешён только в dev/test с флагом.
+- `backend/src/main/resources/db/migration/V2__create_catalog.sql`: таблицы каталога/тегов/связей, ограничения и индексы, без production seed.
+- `backend/pom.xml`: канонические fixtures как classpath resources; новых Java dependencies нет.
+- `backend/src/test/`: реальные PostgreSQL/Testcontainers HTTP-тесты, prod DEMO gate, экспорт ответов и проверка JSON Schema 2020-12.
+- `tools/bruno/`: 10 запросов, CLI 4.2.1 с package-lock. `scripts/b1/`: pinned Schemathesis 4.32.2, изолированный runner собранного JAR, README/requirements. CI дополнен этими проверками.
+- Документация: `backend/CATALOG.md`, README/START_HERE, backend/infra/toolchain, DECISIONS и правила пользовательских commit/push/PR. `api/`, fixtures, mobile, визуальный референс и авторизация не менялись.
+
+### Выполненные проверки
+
+| Команда / проверка | Результат |
+|---|---|
+| WSL root: `cd /mnt/c/Daniyar/MyProjects/HackAtlas/backend && sh ./mvnw --batch-mode --no-transfer-progress verify` | **BUILD SUCCESS, 91 tests, 0 failures/errors/skipped**, итоговый прогон после всех Java-исправлений |
+| Windows: `.\.venv\Scripts\python.exe backend/src/test/resources/validate_http_contract.py --schema api/openapi.yaml --responses backend/target/catalog-contract-responses.json` | **PASS 139 реальных HTTP-ответов**, включая 3 GET/200, list/400/500, detail/400/404 |
+| `.\.venv\Scripts\python.exe scripts/validate_contract.py` и `-m pip check` | PASS; неизменённый OpenAPI и все 6 fixtures |
+| Изолированный runner на окончательном JAR | PASS offline validator, 12 реальных HTTP schema/semantic сценариев, **Bruno 10 requests / 10 tests** |
+| Schemathesis 4.32.2 | **201 generated / 201 passed**, выбраны и проверены ровно 3/17 операций B1; seed `20261020`, max-examples 100. Fuzzing прошёл; Examples не имел request examples и пропустил три операции. Coverage/Stateful не входят в этот прогон |
+| GitHub read-only API | Подтверждены `yergaliuly`, репозиторий KDvibers/HackAtlas и write-доступ; Git author проверен отдельно |
+| Независимое review и regression checks | Исправлены порядок NEWEST seed, snapshot чтения, U+0000 в query/city/topic и ошибочный 500 при пустом имени query-параметра; итоговые Java tests покрывают исправления |
+
+Логи: `backend/target/b1-verify.log`, `backend/target/failsafe-reports/`, `backend/target/catalog-contract-responses.json`, `backend/target/b1-checks/contract-checks.log`, `backend/target/b1-checks/final-checks.log`. Они игнорируются Git. Helper проверяет именно экспорт HTTP, требует обязательные пары operation/status и завершает работу ненулевым кодом при нарушении схемы/покрытия.
+
+Первый Schemathesis запуск выявил неверные одинарные кавычки в селекторе; использован JSON literal `"B1"`, после чего выбраны ровно три маршрута. Реальный fuzz обнаружил, что Tomcat `InvalidParameterException` при пустом имени query-параметра попадал в общий 500. Добавлена безопасная обработка 400 `VALIDATION_ERROR` и пять HTTP regression cases для malformed/unknown names и повторов. Ошибки не исключались из генерации и checks не отключались ради прохождения.
+
+### Окружение и ограничения
+
+Docker/JVM проверки выполнены в Ubuntu WSL2 root с Java 21 и PostgreSQL 17.11. Bruno использовал Node 24.19.0, Schemathesis — отдельный Python 3.14 venv. CI настроен на Python 3.12; его dependency resolution проверен, но **удалённый GitHub Actions run ещё не выполнялся**. Полный Windows JVM + Docker прогон, Android/iOS и устройства не проверялись.
+
+Runner копирует JAR в собственный Linux temporary directory, чтобы JVM не удерживала исходный файл на Windows mount. Его отдельная PostgreSQL использует случайное имя/owner label и tmpfs, credentials передаются через env. В итоговом прогоне cleanup успешно остановил JVM и удалил только собственный контейнер. Общая dev-БД, её volume и БД другого проекта не использовались и не удалялись.
+
+API проверен по loopback внутри WSL. Отдельная попытка Windows PowerShell подключиться к активному серверу WSL по `127.0.0.1` получила connection refused; Windows localhost forwarding здесь не подтверждён и не настраивался. Для mobile потребуется отдельно проверить доступный host mapping/LAN либо staging. Внешнего staging URL нет, сервер после проверок остановлен.
+
+Команды для нового окружения и locks — в [backend/README](../backend/README.md) и [scripts/b1/README](../scripts/b1/README.md). Фактически выполненный локальный runner из PowerShell:
+
+   ```powershell
+   wsl -d Ubuntu -u root --exec /tmp/hackatlas-b1-tools-20261020-326a/venv/bin/python /mnt/c/Daniyar/MyProjects/HackAtlas/scripts/b1/run_contract_checks.py --jar /mnt/c/Daniyar/MyProjects/HackAtlas/backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --node /tmp/hackatlas-b1-tools-20261020-326a/node-v24.19.0-linux-x64/bin/node
+   ```
+
+### Финальный scope и передача
+
+`git diff --check` и проверка новых файлов/Markdown-ссылок проходят; staged diff пуст. Gitleaks CLI 8.30.1 проверяет доступную Git-историю и временную копию всех 58 изменённых/новых неигнорируемых файлов, без staging и без чтения реального `.env`: утечек не найдено. Проверку выполняет обычный WSL-пользователь; root Git не доверяет checkout. Повторяемый локальный скрипт проверки сохранён в игнорируемом `backend/target/b1-final-checks.py`. Это проверка распространённых шаблонов, не полный security audit.
+
+Для напарника: «B1 готов локально в `feat/catalog-api`, PR будет в main. Доступны публичные GET `/api/v1/hackathons`, `/api/v1/hackathons/{id}`, `/api/v1/metadata/filters`; Starter не менялся. После пользовательского merge обнови main и используй [CATALOG](../backend/CATALOG.md). DEMO требует явного флага, фиксированная дата fixtures — `2026-10-12T10:00:00Z`; `example.com` не является реальной регистрацией. Базовый URL локального сервера в WSL — `http://127.0.0.1:8080/api/v1`; для твоего устройства/машины нужен отдельно проверенный доступный адрес. Auth ещё нет». Сообщение подготовлено, автоматически никому не отправлялось.
+
+Следующий отдельный этап — **B2: аккаунты и opaque Bearer sessions** по неизменённому Starter. Он не начат; после B1 остановиться и ждать отдельного поручения. Для пользовательского PR: title `Implement B1 public catalog API`; описание — публичный каталог/поиск/фильтры/metadata, V2/явный DEMO, безопасные ошибки и фактические проверки выше. Commit, push и создание PR не выполнялись.
+
+Далее сохранены исторические отчёты; их утверждения о ещё не начатом B1 относятся к предыдущим заданиям.
+
+## Исторический B0 — основа backend завершена локально
 
 Пользователь отдельно поручил **только B0**, со сборкой и тестами. Ветка — `feat/backend-bootstrap`, основа — локальный planning commit `6e6071c`; `origin/main` при начале работы оставался на `0128f7b`. B1 не начат. Push, создание PR, merge и deployment не выполнялись.
 

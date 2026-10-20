@@ -68,6 +68,33 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>../api/examples</directory>
+                <targetPath>demo</targetPath>
+                <includes>
+                    <include>catalog-page.json</include>
+                    <include>hackathon-detail.json</include>
+                    <include>filter-metadata.json</include>
+                </includes>
+            </resource>
+        </resources>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+            <testResource>
+                <directory>../api</directory>
+                <targetPath>api</targetPath>
+                <includes>
+                    <include>openapi.yaml</include>
+                    <include>examples/*.json</include>
+                </includes>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

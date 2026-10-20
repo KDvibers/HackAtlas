@@ -1,0 +1,12 @@
+{
+  "name": "hackatlas-b1-api-checks",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local-only Bruno checks for the three public B1 operations",
+  "scripts": {
+    "test": "bru run --env local --noproxy"
+  },
+  "devDependencies": {
+    "@usebruno/cli": "4.2.1"
+  }
+}

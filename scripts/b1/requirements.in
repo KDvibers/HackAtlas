@@ -1,0 +1,2 @@
+-r ../requirements-contract.txt
+schemathesis==4.32.2

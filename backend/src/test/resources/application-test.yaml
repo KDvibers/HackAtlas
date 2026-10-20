@@ -5,3 +5,11 @@ spring:
     hikari:
       maximum-pool-size: 3
       minimum-idle: 1
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+
+hackatlas:
+  demo:
+    enabled: true

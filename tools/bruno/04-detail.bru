@@ -1,0 +1,23 @@
+meta {
+  name: Detail - AI DEMO
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e
+  body: none
+  auth: none
+}
+
+tests {
+  test("Detail preserves precise time and decimal-string prize", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.id).to.equal("39287368-5259-5235-a1c4-25b4e1e8421e");
+    expect(body.isDemo).to.equal(true);
+    expect(body.starts.precision).to.equal("MINUTE");
+    expect(body.prize.totalAmount).to.equal("10000.00");
+    expect(body.sourceUrl).to.match(/^https:\/\//);
+  });
+}

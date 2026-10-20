@@ -1,0 +1,19 @@
+meta {
+  name: Error - unknown sort
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/hackathons?sort=INVALID
+  body: none
+  auth: none
+}
+
+tests {
+  test("Unknown sort is rejected", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().code).to.equal("VALIDATION_ERROR");
+  });
+}

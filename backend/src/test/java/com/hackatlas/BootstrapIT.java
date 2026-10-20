@@ -5,7 +5,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.UUID;
 
 import javax.sql.DataSource;
 
@@ -18,24 +17,20 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
         classes = HackAtlasApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "hackatlas.demo.enabled=false"
 )
 @ActiveProfiles("test")
-@Import(BootstrapIT.DatabaseConfiguration.class)
+@Import(IntegrationTestConfiguration.class)
 class BootstrapIT {
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
@@ -64,7 +59,7 @@ class BootstrapIT {
     }
 
     @Test
-    void startsAgainstPostgres17AndMigratesANewDatabaseWithoutDomainTables() throws Exception {
+    void startsAgainstPostgres17AndAppliesAllMigrations() throws Exception {
         try (var connection = dataSource.getConnection()) {
             assertThat(connection.getMetaData().getDatabaseProductName()).isEqualTo("PostgreSQL");
             assertThat(connection.getMetaData().getDatabaseMajorVersion()).isEqualTo(17);
@@ -74,20 +69,15 @@ class BootstrapIT {
                 "select exists (select 1 from pg_namespace where nspname = 'hackatlas')",
                 Boolean.class
         )).isTrue();
-        assertThat(jdbc.queryForList("""
-                select table_name
-                from information_schema.tables
-                where table_schema = 'hackatlas' and table_type = 'BASE TABLE'
-                """, String.class)).isEmpty();
         assertThat(jdbc.queryForObject(
                 "select count(*) from public.flyway_schema_history where version = '1' and success",
                 Integer.class
         )).isEqualTo(1);
-        assertThat(flyway.info().applied()).singleElement().satisfies(migration -> {
-            assertThat(migration.getVersion().getVersion()).isEqualTo("1");
+        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(2).allSatisfy(migration -> {
             assertThat(migration.getState()).isEqualTo(MigrationState.SUCCESS);
         });
         assertThat(flyway.info().pending()).isEmpty();
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.catalog_hackathon", Integer.class)).isZero();
     }
 
     @Test
@@ -95,7 +85,7 @@ class BootstrapIT {
         flyway.validate();
 
         assertThat(flyway.migrate().migrationsExecuted).isZero();
-        assertThat(flyway.info().applied()).hasSize(1);
+        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(2);
         assertThat(flyway.info().pending()).isEmpty();
     }
 
@@ -135,15 +125,9 @@ class BootstrapIT {
         assertThat(request("GET", path).statusCode()).isEqualTo(404);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {
-            "/api/v1/hackathons",
-            "/api/v1/hackathons/00000000-0000-0000-0000-000000000001",
-            "/api/v1/metadata/filters",
-            "/api/v1/me"
-    })
-    void catalogueAndProfileEndpointsAreNotImplementedInB0(String path) throws Exception {
-        assertThat(request("GET", path).statusCode()).isEqualTo(404);
+    @Test
+    void profileEndpointIsNotImplementedInB1() throws Exception {
+        assertThat(request("GET", "/api/v1/me").statusCode()).isEqualTo(404);
     }
 
     @ParameterizedTest
@@ -152,7 +136,7 @@ class BootstrapIT {
             "/api/v1/auth/login",
             "/api/v1/auth/logout"
     })
-    void authEndpointsAreNotImplementedInB0(String path) throws Exception {
+    void authEndpointsAreNotImplementedInB1(String path) throws Exception {
         assertThat(request("POST", path).statusCode()).isEqualTo(404);
     }
 
@@ -169,21 +153,4 @@ class BootstrapIT {
         return HTTP.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    @TestConfiguration(proxyBeanMethods = false)
-    static class DatabaseConfiguration {
-
-        @Bean
-        @ServiceConnection
-        PostgreSQLContainer postgresDatabase() {
-            // Same 17.11-bookworm digest as Compose; Testcontainers parses name@digest without a tag.
-            return new PostgreSQLContainer(DockerImageName.parse(
-                    "postgres@sha256:"
-                            + "3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
-            ))
-                    .withDatabaseName("hackatlas_bootstrap_test")
-                    .withUsername("hackatlas_test")
-                    .withPassword(UUID.randomUUID().toString())
-                    .withReuse(false);
-        }
-    }
 }
