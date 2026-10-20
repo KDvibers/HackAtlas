@@ -1,0 +1,53 @@
+# GitHub: совместная работа
+
+## Организация
+Один репозиторий `HackAtlas` в выбранной GitHub organization либо аккаунте с приглашённым collaborator. Не использовать общий логин. Реальный OWNER и GitHub usernames вводятся пользователями; не брать чужие названия репозиториев за существующие.
+
+Два локальных клона, два Codex-сеанса, разные feature-ветки. Общий код — на GitHub, не в пересылаемых ZIP после каждого этапа.
+
+## Владение
+`backend/`, `infra/`, backend-ci — пользователь.
+`mobile/`, `design/assets/`, mobile-ci — друг.
+`api/`, root AGENTS, PRODUCT, reference — совместные. Инициатор делает отдельный PR, второй подтверждает соответствие. Не редактировать один общий STATUS: у каждого свой файл.
+
+CODEOWNERS.example — только шаблон. Сначала заменить handles и сохранить как CODEOWNERS. Запись с двумя владельцами сама по себе не означает, что GitHub потребует два approvals; совместное согласование контракта — отдельное правило команды.
+
+## Ветки
+`feat/backend-bootstrap`, `feat/backend-catalog`, `feat/backend-auth`, `feat/mobile-bootstrap`, `feat/mobile-design-core`, `feat/mobile-catalog-api`, `fix/mobile-...`, `chore/api-...`.
+
+main — интеграционная ветка. После первоначального пустого bootstrap не push прямо в main. Один этап/небольшая фича → PR → проверки → просмотр другом → merge. Не вести месячную ветку всего приложения.
+
+## Перед новым этапом (при чистом рабочем дереве)
+```bash
+git status --short --branch
+git switch main
+git pull --ff-only origin main
+git switch -c feat/backend-catalog
+```
+Друг вместо последней команды создаёт свою mobile-ветку. Не выполнять switch/pull, когда есть несохранённые чужие изменения. Сначала разобраться, сохранить и согласовать их; не применять reset/clean/force.
+
+## Перед отправкой
+Запустить тесты своей части и contract-check, посмотреть `git diff --check`, `git diff` и `git status`. Добавлять конкретные файлы, чтобы не закоммитить локальные конфиги или чужую работу.
+```bash
+git add backend/ infra/ docs/STATUS_BACKEND.md
+git diff --cached
+git commit -m "feat(backend): implement public hackathon catalog"
+git push -u origin feat/backend-catalog
+```
+Команды показывают форму; не добавлять отсутствующие пути. В первой сессии Codex даёт команды человеку и не выполняет push без разрешения.
+
+## PR
+Что сделано; этап; screenshots для UI; как проверить; какие тесты реально выполнены; как изменился API; что осталось; нужна ли миграция. CODEOWNERS помогает запросить review. Правила защиты main (при доступности в вашем плане): PR, минимум один review, успешные существующие checks, запрет force push. Не назначать required-check, который workflow пропускает навсегда.
+
+## CI
+Backend на Linux: Java21, wrapper build/test, PostgreSQL service или Testcontainers, Flyway test, OpenAPI examples validation.
+Mobile Android/common: Linux + совместимый JDK/Android SDK, wrapper assemble debug + common tests + lint.
+iOS: подходящий macOS/архитектура runner + Xcode, сборка simulator без release-signing. Проверить доступные runners, архитектуру и стоимость до добавления обязательного job. Отсутствие runner не считать успехом iOS.
+
+Не смешивать сторонние workflow-примеры с несовместимыми версиями Actions. Зафиксировать поддерживаемые версии (предпочтительно проверенные commit SHA), минимальные permissions. Fork PR не получает секреты. Сначала работающие команды локально, затем CI.
+
+## Передача результата напарнику
+«Ветка/PR; этап; commit; endpoints и пример ответа; как запустить; адрес API; изменился ли контракт; известные ограничения; какие проверки выполнены; что подключать далее».
+
+## Видимость авторов
+Каждый коммитит со своего аккаунта и email, связанного с GitHub. В README указать обоих создателей с реальными handles. Не приписывать авторство чужих изменений и не подделывать commits. Лицензию репозитория выбрать совместно, не вставлять MIT автоматически.

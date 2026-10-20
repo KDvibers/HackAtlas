@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HackAtlas — гостевые закладки и календарь M2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#050507;color:#f5f2fa;font:16px/1.5 system-ui,sans-serif}main{max-width:1450px;margin:auto;padding:30px}h1{font-size:28px;margin:0 0 8px}p{color:#c0b8cc;max-width:1000px}a{color:#e91df4}header{margin-bottom:30px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}figure{margin:0}figcaption{padding:10px 0;font-weight:600}.grid img{width:100%;height:auto;display:block;border:1px solid #443053;border-radius:12px}section{margin-top:35px;border-top:1px solid #443053;padding-top:20px}.note{font-size:14px;color:#9f97ad}@media(max-width:950px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){main{padding:16px}.grid{grid-template-columns:1fr}}
+</style>
+<main>
+<header>
+<h1>HackAtlas · независимая часть M2</h1>
+<p>Настоящие снимки Android-приложения: постоянные гостевые закладки, сохранённые подробности без сети и календарь. События — DEMO из Starter. Backend и авторизация пока не подключены.</p>
+<a href="../../androidApp/build/outputs/apk/debug/androidApp-debug.apk">Android debug APK</a> ·
+<a href="android-smoke.json">Результат проверки на эмуляторе</a> ·
+<a href="../../README.md">Инструкция запуска</a> ·
+<a href="../m1/review.html">Утверждённые экраны и шрифты M1</a>
+</header>
+<div class="grid">
+<figure><figcaption>Сохранённое без сети</figcaption><a href="screenshots/saved-offline.png"><img src="screenshots/saved-offline.png" alt="Гостевые закладки с датой сохранённой копии в авиарежиме"></a></figure>
+<figure><figcaption>Подробности из локальной копии</figcaption><a href="screenshots/detail-offline.png"><img src="screenshots/detail-offline.png" alt="Сохранённый AI Sprint при отключённом источнике каталога"></a></figure>
+<figure><figcaption>Календарь · дни проведения</figcaption><a href="screenshots/calendar-event.png"><img src="screenshots/calendar-event.png" alt="Ноябрь 2026, выбран день проведения сохранённого события"></a></figure>
+</div>
+<section>
+<div class="grid">
+<figure><figcaption>Дедлайн · время и часовой пояс</figcaption><a href="screenshots/calendar-deadline.png"><img src="screenshots/calendar-deadline.png" alt="Дедлайн регистрации отдельно от дней проведения, экран прокручен к карточке"></a></figure>
+<figure><figcaption>Пустой календарь</figcaption><a href="screenshots/calendar-empty.png"><img src="screenshots/calendar-empty.png" alt="Пустое состояние после удаления всех закладок и перезапуска"></a></figure>
+<figure><figcaption>Календарь · 360 dp, текст 130%</figcaption><a href="screenshots/calendar-360-large.png"><img src="screenshots/calendar-360-large.png" alt="Календарь на узком экране с увеличенным текстом"></a></figure>
+</div>
+<p class="note">Сохранённые сведения могут устаревать: дата копии не означает новую проверку источника. Даты календаря следуют опубликованной локальной дате и точности. Напоминания, синхронизация с аккаунтом и системный календарь не входят в этот этап. iOS требует отдельной сборки и проверки на Mac.</p>
+</section>
+</main>
+</html>

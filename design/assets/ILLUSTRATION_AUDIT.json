@@ -1,0 +1,65 @@
+{
+  "checkedOn": "2026-10-12",
+  "images": [
+    {
+      "name": "ai_head.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "transparentPixelCount": 844533,
+      "sha256": "b6b1c54dbf5c45767eaec958931ffc99e777982ad3ef9c84619cc4f8fa36dc2f",
+      "appCopyMatches": true
+    },
+    {
+      "name": "demo_avatar.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "transparentPixelCount": 810091,
+      "sha256": "08820c370f6b82009431fa943f0a0bb458f8bfe451af04a103f574d4191818b9",
+      "appCopyMatches": true
+    },
+    {
+      "name": "fintech_skyline.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "transparentPixelCount": 1017092,
+      "sha256": "600dfbdd9507433453eec17cd1f8320d41797e6839e194c5db8d11c5e38cb0ee",
+      "appCopyMatches": true
+    },
+    {
+      "name": "game_controller.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "transparentPixelCount": 915156,
+      "sha256": "c43bbabcbab36398cd9648db5dabb8101de4df914bdd84efb039218bb388cf91",
+      "appCopyMatches": true
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "checkedOn": "2026-10-12",
+  "sources": {
+    "pressstart2p": {
+      "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf",
+      "file": "design\\assets\\fonts\\sources\\PressStart2P-Regular.ttf",
+      "sha256": "034c77f1f05ec89421e4a63f0e3a4ca1ecf852cc6d2bf611f126f275728e017d",
+      "license": "design\\assets\\licenses\\pressstart2p-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/OFL.txt"
+    },
+    "inter": {
+      "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/Inter%5Bopsz%2Cwght%5D.ttf",
+      "file": "design\\assets\\fonts\\sources\\Inter[opsz,wght].ttf",
+      "sha256": "29160a80ff49ddcab2c97711247e08b1fab27a484a329ce8b813d820dc559031",
+      "license": "design\\assets\\licenses\\inter-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/inter/OFL.txt"
+    },
+    "exo2": {
+      "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/exo2/Exo2%5Bwght%5D.ttf",
+      "file": "design\\assets\\fonts\\sources\\Exo2[wght].ttf",
+      "sha256": "205a448676a2586f9c57c25f3d5c58ca8db7e6cf5edf7506783a010c6fe2bfb5",
+      "license": "design\\assets\\licenses\\exo2-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/exo2/OFL.txt"
+    },
+    "jetbrainsmono": {
+      "url": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf",
+      "file": "design\\assets\\fonts\\sources\\JetBrainsMono-Regular.ttf",
+      "sha256": "e6fd0d7e91550b3ed2b735d4312474362c4716edc4fc0577a0f61ed782d5aed1",
+      "license": "design\\assets\\licenses\\jetbrainsmono-OFL.txt",
+      "licenseUrl": "https://raw.githubusercontent.com/google/fonts/main/ofl/jetbrainsmono/OFL.txt"
+    }
+  },
+  "fonts": [
+    {
+      "file": "mobile\\shared\\src\\commonMain\\composeResources\\font\\press_start_2p.ttf",
+      "sha256": "034c77f1f05ec89421e4a63f0e3a4ca1ecf852cc6d2bf611f126f275728e017d",
+      "missingRequiredGlyphs": [],
+      "glyphCount": 656,
+      "currencyGlyphs": {
+        "₽": true,
+        "₸": true,
+        "€": true,
+        "$": true
+      }
+    },
+    {
+      "file": "mobile\\shared\\src\\commonMain\\composeResources\\font\\inter_regular.ttf",
+      "sha256": "3e859415138d30307a5c4ab9eff16d5fdc910ac59dc733d10ed1d24e501d67db",
+      "missingRequiredGlyphs": [],
+      "glyphCount": 2849,
+      "currencyGlyphs": {
+        "₽": true,
+        "₸": true,
+        "€": true,
+        "$": true
+      }
+    },
+    {
+      "file": "mobile\\shared\\src\\commonMain\\composeResources\\font\\inter_semibold.ttf",
+      "sha256": "b7637cc7a0a2f9612fb5d49095a014bd0efa759001cd5c9204fa30e5e145cbc3",
+      "missingRequiredGlyphs": [],
+      "glyphCount": 2849,
+      "currencyGlyphs": {
+        "₽": true,
+        "₸": true,
+        "€": true,
+        "$": true
+      }
+    },
+    {
+      "file": "mobile\\shared\\src\\commonMain\\composeResources\\font\\inter_bold.ttf",
+      "sha256": "a984e6fc2548417413fe562afa2a042ff69d649571665f0d6d2c8269b8809d21",
+      "missingRequiredGlyphs": [],
+      "glyphCount": 2849,
+      "currencyGlyphs": {
+        "₽": true,
+        "₸": true,
+        "€": true,
+        "$": true
+      }
+    },
+    {
+      "file": "mobile\\shared\\src\\commonMain\\composeResources\\font\\exo_2_bold.ttf",
+      "sha256": "885c7ed88a3c1740c198d0be672dcc8cebc0ff0549c16f96503de543f1e17b79",
+      "missingRequiredGlyphs": [],
+      "glyphCount": 911,
+      "currencyGlyphs": {
+        "₽": true,
+        "₸": false,
+        "€": true,
+        "$": true
+      }
+    },
+    {
+      "file": "mobile\\shared\\src\\commonMain\\composeResources\\font\\jetbrains_mono_regular.ttf",
+      "sha256": "e6fd0d7e91550b3ed2b735d4312474362c4716edc4fc0577a0f61ed782d5aed1",
+      "missingRequiredGlyphs": [],
+      "glyphCount": 1372,
+      "currencyGlyphs": {
+        "₽": true,
+        "₸": false,
+        "€": true,
+        "$": true
+      }
+    }
+  ]
+}
