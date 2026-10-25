@@ -1,0 +1,26 @@
+meta {
+  name: Save event for account B
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/me/saved/39287368-5259-5235-a1c4-25b4e1e8421e
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenB}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Save event for account B", function () {
+    expect(res.getStatus()).to.equal(204);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+  });
+}

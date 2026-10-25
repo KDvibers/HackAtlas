@@ -1,4 +1,4 @@
-# Backend toolchain — B0/B1/B2
+# Backend toolchain — B0/B1/B2/B3
 
 Фиксация от 20 октября 2026. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
 
@@ -7,6 +7,7 @@
 | Java | Language / bytecode target 21; локально проверен JDK 21.0.12.1 |
 | Spring Boot parent / BOM | 4.1.1 |
 | Spring Security | 7.1.1 через Boot BOM, подключён B2 |
+| Thymeleaf | 3.1.5.RELEASE через Boot BOM, server-side HTML админка B3 |
 | Bouncy Castle | `bcprov-jdk18on:1.86`, нужен Spring Argon2id encoder |
 | Maven | 3.9.16 |
 | Maven Wrapper | 3.3.4, `only-script`, без wrapper JAR в Git |
@@ -24,6 +25,8 @@
 Mockito из `spring-boot-starter-test` запускается явным Java agent в Surefire/Failsafe по [официальной инструкции для Java 21+](https://javadoc.io/static/org.mockito/mockito-core/5.24.0/org.mockito/org/mockito/Mockito.html#0.3). Maven dependency plugin разрешает путь к JAR; late `argLine` сохраняет совместимость с будущими test agents. Это устраняет динамическое self-attach при старте Spring test context; тесты и listeners не отключаются.
 
 PostgreSQL digest: `sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826`. Он используется и для Compose, и для интеграционных тестов; тесты не зависят от состояния dev volume. Exact versions и hashes CI Actions / Gitleaks собраны в [infra/README](../infra/README.md).
+
+B3 добавляет только `spring-boot-starter-thymeleaf` из существующего Boot BOM. HTML формируется на сервере, дополнительный JavaScript runtime или сборщик UI не нужен. Spring Security сохраняет opaque Bearer API и отдельно защищает admin browser session/CSRF. Для модерации переиспользуется проверенный алгоритм ограниченных окон B2 с отдельными счётчиками: Bucket4j и Redis не добавлялись. PostgreSQL row locks, FK и транзакции обеспечивают атомарное удаление аккаунта и аудит. Подробности — [MODERATION](MODERATION.md).
 
 ## Wrapper и проверка загрузок
 

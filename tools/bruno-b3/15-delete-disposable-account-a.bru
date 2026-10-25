@@ -1,0 +1,31 @@
+meta {
+  name: Delete disposable account A
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/me/delete-account
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{tokenA}}
+}
+
+body:json {
+  {"password":"{{process.env.HACKATLAS_B3_PASSWORD}}"}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Delete disposable account A", function () {
+    expect(res.getStatus()).to.equal(204);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+  });
+}

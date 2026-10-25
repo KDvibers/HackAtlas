@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import com.hackatlas.personal.ProfilePatch;
+import com.hackatlas.moderation.SafeHttpsUrl;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Validator;
 import jakarta.validation.constraints.Email;
@@ -37,6 +38,28 @@ final class JsonRequests {
         @Override public String toString() { return "Login[redacted]"; }
     }
     private record EmailValue(@Email String value) { }
+
+    record Suggestion(String url, String comment) { }
+    record Report(String reason, String message) { }
+
+    Suggestion suggestion(HttpServletRequest request) {
+        var body = object(request, Set.of("url", "comment"));
+        return new Suggestion(SafeHttpsUrl.validate(text(body, "url", 1, MAX_BYTES, false, false), "url"),
+                text(body, "comment", 0, 2000, true, false));
+    }
+
+    Report report(HttpServletRequest request) {
+        var body = object(request, Set.of("reason", "message"));
+        String reason = text(body, "reason", 1, 12, false, false);
+        if (!Set.of("DATES", "LINK", "PRIZE", "ELIGIBILITY", "DUPLICATE", "OTHER").contains(reason)) {
+            throw invalid("reason");
+        }
+        return new Report(reason, text(body, "message", 5, 2000, false, false));
+    }
+
+    String deletionPassword(HttpServletRequest request) {
+        return text(object(request, Set.of("password")), "password", 1, 256, false, true);
+    }
 
     Registration registration(HttpServletRequest request) {
         var body = object(request, Set.of("email", "password", "displayName"));

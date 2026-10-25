@@ -1,0 +1,15 @@
+<!doctype html><html lang="ru" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{admin/fragments :: head('Очередь проверки')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><main><p class="eyebrow">PENDING / РУЧНАЯ ПРОВЕРКА</p><h1>Предложения и замечания</h1>
+<p>Первые 100 ожидающих записей, начиная с ранних. Завершение проверки не публикует событие автоматически.</p>
+<p class="notice" th:if="${#lists.isEmpty(submissions)}">Очередь пуста.</p>
+<article class="submission" th:each="item : ${submissions}"><p class="eyebrow" th:text="${item.kind}"></p>
+<p><time th:text="${item.createdAt}"></time></p>
+<p th:if="${item.hackathonId != null}">Событие: <a th:href="@{/admin/events/{id}/edit(id=${item.hackathonId})}" th:text="${item.hackathonId}"></a></p>
+<p th:if="${item.url != null}">Предложенный источник: <span class="user-text" th:text="${item.url}"></span></p>
+<p class="user-text" th:if="${item.comment != null}" th:text="${item.comment}"></p>
+<p th:if="${item.reason != null}">Причина: <strong th:text="${item.reason}"></strong></p>
+<p class="user-text" th:if="${item.message != null}" th:text="${item.message}"></p>
+<form method="post" th:action="@{/admin/queue/{id}/review(id=${item.id})}" class="inline">
+<button type="submit" name="decision" value="RESOLVED">Проверено / обработано</button>
+<button type="submit" name="decision" value="DISMISSED" class="secondary">Отклонить</button></form></article>
+</main></body></html>

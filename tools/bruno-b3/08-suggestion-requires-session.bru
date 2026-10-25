@@ -1,0 +1,32 @@
+meta {
+  name: Suggestion requires session
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/suggestions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"url":"https://example.com/bruno-b3-demo","comment":"DEMO suggestion for moderation."}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Suggestion requires session", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+  });
+}

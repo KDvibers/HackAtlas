@@ -1,0 +1,54 @@
+<!doctype html><html lang="ru" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{admin/fragments :: head('Карточка события')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><main>
+<p class="eyebrow" th:text="${event == null ? 'НОВЫЙ ЧЕРНОВИК' : event.publicationStatus}">DRAFT</p>
+<h1 th:text="${event == null ? 'Новое событие' : event.title}">Карточка события</h1>
+<p class="demo" th:if="${event != null and event.demo}">DEMO: вымышленное событие. Редактирование не превращает его в реальное.</p>
+<p class="error" th:if="${error != null}" th:text="${error}" role="alert"></p>
+<form method="post" th:action="${action}" class="editor">
+<fieldset><legend>Описание</legend>
+<label>Название<input name="title" required th:value="${form['title']}"></label>
+<label>Краткое описание<textarea name="shortDescription" rows="3" th:text="${form['shortDescription']}"></textarea></label>
+<label>Полное описание<textarea name="description" rows="8" th:text="${form['description']}"></textarea></label>
+<div class="grid"><label>Организатор<input name="organizerName" required th:value="${form['organizerName']}"></label>
+<label>Сайт организатора<input name="organizerWebsiteUrl" type="url" placeholder="https://" th:value="${form['organizerWebsiteUrl']}"></label></div>
+</fieldset>
+<fieldset><legend>Формат и место</legend><div class="grid">
+<label>Формат<select name="format"><option th:each="value : ${ {'ONLINE','OFFLINE','HYBRID'} }" th:value="${value}" th:text="${value}" th:selected="${form['format'] == value}"></option></select></label>
+<label>Код страны<input name="countryCode" maxlength="2" placeholder="KZ" th:value="${form['countryCode']}"></label>
+<label>Город<input name="city" th:value="${form['city']}"></label><label>Площадка<input name="venue" th:value="${form['venue']}"></label></div>
+<p class="hint">Пустое место означает, что оно неизвестно. Онлайн-формат не означает доступность участия из любой страны.</p></fieldset>
+<fieldset><legend>Даты и время</legend><p class="hint">DATE — известен только день. MINUTE — подтверждены время и часовой пояс IANA.
+Неизвестную дату оставьте пустой вместе со временем и поясом. Время в переходе на летнее/зимнее время требует уточнения у источника.</p>
+<section class="time-block" th:each="prefix : ${ {'starts','ends','deadline'} }">
+<h2 th:text="${prefix == 'starts' ? 'Начало' : (prefix == 'ends' ? 'Окончание' : 'Дедлайн регистрации')}"></h2><div class="grid four">
+<label>Точность<select th:name="${prefix + 'Precision'}"><option value="" th:selected="${form[prefix + 'Precision'] == ''}">Неизвестно</option>
+<option value="DATE" th:selected="${form[prefix + 'Precision'] == 'DATE'}">DATE — день</option><option value="MINUTE" th:selected="${form[prefix + 'Precision'] == 'MINUTE'}">MINUTE — время</option></select></label>
+<label>Дата<input type="date" th:name="${prefix + 'Date'}" th:value="${form[prefix + 'Date']}"></label>
+<label>Время<input type="time" step="60" th:name="${prefix + 'Time'}" th:value="${form[prefix + 'Time']}"></label>
+<label>Часовой пояс<input th:name="${prefix + 'TimeZone'}" placeholder="Asia/Almaty" th:value="${form[prefix + 'TimeZone']}"></label>
+</div></section></fieldset>
+<fieldset><legend>Состояние</legend><div class="grid"><label>Регистрация<select name="registrationStatus">
+<option th:each="value : ${ {'UNKNOWN','UPCOMING','OPEN','CLOSED'} }" th:value="${value}" th:text="${value}" th:selected="${form['registrationStatus'] == value}"></option>
+</select></label><label>Событие<select name="eventStatus"><option th:each="value : ${ {'SCHEDULED','ONGOING','ENDED','POSTPONED','CANCELLED'} }"
+th:value="${value}" th:text="${value}" th:selected="${form['eventStatus'] == value}"></option></select></label></div>
+<p class="hint">POSTPONED — перенос, CANCELLED — отмена. Эти изменения также увидят пользователи, сохранившие событие.</p></fieldset>
+<fieldset><legend>Ссылки и источник</legend><div class="grid">
+<label>Официальный сайт<input name="officialUrl" type="url" placeholder="https://" th:value="${form['officialUrl']}"></label>
+<label>Источник сведений<input name="sourceUrl" type="url" placeholder="https://" th:value="${form['sourceUrl']}"></label>
+<label>Внешняя регистрация<input name="registrationUrl" type="url" placeholder="https://" th:value="${form['registrationUrl']}"></label>
+<label>Правила<input name="rulesUrl" type="url" placeholder="https://" th:value="${form['rulesUrl']}"></label></div>
+<p class="hint">Только HTTPS. Сервер не открывает ссылки автоматически. Изменение официального сайта или источника снимает отметку проверки.</p></fieldset>
+<p class="hint">Призы, темы и остальные условия существующего события сохраняются. У нового черновика призы и неизвестные условия не заполняются предположениями.</p>
+<button type="submit" th:text="${event == null ? 'Создать черновик' : 'Сохранить изменения'}">Сохранить</button>
+</form>
+<section class="actions" th:if="${event != null}"><h2>Проверка и публикация</h2>
+<p>Изменено: <time th:text="${event.updatedAt}"></time> · Источник проверен: <time th:text="${event.lastVerifiedAt ?: 'нет'}"></time></p>
+<p class="hint">Сначала сохраните изменения формы. Действия ниже работают с сохранённой карточкой.</p>
+<form method="post" th:action="@{/admin/events/{id}/verify(id=${event.id})}">
+<label class="check"><input type="checkbox" name="sourceChecked" value="true" required> Я вручную проверил сведения по официальному источнику.</label>
+<button type="submit" class="secondary">Отметить проверку источника</button></form>
+<form method="post" th:action="@{/admin/events/{id}/publish(id=${event.id})}">
+<label class="check"><input type="checkbox" name="reviewConfirmed" value="true" required> Я проверил сохранённую карточку и разрешаю публикацию.</label>
+<button type="submit">Опубликовать</button></form>
+<form method="post" th:action="@{/admin/events/{id}/archive(id=${event.id})}"><button type="submit" class="danger">Перенести в архив</button></form>
+</section></main></body></html>

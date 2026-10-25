@@ -63,6 +63,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiProblem> unexpected(Exception exception, HttpServletRequest request) {
+        if (DataFailures.unavailable(exception)) { return unavailable(exception, request); }
         logFailure(exception, request);
         return problem(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "Ошибка сервера",
                 "Не удалось обработать запрос.", List.of(), request);
@@ -70,8 +71,13 @@ public class ApiExceptionHandler {
 
     private static void logFailure(Exception exception, HttpServletRequest request) {
         // Do not log request parameters, exception messages, credentials, or SQL values.
-        LOG.error("API request failed: requestId={}, exceptionType={}",
-                RequestIdFilter.requestId(request), exception.getClass().getSimpleName());
+        var causes = new java.util.ArrayList<String>();
+        for (Throwable cause = exception; cause != null && causes.size() < 12; cause = cause.getCause()) {
+            causes.add(cause.getClass().getSimpleName()
+                    + (cause instanceof java.sql.SQLException sql ? "[" + sql.getSQLState() + "]" : ""));
+        }
+        LOG.error("API request failed: requestId={}, exceptionTypes={}",
+                RequestIdFilter.requestId(request), causes);
     }
 
     private static ResponseEntity<ApiProblem> problem(

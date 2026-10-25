@@ -1,0 +1,33 @@
+meta {
+  name: Report event for moderation
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e/reports
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{tokenA}}
+}
+
+body:json {
+  {"reason":"DATES","message":"DEMO: please verify the event dates."}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Report event for moderation", function () {
+    expect(res.getStatus()).to.equal(202);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().status).to.equal("PENDING");
+    expect(typeof res.getBody().id).to.equal("string");
+  });
+}

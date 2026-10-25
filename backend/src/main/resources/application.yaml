@@ -29,6 +29,16 @@ spring:
 
 server:
   forward-headers-strategy: none
+  servlet:
+    session:
+      timeout: 30m
+      tracking-modes: cookie
+      cookie:
+        name: HACKATLAS_ADMIN_SESSION
+        path: /admin
+        http-only: true
+        same-site: strict
+        secure: true
   address: ${HACKATLAS_BIND_ADDRESS:127.0.0.1}
   port: ${PORT:8080}
   shutdown: graceful
@@ -56,7 +66,21 @@ management:
         readiness:
           include: readinessState,db
 
+# These framework categories can include SQL exception text or bound row values.
+# Request handlers retain sanitized requestId/type/SQLState diagnostics instead.
+logging:
+  level:
+    org.springframework.transaction.interceptor.TransactionInterceptor: "OFF"
+    org.hibernate.orm.jdbc.error: "OFF"
+    com.zaxxer.hikari.pool.ProxyConnection: "OFF"
+
 hackatlas:
+  moderation:
+    rate-limit:
+      window: PT1H
+      ip-limit: 60
+      account-limit: 20
+      max-keys: 10000
   auth:
     registration-enabled: ${HACKATLAS_REGISTRATION_ENABLED:false}
     session-ttl: ${HACKATLAS_SESSION_TTL:P30D}

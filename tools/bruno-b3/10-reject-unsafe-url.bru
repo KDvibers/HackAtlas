@@ -1,0 +1,33 @@
+meta {
+  name: Reject unsafe URL
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/suggestions
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{tokenA}}
+}
+
+body:json {
+  {"url":"http://example.com/event","comment":null}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Reject unsafe URL", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(400);
+  });
+}

@@ -40,12 +40,16 @@ abstract class B2HttpSupport {
     @Autowired
     JsonMapper json;
 
+    String contractPhase() { return "B2"; }
+
+    int httpPort() { return port; }
+
     @AfterAll
     void exportResponses() throws Exception {
         try {
-            var output = Path.of("target/b2-contract", getClass().getSimpleName() + ".json");
+            var output = Path.of("target/" + contractPhase().toLowerCase() + "-contract", getClass().getSimpleName() + ".json");
             Files.createDirectories(output.getParent());
-            json.writeValue(output.toFile(), Map.of("source", "B2 HTTP", "responses", responses));
+            json.writeValue(output.toFile(), Map.of("source", contractPhase() + " HTTP", "responses", responses));
         } finally {
             http.close();
         }
@@ -99,7 +103,9 @@ abstract class B2HttpSupport {
                         "token_hash", "Authorization", "stackTrace", PASSWORD);
             }
         }
-        responses.add(capture);
+        boolean b3 = path.startsWith("/suggestions") || path.startsWith("/me/delete-account")
+                || path.startsWith("/hackathons/") && path.split("\\?", 2)[0].endsWith("/reports");
+        if (b3 == contractPhase().equals("B3")) responses.add(capture);
         return response;
     }
 
@@ -136,6 +142,7 @@ abstract class B2HttpSupport {
         var base = path.split("\\?", 2)[0];
         if (base.startsWith("/me/saved/")) return "/me/saved/{id}";
         if (base.startsWith("/me/applications/")) return "/me/applications/{id}";
+        if (base.startsWith("/hackathons/") && base.endsWith("/reports")) return "/hackathons/{id}/reports";
         return base;
     }
 }
