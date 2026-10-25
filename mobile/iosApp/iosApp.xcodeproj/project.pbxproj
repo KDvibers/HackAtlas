@@ -85,6 +85,8 @@
                 PRODUCT_NAME = HackAtlas;
                 SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+                HACKATLAS_SOURCE = DEMO;
+                HACKATLAS_API_BASE_URL = "";
                 SWIFT_VERSION = 5.0;
                 TARGETED_DEVICE_FAMILY = "1,2";
             };
@@ -104,6 +106,8 @@
                 MARKETING_VERSION = 0.1.0;
                 OTHER_LDFLAGS = ("$(inherited)", "-framework", HackAtlasShared);
                 PRODUCT_BUNDLE_IDENTIFIER = dev.hackatlas.mobile;
+                HACKATLAS_SOURCE = REMOTE;
+                HACKATLAS_API_BASE_URL = "";
                 PRODUCT_NAME = HackAtlas;
                 SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
                 SWIFT_VERSION = 5.0;

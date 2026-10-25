@@ -3,6 +3,8 @@ import java.util.zip.ZipFile
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
 import javax.inject.Inject
+import org.gradle.api.provider.Property
+import java.net.URI
 
 plugins {
     alias(libs.plugins.android.application)
@@ -40,6 +42,34 @@ val generateDebugFixtures = tasks.register<GenerateDebugFixtureAssets>("generate
     fixtureDirectory.set(rootProject.layout.projectDirectory.dir("../api/examples"))
 }
 
+val debugSource = providers.gradleProperty("hackatlas.debugSource").getOrElse("DEMO")
+val debugApiUrl = providers.gradleProperty("hackatlas.debugApiBaseUrl").getOrElse("")
+val releaseApiUrl = providers.gradleProperty("hackatlas.releaseApiBaseUrl").getOrElse("")
+val allowDebugHttp = providers.gradleProperty("hackatlas.allowDebugHttp").getOrElse("false").toBooleanStrictOrNull() == true
+fun buildConfigString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""
+
+abstract class GenerateDebugNetworkSecurity : DefaultTask() {
+    @get:Input abstract val httpHost: Property<String>
+    @get:OutputDirectory abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction fun generate() {
+        val host = httpHost.get()
+        check(host.isEmpty() || host.matches(Regex("[A-Za-z0-9.-]+")))
+        val file = outputDirectory.file("xml/debug_network_security.xml").get().asFile
+        file.parentFile.mkdirs()
+        val domain = if (host.isEmpty()) "" else "<domain-config cleartextTrafficPermitted=\"true\"><domain includeSubdomains=\"false\">$host</domain></domain-config>"
+        file.writeText("<network-security-config><base-config cleartextTrafficPermitted=\"false\"/>$domain</network-security-config>")
+    }
+}
+
+val debugHttpHost = if (debugSource == "REMOTE" && allowDebugHttp) runCatching {
+    URI(debugApiUrl).takeIf { it.scheme.equals("http", ignoreCase = true) }?.host.orEmpty()
+}.getOrDefault("") else ""
+val generateDebugNetworkSecurity = tasks.register<GenerateDebugNetworkSecurity>("generateDebugNetworkSecurity") {
+    httpHost.set(debugHttpHost)
+    outputDirectory.set(layout.buildDirectory.dir("generated/debugNetworkSecurity"))
+}
+
 android {
     namespace = "dev.hackatlas.mobile"
     compileSdk = 36
@@ -52,10 +82,19 @@ android {
     }
     buildFeatures { compose = true; buildConfig = true }
     buildTypes {
-        debug { applicationIdSuffix = ".debug"; versionNameSuffix = "-demo" }
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            buildConfigField("String", "CATALOG_SOURCE", buildConfigString(debugSource))
+            buildConfigField("String", "API_BASE_URL", buildConfigString(debugApiUrl))
+            buildConfigField("boolean", "ALLOW_DEBUG_HTTP", allowDebugHttp.toString())
+        }
         release {
             isMinifyEnabled = false
             isDebuggable = false
+            buildConfigField("String", "CATALOG_SOURCE", "\"REMOTE\"")
+            buildConfigField("String", "API_BASE_URL", buildConfigString(releaseApiUrl))
+            buildConfigField("boolean", "ALLOW_DEBUG_HTTP", "false")
         }
     }
     compileOptions {
@@ -69,6 +108,7 @@ kotlin { compilerOptions { jvmTarget.set(JvmTarget.JVM_17) } }
 
 androidComponents {
     onVariants(selector().withBuildType("debug")) { variant ->
+        variant.sources.res?.addGeneratedSourceDirectory(generateDebugNetworkSecurity, GenerateDebugNetworkSecurity::outputDirectory)
         variant.sources.assets?.addGeneratedSourceDirectory(
             generateDebugFixtures,
             GenerateDebugFixtureAssets::outputDirectory,

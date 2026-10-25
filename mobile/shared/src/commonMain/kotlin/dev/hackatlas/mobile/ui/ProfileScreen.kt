@@ -66,7 +66,7 @@ fun ProfileScreen(profile: DemoProfile, saved: List<Hackathon>, format: DisplayF
             }
         }
         if (saved.isEmpty()) item { Text(stringResource(Res.string.empty_saved_body), color = AtlasColors.TextSecondary, fontSize = 13.sp) }
-        items(saved.take(3), key = { it.id }) { HackathonMiniCard(it, format, { onOpen(it) }, { onRemove(it) }) }
+        items(saved.take(3), key = { it.savedKey().listKey() }) { HackathonMiniCard(it, format, { onOpen(it) }, { onRemove(it) }, showDemoLabel = false) }
     }
 }
 
@@ -113,7 +113,7 @@ private fun ProfileStat(value: Int, label: String, modifier: Modifier) {
 }
 
 @Composable
-fun SavedScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (Hackathon) -> Unit, onRemove: (Hackathon) -> Unit, onCatalog: () -> Unit, onDemo: () -> Unit) {
+fun SavedScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit, onRemove: (SavedGuestEvent) -> Unit, onCatalog: () -> Unit, onDemo: () -> Unit, bundled: Boolean = true) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             PixelHeading(stringResource(Res.string.saved), fontSize = 23.sp)
@@ -121,15 +121,53 @@ fun SavedScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen:
             Text(stringResource(Res.string.saved_local_subtitle), color = AtlasColors.Cyan, fontSize = 12.sp)
             Spacer(Modifier.height(7.dp))
             Text(stringResource(Res.string.snapshot_note), color = AtlasColors.TextSecondary, fontSize = 12.sp, lineHeight = 17.sp)
-            DemoBadge(onDemo)
+            if (bundled) DemoBadge(onDemo)
         }
         if (snapshots.isEmpty()) item { StatePanel(stringResource(Res.string.empty_saved), stringResource(Res.string.empty_saved_body), stringResource(Res.string.go_catalog), onCatalog) }
-        items(snapshots, key = { it.detail.hackathon.id }) { snapshot ->
+        items(snapshots, key = { it.key.listKey() }) { snapshot ->
             val event = snapshot.detail.hackathon
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                HackathonMiniCard(event, format, { onOpen(event) }, { onRemove(event) })
+                HackathonMiniCard(event, format, { onOpen(snapshot) }, { onRemove(snapshot) }, showDemoLabel = !bundled)
                 Text(stringResource(Res.string.snapshot_captured, format.snapshotTimestamp(snapshot.savedAt)), color = AtlasColors.TextMuted, fontSize = 11.sp)
             }
+        }
+    }
+}
+
+@Composable
+fun GuestProfileScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit,
+    onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit, onSettings: () -> Unit) {
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                PixelHeading(stringResource(Res.string.profile), Modifier.weight(1f), fontSize = 29.sp)
+                IconAction(AtlasIcon.Settings, stringResource(Res.string.settings), onSettings)
+            }
+            Text(stringResource(Res.string.profile_subtitle), color = AtlasColors.TextSecondary, fontSize = 11.sp, lineHeight = 16.sp)
+        }
+        item {
+            val shape = RoundedCornerShape(14.dp)
+            Column(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border, shape).padding(15.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    OutlineIcon(AtlasIcon.User, Modifier.size(48.dp), AtlasColors.Primary)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        SectionTitle(stringResource(Res.string.guest_profile))
+                        Text(stringResource(Res.string.guest_saved_count, snapshots.size), color = AtlasColors.Primary, fontSize = 16.sp)
+                    }
+                }
+                Text(stringResource(Res.string.guest_profile_body), color = AtlasColors.TextSecondary, fontSize = 13.sp, lineHeight = 19.sp)
+                Text(stringResource(Res.string.profile_motto), color = AtlasColors.Cyan, fontSize = 10.sp, lineHeight = 16.sp)
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(Res.string.saved_hackathons), Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.TextButton(onClick = onAllSaved) { Text(stringResource(Res.string.all), color = AtlasColors.Primary) }
+            }
+        }
+        if (snapshots.isEmpty()) item { Text(stringResource(Res.string.empty_saved_body), color = AtlasColors.TextSecondary, fontSize = 13.sp) }
+        items(snapshots.take(3), key = { it.key.listKey() }) { snapshot ->
+            HackathonMiniCard(snapshot.detail.hackathon, format, { onOpen(snapshot) }, { onRemove(snapshot) })
         }
     }
 }

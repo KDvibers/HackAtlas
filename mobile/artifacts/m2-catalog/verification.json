@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-26",
+  "base_commit": "0a8ee69f75fe9a5f3087917f529a09e47a8e89de",
+  "changes": "uncommitted",
+  "tests": {
+    "skipped": 0,
+    "errors": 0,
+    "failures": 0,
+    "count": 126
+  },
+  "android": {
+    "assemble_debug": "PASS",
+    "lint_issues": 0,
+    "remote_mock_apk_sha256": "07E73C605C6459B1AEF8CD67A5CCF75B85227961F786E40B1F70DE26CC8705FA",
+    "release_fixture_check": "PASS",
+    "demo_apk_sha256": "8C9D592ADCD1BC1C7D9EF9946D55770A8FCFA908516360E7B3742AF07B7C212B"
+  },
+  "smoke": {
+    "remote": {
+      "server": "loopback synthetic fixtures, not B1",
+      "build": "after lifecycle review fix",
+      "status": "PASS",
+      "groups": 7
+    },
+    "offline": {
+      "build": "before lifecycle review fix; hash in android-smoke-environment.json",
+      "status": "PASS",
+      "groups": 6
+    }
+  },
+  "review": {
+    "fixed": 1,
+    "important": 1,
+    "deferred_minors": 0,
+    "second_independent_review": false
+  },
+  "unverified": [
+    "iOS Native/Swift/Darwin build and device",
+    "live B1 HTTPS and physical Android"
+  ]
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/metadata/filters",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/metadata/filters",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "format": "ONLINE",
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "format": "ONLINE",
+      "countryCode": "KZ",
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "format": "ONLINE",
+      "countryCode": "KZ",
+      "registrationStatus": "OPEN",
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/metadata/filters",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "format": "ONLINE",
+      "countryCode": "KZ",
+      "registrationStatus": "OPEN",
+      "sort": "DEADLINE_ASC",
+      "page": "1",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/metadata/filters",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/metadata/filters",
+    "query": {},
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/hackathons",
+    "query": {
+      "sort": "DEADLINE_ASC",
+      "page": "0",
+      "size": "20"
+    },
+    "authorization": null
+  },
+  {
+    "path": "/api/v1/metadata/filters",
+    "query": {},
+    "authorization": null
+  }
+]

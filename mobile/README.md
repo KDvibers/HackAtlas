@@ -36,11 +36,11 @@ Debug принимает `--es screen home`, `detail`, `profile`, `saved`, `cale
 
 ## DEMO и release
 
-Debug — явно обозначенный DEMO на канонических вымышленных fixtures из `../api/examples`. `generateDebugFixtures` автоматически копирует JSON в Android **debug assets**. `Res.readBytes("files/demo/<filename>.json")` обращается к этим файлам; отдельной ручной копии JSON в исходниках нет. Common tests получают `CanonicalFixtures.files` из того же источника через `generateCanonicalTestFixtures`.
+Debug по умолчанию выбирает DEMO явно через build configuration; также поддерживает REMOTE (см. ниже). Встроенный DEMO использует канонические вымышленные fixtures из `../api/examples`. `generateDebugFixtures` автоматически копирует JSON в Android **debug assets**. `Res.readBytes("files/demo/<filename>.json")` обращается к этим файлам; отдельной ручной копии JSON в исходниках нет. Common tests получают `CanonicalFixtures.files` из того же источника через `generateCanonicalTestFixtures`.
 
 Общие строки, шрифты и графика находятся в `shared/src/commonMain/composeResources`. Сгенерированный public класс — `dev.hackatlas.mobile.resources.Res`.
 
-Android release не получает demo JSON и передаёт `demoEnabled = false`; до отдельной интеграции backend он не является готовым клиентом работающего API. Debug намеренно имеет отдельный ID `.debug`. Открытого HTTP и сетевых разрешений нет. Проверка упаковки unsigned release:
+Android release не получает demo JSON и всегда выбирает REMOTE. Без корректного HTTPS base URL он показывает состояние «Источник не настроен». Debug имеет отдельный ID `.debug`. INTERNET разрешён; cleartext запрещён, кроме явно выбранного host в debug-конфигурации ниже. Проверка упаковки unsigned release:
 
 ```powershell
 .\gradlew.bat :androidApp:verifyReleaseNoDemoFixtures
@@ -52,7 +52,7 @@ Android release не получает demo JSON и передаёт `demoEnabled
 
 `GuestSavedRepository` хранит полные локальные копии подробностей и `savedAt`. Копию можно открыть без загрузки каталога; дата последней проверки источника (`lastVerifiedAt`) при этом не меняется. Экран явно сообщает, что сведения могли устареть. Арт приложения доступен локально, новые изображения из сети не загружаются.
 
-На Android файл находится в приватной `no_backup/guest-saved/demo-v1.json`: запись через `FileChannel.force` и атомарную замену файла. На iOS подготовлена атомарная запись в `Application Support/GuestSaved/demo-v1.json`, но её проверка на Mac ещё нужна. DEMO и будущий REMOTE имеют разные имена файлов и проверяемый scope; сессии и данные аккаунта здесь не хранятся.
+На Android файл находится в приватной `no_backup/guest-saved/demo-v1.json`: запись через `FileChannel.force` и атомарную замену файла. На iOS подготовлена атомарная запись в `Application Support/GuestSaved/demo-v1.json`, но её проверка на Mac ещё нужна. DEMO и каждый REMOTE origin имеют разные имена файлов и проверяемый scope; сессии и данные аккаунта здесь не хранятся.
 
 Один `AppState` владеет хранилищем в течение процесса. UI подтверждает изменение после успешной записи. Ошибка чтения или неизвестная версия показываются пользователю без сброса данных. Три начальные DEMO-закладки добавляются только при создании файла: после удаления последней записи они не возвращаются. Удаление приложения удалит локальные закладки; перенос в аккаунт или синхронизация пока отсутствуют.
 
@@ -72,7 +72,7 @@ python -X utf8 mobile/scripts/android_m2_smoke.py --adb "$env:LOCALAPPDATA\Andro
 & $adb shell am start -S -n dev.hackatlas.mobile.debug/dev.hackatlas.mobile.MainActivity --es screen saved --ez savedOnly true
 ```
 
-Это намеренно отключает источник каталога в debug-процессе; обычный холодный запуск возвращает DEMO-каталог. К API приложение в этом этапе не обращается.
+Это отключает каталог в debug-процессе; обычный холодный запуск возвращает выбранный в сборке источник. Выбор источника фиксирован до перезапуска процесса.
 
 ## iOS: подготовлен, не собран
 
@@ -94,4 +94,40 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme HackAtlas \
   -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 ```
 
-Swift — минимальная оболочка `ComposeUIViewController`, экраны остаются общими. Debug-only Xcode phase копирует canonical fixtures в app bundle; Release передаёт `demoEnabled = false` и не копирует JSON. На Windows эти iOS команды не выполнялись. Проверьте ресурсные пути, Swift bridge и запуск на Mac до утверждения iOS-готовности.
+Swift — минимальная оболочка `ComposeUIViewController`, экраны остаются общими. Debug-only Xcode phase копирует canonical fixtures в app bundle; Release выбирает REMOTE и не копирует JSON. На Windows эти iOS команды не выполнялись. Проверьте ресурсные пути, Swift bridge и запуск на Mac до утверждения iOS-готовности.
+
+## M2 Task 4: подключение источника
+
+`CatalogRuntime` владеет process scope, одним AppState, клиентом и engine. Android использует OkHttp, iOS — Darwin той же версии Ktor 3.3.3. Поворот/пересоздание host не создаёт второго владельца файла. Закрытие процесса освобождает runtime; сохранение не привязано к жизненному циклу composable.
+
+`BookmarkStore` сохраняет pending keys и неподтверждённые ошибки в памяти процесса. Новый экран после пересоздания получает текущее состояние; ошибка удаляется из очереди только по подтверждению. Эти UI-состояния не записываются на диск и не восстанавливаются после завершения процесса; сами snapshots сохраняются атомарно.
+
+Android, команды из `mobile/` (JDK 21 и Android SDK в окружении):
+
+```powershell
+# Встроенная утверждённая демонстрация
+.\gradlew.bat :androidApp:assembleDebug
+
+# HTTPS API; адрес передаётся локально, в репозиторий его не записываем
+.\gradlew.bat :androidApp:assembleDebug '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=https://YOUR_HOST/api/v1/'
+
+# Только локальный emulator smoke из этого Task 4
+.\gradlew.bat :androidApp:assembleDebug '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8768/api/v1/' '-Phackatlas.allowDebugHttp=true'
+
+# Release принимает отдельный HTTPS адрес; иначе честная ошибка конфигурации
+.\gradlew.bat :androidApp:assembleRelease '-Phackatlas.releaseApiBaseUrl=https://YOUR_HOST/api/v1/'
+```
+
+Debug HTTP требует явного opt-in и допускается только для точного hostname из debug URL, без поддоменов; остальные адреса запрещены. Release не содержит этого XML/manifest override, не читает debug URL и не разрешает HTTP. Настройка не изменяет системный trust store и не отключает TLS-проверки. Переходы HTTP redirects отключены. URL должен заканчиваться `/api/v1` либо `/api/v1/`; credentials, query/fragment и произвольный относительный путь запрещены.
+
+iOS: передайте `HACKATLAS_SOURCE=REMOTE HACKATLAS_API_BASE_URL=https://YOUR_HOST/api/v1/` как локальные Xcode build settings или аргументы `xcodebuild`. Debug по умолчанию DEMO; Release — REMOTE. ATS exceptions не добавлены: iOS REMOTE требует HTTPS даже в Debug. Mac/Xcode compile/link и работа Darwin ещё не проверены.
+
+REMOTE не загружает профиль/каталог из fixtures. Гостевой профиль показывает число локальных закладок. Сохранение запрашивает полный detail и сверяет ID/isDemo перед записью; удаление использует точный ключ без HTTP. Файлы разных canonical base URL разделены. Сохранённое и календарь доступны до ответа каталога/metadata, а открытая копия остаётся видна после удаления закладки. `sourceUrl`, `lastVerifiedAt` и `savedAt` отображаются раздельно. Browser/share/auth в этот этап не входят.
+
+Сетевой Android smoke (из корня, после установки REMOTE debug APK для URL выше):
+
+```powershell
+python -X utf8 mobile/scripts/android_catalog_smoke.py --adb "$env:LOCALAPPDATA/Android/Sdk/platform-tools/adb.exe"
+```
+
+Скрипт поднимает временный synthetic HTTP fixture server на **127.0.0.1:8768**, проверяет реальные запросы OkHttp и UI, копии `isDemo=true/false`, 404, фильтры AND, metadata retry, пагинацию и холодный offline запуск. Тестовые названия начинаются с MOCK; `isDemo=false` здесь — тест классификации, не реальные события. Существующий файл именно этого test origin восстанавливается в `finally`; встроенный DEMO-файл не меняется. Нужен запущенный эмулятор; физические устройства скрипт отвергает. Результаты и снимки — `artifacts/m2-catalog/`. Это не приёмка настоящего B1: она остаётся Task 5 и требует адрес/запуск/ID от backend-разработчика.

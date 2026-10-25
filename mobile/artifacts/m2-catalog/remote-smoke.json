@@ -1,0 +1,30 @@
+[
+  {
+    "name": "remote card saves full detail before marking bookmark",
+    "status": "PASS"
+  },
+  {
+    "name": "AND presets, independent metadata failure and retry",
+    "status": "PASS"
+  },
+  {
+    "name": "next page is appended once",
+    "status": "PASS"
+  },
+  {
+    "name": "pending save and unacknowledged failure survive Activity recreation",
+    "status": "PASS"
+  },
+  {
+    "name": "404 cannot mark saved; same-ID server DEMO and real copies coexist",
+    "status": "PASS"
+  },
+  {
+    "name": "cold offline saved/detail/calendar, exact-key removal, opened copy stays readable",
+    "status": "PASS"
+  },
+  {
+    "name": "bundled guest bytes unchanged; only public requests and no auth",
+    "status": "PASS"
+  }
+]

@@ -2,19 +2,22 @@ package dev.hackatlas.mobile
 
 import android.app.Application
 import dev.hackatlas.mobile.data.AndroidGuestSnapshotStorage
-import dev.hackatlas.mobile.data.FixtureSource
+import dev.hackatlas.mobile.domain.selectCatalogSource
 import dev.hackatlas.mobile.ui.AppState
+import dev.hackatlas.mobile.ui.CatalogRuntime
 
 /** One guest repository owner per process, including Activity recreation during a disk write. */
 class HackAtlasApplication : Application() {
-    private var guestState: AppState? = null
+    private var runtime: CatalogRuntime? = null
 
     @Synchronized
-    fun guestState(catalogEnabled: Boolean): AppState = guestState ?: run {
-        val storage = AndroidGuestSnapshotStorage(this, demo = BuildConfig.DEBUG)
-        val created = if (catalogEnabled) AppState(storage)
-            else AppState(storage, FixtureSource { error("Catalog unavailable") })
-        guestState = created
-        created
+    fun guestState(catalogEnabled: Boolean): AppState = (runtime ?: CatalogRuntime(
+        selectCatalogSource(BuildConfig.DEBUG, BuildConfig.CATALOG_SOURCE, BuildConfig.API_BASE_URL, BuildConfig.ALLOW_DEBUG_HTTP),
+        { scope -> AndroidGuestSnapshotStorage(this, scope) }, catalogEnabled,
+    ).also { runtime = it }).state
+
+    override fun onTerminate() {
+        runtime?.close()
+        super.onTerminate()
     }
 }

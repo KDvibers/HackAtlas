@@ -27,15 +27,15 @@ import dev.hackatlas.mobile.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat, onBack: () -> Unit, onBookmark: () -> Unit, onShare: () -> Unit, onRegister: () -> Unit, capturedAt: String? = null) {
+fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat, onBack: () -> Unit, onBookmark: () -> Unit, onShare: () -> Unit, onRegister: () -> Unit, capturedAt: String? = null, bundled: Boolean = true, saving: Boolean = false) {
     val event = detail.hackathon
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IconAction(AtlasIcon.Back, stringResource(Res.string.back), onBack, AtlasColors.TextPrimary)
                 Spacer(Modifier.weight(1f))
-                Text(stringResource(Res.string.demo_label), color = AtlasColors.Primary, fontSize = 9.sp, letterSpacing = 1.sp)
-                IconAction(AtlasIcon.Bookmark, stringResource(if (saved) Res.string.unsave_event else Res.string.save_event), onBookmark, if (saved) AtlasColors.Primary else AtlasColors.TextPrimary)
+                if (event.isDemo) Text(stringResource(Res.string.demo_label), color = AtlasColors.Primary, fontSize = 9.sp, letterSpacing = 1.sp)
+                IconAction(AtlasIcon.Bookmark, stringResource(if (saving) Res.string.saving else if (saved) Res.string.unsave_event else Res.string.save_event), onBookmark, if (saved) AtlasColors.Primary else AtlasColors.TextPrimary, enabled = !saving)
                 IconAction(AtlasIcon.Share, stringResource(Res.string.share), onShare, AtlasColors.TextPrimary)
             }
             if (capturedAt != null) {
@@ -86,7 +86,12 @@ fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat,
             Spacer(Modifier.height(20.dp))
             SectionTitle(stringResource(Res.string.source))
             Spacer(Modifier.height(8.dp))
-            Text(stringResource(Res.string.demo_source), color = AtlasColors.TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+            if (bundled) Text(stringResource(Res.string.demo_source), color = AtlasColors.TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+            else {
+                if (event.isDemo) Text(stringResource(Res.string.server_demo_body), color = AtlasColors.Primary, fontSize = 12.sp, lineHeight = 18.sp)
+                Text(detail.sourceUrl, color = AtlasColors.Cyan, fontSize = 12.sp, lineHeight = 18.sp)
+            }
+            Text(stringResource(Res.string.source_verified, event.lastVerifiedAt?.let(format::snapshotTimestamp) ?: stringResource(Res.string.not_verified)), color = AtlasColors.TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
             Spacer(Modifier.height(24.dp))
         }
         Column(Modifier.fillMaxWidth().background(AtlasColors.Background).padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {

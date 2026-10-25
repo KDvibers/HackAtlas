@@ -15,8 +15,9 @@ import kotlinx.coroutines.launch
  * Commands and completions share one queue, so state transitions stay serialized even
  * on a multi-threaded dispatcher. Public commands enqueue work and never block the caller.
  */
-class CatalogStore(private val repository: CatalogRepository, private val scope: CoroutineScope) {
-    private val mutableState = MutableStateFlow(CatalogUiState())
+class CatalogStore(private val repository: CatalogRepository, private val scope: CoroutineScope,
+    initialSort: CatalogSort = CatalogSort.DEADLINE_ASC) {
+    private val mutableState = MutableStateFlow(CatalogUiState(query = CatalogQuery(sort = initialSort)))
     val state = mutableState.asStateFlow()
     private val actions = Channel<Action>(Channel.UNLIMITED)
     private var generation = 0L
@@ -25,7 +26,7 @@ class CatalogStore(private val repository: CatalogRepository, private val scope:
 
     init {
         scope.launch {
-            firstPage(CatalogQuery())
+            firstPage(mutableState.value.query)
             metadata()
             for (action in actions) handle(action)
         }.invokeOnCompletion { actions.cancel() }

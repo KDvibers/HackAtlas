@@ -1,0 +1,26 @@
+[
+  {
+    "name": "bookmark add and removal survive force-stop/relaunch",
+    "status": "PASS"
+  },
+  {
+    "name": "stored details open in airplane mode with catalog loading disabled",
+    "status": "PASS"
+  },
+  {
+    "name": "event range and registration deadline are distinct; calendar selection survives detail/back",
+    "status": "PASS"
+  },
+  {
+    "name": "unknown storage version is reported without overwriting data",
+    "status": "PASS"
+  },
+  {
+    "name": "empty saved and empty calendar survive restart without reseeding",
+    "status": "PASS"
+  },
+  {
+    "name": "360 dp and 130% text: navigation and snapshots survive configuration changes",
+    "status": "PASS"
+  }
+]
