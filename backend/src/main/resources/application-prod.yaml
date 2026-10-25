@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${HACKATLAS_DB_URL}
+    username: ${HACKATLAS_DB_USERNAME}
+    password: ${HACKATLAS_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${HACKATLAS_DB_POOL_SIZE:10}
+      connection-timeout: 5000

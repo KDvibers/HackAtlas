@@ -30,4 +30,5 @@ Thumbs.db
 *.log
 .venv/
 __pycache__/
+/tools/bruno/node_modules/
 # Never blanket-ignore gradle/wrapper or Maven wrapper configuration.

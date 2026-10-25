@@ -1,0 +1,20 @@
+meta {
+  name: Error - unknown UUID
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/hackathons/00000000-0000-0000-0000-000000000001
+  body: none
+  auth: none
+}
+
+tests {
+  test("Unknown UUID returns NOT_FOUND", function () {
+    expect(res.getStatus()).to.equal(404);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().code).to.equal("NOT_FOUND");
+    expect(res.getBody().status).to.equal(404);
+  });
+}

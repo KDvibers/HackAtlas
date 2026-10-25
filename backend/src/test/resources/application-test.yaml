@@ -1,0 +1,15 @@
+# JDBC and Flyway connection details come only from the disposable @ServiceConnection.
+# Keep migration, JPA validation and Actuator settings inherited from application.yaml.
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 1
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true
+
+hackatlas:
+  demo:
+    enabled: true

@@ -1,0 +1,21 @@
+meta {
+  name: Search - case-insensitive query AND format
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/hackathons?query=ai&format=ONLINE
+  body: none
+  auth: none
+}
+
+tests {
+  test("Search and format are applied together", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.items).to.have.lengthOf(1);
+    expect(body.items[0].id).to.equal("39287368-5259-5235-a1c4-25b4e1e8421e");
+    expect(body.items[0].format).to.equal("ONLINE");
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Catalogue - NEWEST DEMO page
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/hackathons?sort=NEWEST
+  body: none
+  auth: none
+}
+
+tests {
+  test("Public catalogue returns the seeded DEMO page", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("content-type")).to.include("application/json");
+    const body = res.getBody();
+    expect(body.items).to.have.lengthOf(5);
+    expect(body.items[0].id).to.equal("39287368-5259-5235-a1c4-25b4e1e8421e");
+    expect(body.items.every(item => item.isDemo === true)).to.equal(true);
+    expect(body.totalElements).to.equal(5);
+  });
+}

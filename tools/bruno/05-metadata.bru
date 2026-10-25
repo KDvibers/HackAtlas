@@ -1,0 +1,22 @@
+meta {
+  name: Metadata - available catalogue filters
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/metadata/filters
+  body: none
+  auth: none
+}
+
+tests {
+  test("Metadata exposes available formats and stable interest IDs", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.formats.map(item => item.id).sort()).to.deep.equal(["OFFLINE", "ONLINE"]);
+    expect(body.topics.map(item => item.id)).to.include("ai-ml");
+    expect(body.interests.map(item => item.id)).to.include("java");
+    expect(body.countries.map(item => item.code)).to.include("KZ");
+  });
+}

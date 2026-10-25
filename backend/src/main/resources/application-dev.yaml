@@ -1,0 +1,10 @@
+spring:
+  config:
+    import: optional:file:../infra/.env[.properties]
+  datasource:
+    url: ${HACKATLAS_DB_URL:jdbc:postgresql://localhost:5432/hackatlas}
+    username: ${HACKATLAS_DB_USERNAME:hackatlas}
+    password: ${HACKATLAS_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 5000

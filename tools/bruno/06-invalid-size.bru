@@ -1,0 +1,23 @@
+meta {
+  name: Error - invalid page size
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/hackathons?size=0
+  body: none
+  auth: none
+}
+
+tests {
+  test("Invalid size returns the agreed Problem shape", function () {
+    expect(res.getStatus()).to.equal(400);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    const body = res.getBody();
+    expect(body.code).to.equal("VALIDATION_ERROR");
+    expect(body.status).to.equal(400);
+    expect(body.requestId).to.be.a("string").and.not.empty;
+    expect(body.fieldErrors).to.be.an("array");
+  });
+}

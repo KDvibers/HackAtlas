@@ -1,5 +1,97 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## Повторная проверка PR #4 — 25 октября 2026
+
+**Причина сохраняющегося конфликта на GitHub:** подготовленное 21 октября разрешение ещё не закоммичено и не отправлено. GitHub API подтверждает открытый PR #4 с одним коммитом `5bc21123543c5e6cd966243420c1aaa052a7478e`, `mergeable=false`, `mergeable_state=dirty`. Ветка main осталась на `959e2f4db19a87ec13b60646d969d39a3e509859`; новых удалённых изменений относительно подготовленного merge нет.
+
+Первоначальные 14 конфликтов возникли при независимом добавлении общих файлов Starter в две ветки от исходного README-only коммита `7824a4b`, с последующим обновлением документов и validator в backend-ветке. Локально все они уже разрешены; `git status` сообщает `All conflicts fixed but you are still merging`. `HEAD=5bc2112`, `MERGE_HEAD=959e2f4`, неразрешённых записей в индексе нет. Повторный merge, reset или перезапись мобильного кода не нужны.
+
+Проверены удалённые описание PR, refs, review submissions, discussion/inline comments, check-runs, commit statuses и Actions runs. Комментариев и ревью нет; у текущего head **нет результатов CI** (пустые check-runs/statuses/Actions runs). Это не подтверждение успешного CI. Снимки ответов без авторизационных данных находятся в ignored-каталоге `mobile/build/pr4-review/audit-2026-10-25/`.
+
+Повторная проверка объединённого дерева подтвердила 236 файлов, сохранность всех файлов обоих родителей, точное соответствие backend/infra/scripts/tools/CI версии main, а mobile/дизайна — мобильному HEAD (кроме согласованного README ресурсов). Все 10 файлов API идентичны обоим родителям. `git diff --cached --check` и `git diff --check` проходят.
+
+Свежая команда из `mobile/` с JDK 21 и установленным Android SDK:
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain
+```
+
+**BUILD SUCCESSFUL**, exit 0; тестовая задача выполнена заново: **43 теста, 0 failures/errors/skipped**. Lint: 0 ошибок, одно прежнее предупреждение `ObsoleteSdkInt`. Проверка отсутствия DEMO fixtures в release прошла. Лог: `mobile/build/reports/pr4-audit-2026-10-25.log`. APK SHA-256 остался `A81262703280484F67501337726DBBED2C2994C2F0748329F3F6453BC7C6B955`.
+
+Из корня повторно выполнены `mobile/build/pr4-contract-venv/Scripts/python.exe -X utf8 scripts/validate_contract.py` и `mobile/build/pr4-contract-venv/Scripts/python.exe -m pip check`: OpenAPI, проектные правила, все 6 fixtures и согласованность зависимостей — PASS, exit 0. Проверки не отключались. Для Gradle потребовался доступ к уже существующему кешу вне песочницы; повторный запуск с этим доступом успешен.
+
+Независимое ревью мобильной логики не обнаружило блокирующих проблем в сохранении, восстановлении и календаре. Зафиксировано небольшое замечание по коду: `App.kt:95` использует один `SaveableStateProvider(route)` для всех detail-экранов, поэтому `DetailScreen.kt:33` может переносить scroll position между разными событиями. Это не причина Git-конфликта; сценарий ещё не воспроизведён на устройстве и в этой проверке объединения не исправлялся. Требуется отдельная проверка последовательности «прокрутить событие A → назад → открыть B».
+
+Backend verify заново не запускался: Docker на этой машине по-прежнему не найден; предыдущая попытка завершилась ошибкой Testcontainers (подробности ниже). Полная серверная интеграция и iOS здесь не подтверждены. UI, шрифты, APK и существующие screenshots не изменены; новый UI smoke не выполнялся. Новые этапы и изменения API не начинались.
+
+**Оставшееся действие:** пользователь завершает уже подготовленный merge командой `git commit` и отправляет `feat/mobile-bootstrap` обычным `git push`. После этого PR #4 получит разрешение конфликтов; повторный PR не требуется. Commit/push оставлены пользователю в соответствии с его действующими правилами. Перед слиянием PR в main нужны результаты CI отправленного коммита.
+
+Сообщение напарнику для ручной передачи: «PR #4 пока показывает прежний мобильный commit, локальные разрешения готовы. Android/43 tests и контракт повторно прошли 25 октября. Backend и API сохранены; после commit/push нужно проверить CI. REMOTE-интеграция остаётся отдельным заданием».
+
+## PR #4 — локальное объединение с main, 21 октября 2026
+
+По явному разрешению пользователя выполнен `git merge --no-commit --no-ff origin/main` в `feat/mobile-bootstrap`. Все **14 конфликтов разрешены**, результат добавлен в индекс и оставлен для пользовательского commit/push. `HEAD` остаётся `5bc21123543c5e6cd966243420c1aaa052a7478e`; `MERGE_HEAD` и `origin/main` — `959e2f4db19a87ec13b60646d969d39a3e509859` (B1, PR #3). [PR #4](https://github.com/KDvibers/HackAtlas/pull/4) обновится после пользовательского push. Серверная авторизация B2 и мобильная REMOTE-интеграция этим объединением не реализуются.
+
+Обычный `git fetch` обрывался; исходные объекты main получены через GitHub API с проверкой каждого Git SHA. Сохранены исходные коммиты, родители и история до общего `7824a4b`; новые коммиты не создавались. `git fsck --full --no-reflogs` не выявил повреждённых или недостающих объектов.
+
+### Разрешённые файлы
+
+- Взята актуальная версия main: `.gitignore`, `AGENTS.md`, `backend/AGENTS.md`, `docs/PROJECT.md`, `docs/ROADMAP.md`, `docs/STATUS_BACKEND.md`, `docs/TOOLCHAIN.md`, `docs/WORKFLOW.md`, `scripts/README.md`, `scripts/validate_contract.py`. Собственный отчёт backend не редактировался: он точно совпадает с main.
+- `README.md` и `START_HERE.md` объединяют актуальные сведения B0/B1 и M0/M1/локальной M2, сохраняют ссылки и команды серверной части.
+- `design/assets/README.md` сохраняет мобильные ресурсы и добавляет факт утверждения M1 20 октября; `docs/STATUS_MOBILE.md` сохраняет историю и содержит этот отчёт.
+- Остальные изменения пришли автоматически из main. Поблобно и по Git file mode проверено объединение всех **236 файлов**: backend, infra, scripts, tools и CI совпадают с main; `mobile/`, ресурсы и референс совпадают с исходным мобильным HEAD. Все **10 файлов `api/` неизменны** относительно обоих родителей. Новых миграций сверх main нет.
+
+### Свежие проверки объединённого состояния
+
+Из `mobile/`, с `JAVA_HOME=C:\Program Files\Android\Android Studio\jbr` и `ANDROID_HOME=C:\Users\user\AppData\Local\Android\Sdk`:
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain
+.\gradlew.bat :shared:testDebugUnitTest --rerun --offline --console=plain
+```
+
+- Обе команды — **BUILD SUCCESSFUL**, exit 0. Второй запуск действительно повторил тесты, а не использовал `UP-TO-DATE`: **43 теста, 0 failures/errors/skipped**.
+- Android lint — **0 ошибок, 1 прежнее предупреждение** `ObsoleteSdkInt` о локальном `mipmap-anydpi-v26`. Проверка отсутствия DEMO fixtures в release — PASS.
+- APK: `mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk`, SHA-256 `A81262703280484F67501337726DBBED2C2994C2F0748329F3F6453BC7C6B955`. Совпадает с APK ранее проверенного M2 smoke.
+- Логи: `mobile/build/reports/pr4-merge-checks.log`, `pr4-merge-unit-tests.log`; XML результатов — `mobile/shared/build/test-results/testDebugUnitTest/`.
+
+Расширенный валидатор из main проверен в отдельном Python 3.12 окружении с его закреплёнными зависимостями. Команды из корня:
+
+```powershell
+$taskPython = 'C:\Users\user\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
+& $taskPython -m venv mobile/build/pr4-contract-venv
+& mobile/build/pr4-contract-venv/Scripts/python.exe -m pip install --disable-pip-version-check --requirement scripts/requirements-contract.txt
+& mobile/build/pr4-contract-venv/Scripts/python.exe -X utf8 scripts/validate_contract.py
+& mobile/build/pr4-contract-venv/Scripts/python.exe -m pip check
+```
+
+Все команды — exit 0. **PASS**: OpenAPI 3.1, локальные ссылки, operation IDs/path parameters, правила x-phase и opaque sessions без refresh, все шесть fixtures. `pip check`: `No broken requirements found`. Логи: `mobile/build/reports/pr4-contract-install.log`, `pr4-contract-check.log`. Старый набор двух Python-пакетов в историческом отчёте M2 ниже больше не достаточен для текущего валидатора.
+
+Из `backend/`, с тем же JDK 21:
+
+```powershell
+.\mvnw.cmd --version
+.\mvnw.cmd --batch-mode --no-transfer-progress verify
+```
+
+Wrapper подтвердил Maven 3.9.16 / Java 21.0.9. Java-код скомпилирован, JAR создан, но **полный verify — BUILD FAILURE, exit 1**: Testcontainers сообщает `Could not find a valid Docker environment`. Docker недоступен, WSL не установлен. Failsafe сообщил 21 ошибку инициализации контекста; успешный запуск PostgreSQL/HTTP/миграционных тестов не подтверждён. Тесты не отключались. Лог: `mobile/build/reports/pr4-backend-verify.log`, детали — `backend/target/failsafe-reports/`. Для полного backend verify нужны Docker с Linux containers либо существующий CI после push; Bruno/Schemathesis и проверка настоящих HTTP-ответов здесь не выполнялись.
+
+`git diff --cached --check` и `git diff --check` — PASS; `git ls-files -u` пуст. Независимое ревью подтвердило сохранность дерева обоих родителей и разрешения конфликтов. Локальная детализация сверки — `mobile/build/pr4-review/merge-verification.json` (ignored).
+
+### Ограничения и передача
+
+UI и шрифты не менялись, новый Android UI smoke не запускался. Ранее принятые screenshots — `mobile/artifacts/m1/`, снимки M2 — `mobile/artifacts/m2/screenshots/`; их содержимое и APK сохранены. iOS по-прежнему требует Mac/Xcode и здесь не проверен.
+
+Изменений API нет. Короткое сообщение напарнику для ручной передачи:
+
+> В `feat/mobile-bootstrap` подготовлено объединение с main `959e2f4` без коммита. Backend B0/B1 и API сохранены; Android build/43 tests и contract-check прошли. Локальный backend verify упирается в отсутствие Docker. После пользовательского commit/push результат попадёт в PR #4; мобильная интеграция с B1 остаётся отдельным заданием.
+
+Граница задания: только merge, разрешение конфликтов и проверки. Commit и push выполняет пользователь. Новые функции M2/M3 не начинались.
+
+## Исторический отчёт M2 — 20 октября 2026
+
+Сведения ниже о B0 у напарника и отсутствии commit/push относятся к моменту реализации M2. Они не описывают текущее состояние PR #4.
+
 Обновлено 20 октября 2026. Ветка `feat/mobile-bootstrap`, база `7824a4b` (`origin/main`, исходно только README). Изменения локальные: commit, push и PR не выполнялись.
 
 **20 октября 2026: пользователь утвердил визуал M1 и поручил независимую от backend часть M2.** M0/M1 проверены на Android; iOS host подготовлен, но без Mac/Xcode не собран и не запущен. Текущий отчёт M2 находится перед историческим отчётом M1.
