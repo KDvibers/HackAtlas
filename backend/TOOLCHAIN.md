@@ -1,4 +1,4 @@
-# Backend toolchain — B0/B1
+# Backend toolchain — B0/B1/B2
 
 Фиксация от 20 октября 2026. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
 
@@ -6,6 +6,8 @@
 |---|---|
 | Java | Language / bytecode target 21; локально проверен JDK 21.0.12.1 |
 | Spring Boot parent / BOM | 4.1.1 |
+| Spring Security | 7.1.1 через Boot BOM, подключён B2 |
+| Bouncy Castle | `bcprov-jdk18on:1.86`, нужен Spring Argon2id encoder |
 | Maven | 3.9.16 |
 | Maven Wrapper | 3.3.4, `only-script`, без wrapper JAR в Git |
 | PostgreSQL | 17.11, официальный `bookworm` image, digest ниже |
@@ -17,7 +19,7 @@
 | Schemathesis | 4.32.2, полный Python lock в `scripts/b1/requirements.txt` |
 | Node.js для Bruno | 24.19.0, отдельный инструмент проверки, не серверный runtime |
 
-Используются Spring MVC, Spring Data JPA, Actuator и Flyway starters. B1 добавляет публичный каталог без новых Java dependencies. Spring Security подключается при B2; аккаунты ещё не реализованы. `0.1.0-SNAPSHOT` — версия собственного разрабатываемого приложения, а не предварительная версия сторонних dependencies.
+Используются Spring MVC, Spring Data JPA, Actuator и Flyway starters. B1 добавляет публичный каталог без новых Java dependencies. B2 подключает Spring Security, Validation (`@Email`) и Bouncy Castle для Argon2id; параметры и ограничения описаны в [AUTH](AUTH.md). Security/Validation согласованы Boot BOM; версия Bouncy Castle закреплена явно после проверки Maven Central metadata и сборки с Java 21. `0.1.0-SNAPSHOT` — версия собственного разрабатываемого приложения, а не предварительная версия сторонних dependencies.
 
 Mockito из `spring-boot-starter-test` запускается явным Java agent в Surefire/Failsafe по [официальной инструкции для Java 21+](https://javadoc.io/static/org.mockito/mockito-core/5.24.0/org.mockito/org/mockito/Mockito.html#0.3). Maven dependency plugin разрешает путь к JAR; late `argLine` сохраняет совместимость с будущими test agents. Это устраняет динамическое self-attach при старте Spring test context; тесты и listeners не отключаются.
 

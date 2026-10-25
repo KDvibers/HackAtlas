@@ -1,0 +1,24 @@
+meta {
+  name: Profile requires Bearer header
+  type: http
+  seq: 26
+}
+
+get {
+  url: {{baseUrl}}/me
+  body: none
+  auth: none
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Profile requires Bearer header", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+  });
+}

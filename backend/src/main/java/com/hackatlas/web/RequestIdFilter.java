@@ -27,7 +27,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    static String requestId(HttpServletRequest request) {
+    public static String requestId(HttpServletRequest request) {
         Object requestId = request.getAttribute(ATTRIBUTE);
         return requestId instanceof String value ? value : UUID.randomUUID().toString();
     }

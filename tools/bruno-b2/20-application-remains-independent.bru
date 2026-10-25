@@ -1,0 +1,27 @@
+meta {
+  name: Application remains independent
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/me/applications
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenA}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Application remains independent", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().totalElements).to.equal(1);
+  });
+}

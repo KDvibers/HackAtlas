@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "HackAtlas B2 accounts and personal data",
+  "type": "collection",
+  "ignore": [".git", "results"]
+}

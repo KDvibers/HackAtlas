@@ -1,6 +1,6 @@
 # Backend HackAtlas
 
-Реализованы основа B0 и публичный каталог B1: Java 21 / Spring Boot, PostgreSQL/Flyway, три GET endpoint, health, интеграционные тесты и CI. Авторизация B2 и модерация B3 ещё не реализованы. Единственный контракт — [OpenAPI](../api/openapi.yaml) и [его семантика](../api/README.md); opaque Bearer sessions остаются решением для B2.
+Реализованы основа B0, публичный каталог B1 и аккаунты/личные данные B2: Java 21 / Spring Boot, PostgreSQL/Flyway, Spring Security с opaque Bearer sessions, health, интеграционные тесты и CI. Модерация и удаление аккаунта B3 ещё не реализованы. Единственный контракт — [OpenAPI](../api/openapi.yaml) и [его семантика](../api/README.md).
 
 Параметры каталога, политика статусов и явный DEMO-запуск описаны в [CATALOG](CATALOG.md).
 
@@ -39,6 +39,24 @@ python src/test/resources/validate_http_contract.py --schema ../api/openapi.yaml
 ```
 
 Bruno и Schemathesis проверяют отдельно собранный JAR на временной БД; инструкции — в [scripts/b1](../scripts/b1/README.md).
+
+Для B2 после `verify` тот же schema validator принимает каталог `target/b2-contract` вместо `target/catalog-contract-responses.json`. Затем [B2 runner](../scripts/b2/README.md) проверяет собранный JAR и [26 запросов Bruno](../tools/bruno-b2/README.md) на своей временной БД. B1 regression checks остаются обязательными.
+
+## Аккаунты и личные данные B2
+
+Публичный каталог доступен без входа. `POST /api/v1/auth/register` и `POST /api/v1/auth/login` возвращают opaque token; защищённые операции принимают его только в `Authorization: Bearer <token>`. PostgreSQL хранит SHA-256 хеш случайного токена, а пароли обрабатывает Spring Security Argon2id. Cookie-based auth, JWT и refresh flow отсутствуют. Токен имеет абсолютный срок 30 дней по умолчанию; logout отзывает текущую сессию, после чего она получает 401.
+
+Регистрация закрыта по умолчанию. Для локальной разработки включить её явно:
+
+```text
+java -jar target/hackatlas-backend-0.1.0-SNAPSHOT.jar --spring.profiles.active=dev --hackatlas.auth.registration-enabled=true
+```
+
+В production регистрация остаётся закрытой даже при ошибочном включении dev-флага. Проверка email и password reset относятся к отдельному согласованию перед публичным запуском.
+
+После входа доступны GET/PATCH `/api/v1/me`, GET `/api/v1/me/saved`, PUT/DELETE `/api/v1/me/saved/{id}`, GET `/api/v1/me/applications`, PUT/DELETE `/api/v1/me/applications/{id}`. PATCH сохраняет отсутствующие поля; `null` очищает только nullable поля. Закладка и личная отметка заявки независимы; повтор PUT не создаёт дубликат и не обновляет `markedAt`. `selfReported=true` не подтверждает регистрацию у организатора.
+
+Auth ограничивает попытки по IP и нормализованному email. Настройки: `hackatlas.auth.session-ttl=P30D`, `hackatlas.auth.rate-limit.ip-limit=30`, `account-limit=10`, `window=PT15M`, `max-keys=10000` (последние три с тем же префиксом `hackatlas.auth.rate-limit`). Лимиты действуют внутри одного процесса; согласование общего лимитера для нескольких экземпляров относится к подготовке deployment. Rate limits проверяются отдельными HTTP-тестами с малыми значениями; runtime smoke использует обычные defaults. Пароли, токены и заголовок Authorization не добавлять в логи и файлы репозитория. Подробности реализации и ограничения — в [AUTH](AUTH.md).
 
 ## Локальный запуск
 
@@ -82,7 +100,7 @@ Invoke-RestMethod http://127.0.0.1:8080/actuator/health/readiness
 
 `PORT` переопределяет порт; `HACKATLAS_BIND_ADDRESS` — адрес прослушивания. Production hosting, TLS и выпуск относятся к B4. Не включать внешний bind без подготовки окружения.
 
-Flyway применяет V1 (схема `hackatlas`) и V2 (`catalog_hackathon`, `catalog_tag`, `catalog_hackathon_topic` с ограничениями и индексами); история хранится в `public.flyway_schema_history`. Hibernate использует `ddl-auto=validate`, Open Session in View отключён. Пользователей и seed в миграциях нет. Существующие применённые миграции не переписывать; изменения добавлять следующей версией. Запросы каталога используют read-only транзакцию PostgreSQL `REPEATABLE READ`, чтобы count, страница и детали читались из одного снимка.
+Flyway применяет V1 (схема `hackatlas`), V2 (`catalog_hackathon`, `catalog_tag`, `catalog_hackathon_topic`), V3 (`user_account`, `auth_session`) и V4 (`user_interest`, `saved_hackathon`, `application_mark`) с ограничениями и индексами; история хранится в `public.flyway_schema_history`. Hibernate использует `ddl-auto=validate`, Open Session in View отключён. Миграции создают схему без seed-аккаунтов и событий. Существующие применённые миграции не переписывать; изменения добавлять следующей версией. Запросы каталога используют read-only транзакцию PostgreSQL `REPEATABLE READ`, чтобы count, страница и детали читались из одного снимка.
 
 ## Проверенный путь на текущей Windows-машине
 

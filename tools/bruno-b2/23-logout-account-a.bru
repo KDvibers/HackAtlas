@@ -1,0 +1,26 @@
+meta {
+  name: Logout account A
+  type: http
+  seq: 23
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenA}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Logout account A", function () {
+    expect(res.getStatus()).to.equal(204);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+  });
+}

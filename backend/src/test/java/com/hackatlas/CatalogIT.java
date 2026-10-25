@@ -73,7 +73,7 @@ class CatalogIT {
     void restoreCanonicalDemoData() {
         jdbc.execute("""
                 truncate table hackatlas.catalog_hackathon_topic,
-                    hackatlas.catalog_hackathon, hackatlas.catalog_tag
+                    hackatlas.catalog_hackathon, hackatlas.catalog_tag cascade
                 """);
         seeder.seed();
     }

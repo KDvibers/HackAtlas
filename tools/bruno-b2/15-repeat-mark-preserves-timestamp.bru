@@ -1,0 +1,27 @@
+meta {
+  name: Repeat mark preserves timestamp
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{baseUrl}}/me/applications/39287368-5259-5235-a1c4-25b4e1e8421e
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenA}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Repeat mark preserves timestamp", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().markedAt).to.equal(bru.getVar("markedAt"));
+  });
+}

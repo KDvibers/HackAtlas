@@ -10,13 +10,29 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.firewall.RequestRejectedException;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@RestControllerAdvice(assignableTypes = CatalogController.class)
+@RestControllerAdvice(basePackageClasses = CatalogController.class)
 public class ApiExceptionHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    @ExceptionHandler(ApiFailure.class)
+    ResponseEntity<ApiProblem> failure(ApiFailure exception, HttpServletRequest request) {
+        var response = problem(HttpStatus.valueOf(exception.status()), exception.code(), "Ошибка запроса",
+                exception.getMessage(), List.of(), request);
+        if (exception.retryAfter() > 0) {
+            return ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders())
+                    .header("Retry-After", Long.toString(exception.retryAfter())).body(response.getBody());
+        }
+        if (exception.status() == 401) {
+            return ResponseEntity.status(response.getStatusCode()).headers(response.getHeaders())
+                    .header("WWW-Authenticate", "Bearer").body(response.getBody());
+        }
+        return response;
+    }
 
     @ExceptionHandler(CatalogValidationException.class)
     ResponseEntity<ApiProblem> invalid(CatalogValidationException exception, HttpServletRequest request) {
@@ -24,7 +40,7 @@ public class ApiExceptionHandler {
                 "Проверьте параметры запроса.", exception.fieldErrors(), request);
     }
 
-    @ExceptionHandler(InvalidParameterException.class)
+    @ExceptionHandler({InvalidParameterException.class, RequestRejectedException.class})
     ResponseEntity<ApiProblem> malformedParameters(HttpServletRequest request) {
         // The servlet container can reject malformed query names before our parser runs.
         return problem(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Некорректные параметры",
@@ -54,7 +70,7 @@ public class ApiExceptionHandler {
 
     private static void logFailure(Exception exception, HttpServletRequest request) {
         // Do not log request parameters, exception messages, credentials, or SQL values.
-        LOG.error("Catalogue request failed: requestId={}, exceptionType={}",
+        LOG.error("API request failed: requestId={}, exceptionType={}",
                 RequestIdFilter.requestId(request), exception.getClass().getSimpleName());
     }
 
