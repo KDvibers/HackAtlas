@@ -86,6 +86,10 @@ jobs:
         run: >-
           ../scripts/b1/.venv/bin/python src/test/resources/validate_http_contract.py
           --schema ../api/openapi.yaml --responses target/b2-contract
+      - name: Validate B3 HTTP responses against OpenAPI
+        run: >-
+          ../scripts/b1/.venv/bin/python src/test/resources/validate_http_contract.py
+          --schema ../api/openapi.yaml --responses target/b3-contract
       - name: Install the pinned Bruno CLI
         working-directory: tools/bruno
         run: npm ci --ignore-scripts --no-audit --no-fund
@@ -98,6 +102,11 @@ jobs:
         working-directory: .
         run: >-
           scripts/b1/.venv/bin/python scripts/b2/run_contract_checks.py
+          --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar
+      - name: Verify the packaged B3 API with isolated PostgreSQL and Bruno
+        working-directory: .
+        run: >-
+          scripts/b1/.venv/bin/python scripts/b3/run_contract_checks.py
           --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar
 
   secrets:

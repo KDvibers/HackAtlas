@@ -1,0 +1,9 @@
+<!doctype html><html lang="ru" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{admin/fragments :: head('Вход редактора')}"></head>
+<body><main class="login"><p class="eyebrow">HACKATLAS / РЕДАКТОР</p><h1>Вход в каталог</h1>
+<p>Доступ выдаёт оператор проекта. Обычный аккаунт приложения не открывает редактор.</p>
+<p class="error" th:if="${param.error != null}" role="alert">Вход не выполнен. Проверьте данные и право доступа.</p>
+<p class="notice" th:if="${param.logout != null}">Вы вышли из редактора.</p>
+<form method="post" th:action="@{/admin/login}">
+<label>Email<input name="username" type="email" required maxlength="254" autocomplete="username"></label>
+<label>Пароль<input name="password" type="password" required autocomplete="current-password"></label>
+<button type="submit">Войти</button></form></main></body></html>

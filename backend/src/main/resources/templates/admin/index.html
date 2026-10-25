@@ -1,0 +1,14 @@
+<!doctype html><html lang="ru" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{admin/fragments :: head('Каталог')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><main>
+<div class="heading"><div><p class="eyebrow">ПРОВЕРЕННЫЕ ИСТОЧНИКИ / ЯВНЫЕ ДЕЙСТВИЯ</p><h1>Каталог событий</h1></div>
+<a class="button" th:href="@{/admin/events/new}">Новый черновик</a></div>
+<p>Создание и сохранение черновика не публикуют событие. Изменения опубликованной карточки сразу доступны в приложении.</p>
+<div class="table-wrap"><table><thead><tr><th>Событие</th><th>Публикация</th><th>Состояние</th><th>Изменено</th><th>Источник проверен</th></tr></thead>
+<tbody><tr th:each="event : ${events}"><td><a th:href="@{/admin/events/{id}/edit(id=${event.id})}" th:text="${event.title}">Событие</a>
+<strong class="demo" th:if="${event.demo}">DEMO</strong></td><td th:text="${event.publicationStatus}">DRAFT</td>
+<td th:text="${event.eventStatus}">SCHEDULED</td><td th:text="${event.updatedAt}"></td>
+<td th:text="${event.lastVerifiedAt ?: 'Не проверен'}"></td></tr>
+<tr th:if="${#lists.isEmpty(events)}"><td colspan="5">На этой странице пока нет событий.</td></tr></tbody></table></div>
+<div class="pagination"><a th:if="${page > 0}" th:href="@{/admin(page=${page - 1})}">← Предыдущая</a>
+<span th:text="'Страница ' + (${page} + 1)"></span><a th:if="${hasNext}" th:href="@{/admin(page=${page + 1})}">Следующая →</a></div>
+</main></body></html>

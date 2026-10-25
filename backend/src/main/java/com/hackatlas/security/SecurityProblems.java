@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import com.hackatlas.web.ApiFailure;
+import com.hackatlas.web.DataFailures;
 import com.hackatlas.web.ApiProblem;
 import com.hackatlas.web.RequestIdFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,8 +46,7 @@ final class SecurityProblems {
         // Only the failure class and request ID are safe to log, never SQL/parameters/messages.
         LOG.error("Authentication request failed: requestId={}, exceptionType={}",
                 RequestIdFilter.requestId(request), exception.getClass().getSimpleName());
-        if (exception instanceof DataAccessResourceFailureException
-                || exception instanceof CannotCreateTransactionException) {
+        if (DataFailures.unavailable(exception)) {
             write(request, response, 503, "SERVICE_UNAVAILABLE", "Сервис временно недоступен.", 0);
         } else {
             write(request, response, 500, "INTERNAL_ERROR", "Не удалось обработать запрос.", 0);

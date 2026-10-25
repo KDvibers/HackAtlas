@@ -1,0 +1,28 @@
+meta {
+  name: Account B bookmark remains
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/me/saved
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenB}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Account B bookmark remains", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().totalElements).to.equal(1);
+    expect(res.getBody().items[0].id).to.equal("39287368-5259-5235-a1c4-25b4e1e8421e");
+  });
+}

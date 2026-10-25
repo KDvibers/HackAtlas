@@ -1,0 +1,8 @@
+<!doctype html><html lang="ru" xmlns:th="http://www.thymeleaf.org"><head th:fragment="head(title)">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title th:text="${title} + ' · HackAtlas'">HackAtlas</title>
+<link rel="stylesheet" th:href="@{/admin/admin.css}"></head><body>
+<header th:fragment="header"><a class="brand" th:href="@{/admin}">HACKATLAS <span>/ РЕДАКТОР</span></a>
+<nav><a th:href="@{/admin}">Каталог</a><a th:href="@{/admin/queue}">Очередь</a>
+<form method="post" th:action="@{/admin/logout}"><button class="subtle" type="submit">Выйти</button></form></nav></header>
+</body></html>

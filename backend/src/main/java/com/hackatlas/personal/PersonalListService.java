@@ -23,6 +23,7 @@ public class PersonalListService {
     }
 
     public void save(UUID userId, UUID id) {
+        requireAccount(userId);
         requirePublished(id);
         jdbc.sql("""
                 INSERT INTO hackatlas.saved_hackathon (user_id, hackathon_id, saved_at)
@@ -36,6 +37,7 @@ public class PersonalListService {
     }
 
     public PersonalDtos.ApplicationMark apply(UUID userId, UUID id) {
+        requireAccount(userId);
         requirePublished(id);
         // PostgreSQL resolves competing inserts; the initial timestamp survives retries.
         return jdbc.sql("""
@@ -71,6 +73,14 @@ public class PersonalListService {
                         rs.getTimestamp(2).toInstant())).list();
         return new PersonalDtos.ApplicationPage(items, page, size, count, pages,
                 offset.add(BigInteger.valueOf(items.size())).compareTo(BigInteger.valueOf(count)) < 0, asOf);
+    }
+
+    private void requireAccount(UUID userId) {
+        // Serialize FK-producing writes with account deletion, returning 401 if deletion won the race.
+        if (jdbc.sql("SELECT id FROM hackatlas.user_account WHERE id = :id FOR KEY SHARE")
+                .param("id", userId).query(UUID.class).optional().isEmpty()) {
+            throw new ApiFailure(401, "AUTH_REQUIRED", "Требуется действующая сессия.");
+        }
     }
 
     private void requirePublished(UUID id) {

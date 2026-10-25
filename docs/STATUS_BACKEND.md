@@ -1,8 +1,79 @@
 # BACKEND: статус
 
-Дата актуального дополнения: 25 октября 2026.
+Дата актуального дополнения: 26 октября 2026.
 
-## B2 — аккаунты и личные данные завершены локально
+## B3 — модерация и удаление аккаунта завершены локально
+
+**B3 выполнен, B4 не начат.** Перед работой проверены GitHub и чистый checkout: [B2 PR #5](https://github.com/KDvibers/HackAtlas/pull/5) пользователя `yergaliuly` объединён 25 октября; [main workflow 40223237200](https://github.com/KDvibers/HackAtlas/actions/runs/40223237200) завершён успешно. Ветка `feat/backend-moderation` создана без upstream от `origin/main=20464e76534e64e424b4ea98acc965d4c6aaaf04`. Это база с B2 и мобильным PR #4.
+
+Commit, staging, push, PR и deployment не выполнялись. Локальные Git HTTPS credentials повторно проверены через GitHub `/user`: **yergaliuly**; настройка credential username также `yergaliuly`. Автор коммита проверен отдельно: **softache <itsyergaliuly@gmail.com>**. Изменения оставлены пользователю для review и коммита.
+
+Финальный GitHub check и fetch обнаружили уже объединённый [mobile PR #6](https://github.com/KDvibers/HackAtlas/pull/6): `origin/main=04407db5a37eed1ad388894c2ca2741716414117`. Он меняет только mobile и его документы: `git diff HEAD..origin/main` подтвердил отсутствие изменений backend/API/infra и пересечений с файлами B3. Эта локальная ветка осталась на базе `20464e7`; merge/rebase не выполнялись. Инструкция другу обновлена для свежей main. Тесты мобильного PR — результат работы напарника, не этой сессии.
+
+### Что изменено
+
+- `backend/src/main/java/com/hackatlas/admin/`, `security/`, `config/AdminCookiePolicy.java`, `templates/admin/`, `static/admin/`: Thymeleaf-редактор draft/publish/archive, даты/перенос/отмена, проверка источника, очередь. Отдельная browser session с CSRF, отзывом доступа и Secure cookie в prod; обычный USER и Bearer-токен не дают admin-доступ. [Руководство оператора](../backend/MODERATION.md).
+- `backend/src/main/java/com/hackatlas/moderation/`, `web/ModerationController.java`, `web/JsonRequests.java`: suggestions/reports с PENDING, strict JSON, HTTPS syntax validation без сетевых скачиваний, IP/account limits. [B3 API и ограничения](../backend/MODERATION.md).
+- `backend/src/main/java/com/hackatlas/auth/AccountDeletionService.java`, `AuthService.java`, `personal/PersonalListService.java`: повторная проверка пароля, атомарное удаление аккаунта/сессий/личных данных/обращений; блокировки согласованы с login и новыми личными связями.
+- `backend/src/main/resources/db/migration/V5__moderation_submissions.sql`, `V6__admin_access_and_audit.sql`: только новые миграции, FK/очередь/права/минимальный аудит. Нет автоматических admin grants и seed-аккаунтов. [Правила удаления и хранения](PRIVACY.md).
+- `backend/pom.xml`, `application.yaml`, `application-dev.yaml`, `web/DataFailures.java`, `web/ApiExceptionHandler.java`: Thymeleaf из Boot BOM, cookie/limits, безопасная диагностика ошибок БД, различение 500/503. Opaque Bearer B2 сохранён. [Версии и выбор](../backend/TOOLCHAIN.md).
+- `backend/src/test/`, `scripts/b3/`, `tools/bruno-b3/`, `.github/workflows/backend-ci.yml`: PostgreSQL/HTTP/admin/fault tests, экспорт ответов и B3 contract runner, 24 Bruno requests; B1/B2 проверки сохранены.
+- [B1_MOBILE_HANDOFF](B1_MOBILE_HANDOFF.md): готовая инструкция напарнику для публичного каталога из main, без зависимости от B3. Обновлены README/START_HERE/DECISIONS и только backend status.
+
+**Изменения API: отсутствуют.** Реализованы три уже предусмотренные B3 операции; `api/`, fixtures, `mobile/`, `design/` и `STATUS_MOBILE.md` не менялись. Backend, QA и tooling работали в непересекающихся файлах; итог интегрирован и проверен координатором.
+
+### Выполненные команды и результаты
+
+| Команда / проверка | Результат |
+|---|---|
+| WSL root: `cd backend && bash ./mvnw --batch-mode --no-transfer-progress verify` | **BUILD SUCCESS; 267 тестов: 9 unit + 258 integration; failures/errors/skipped = 0** |
+| `.venv/Scripts/python.exe scripts/validate_contract.py` | PASS OpenAPI 3.1, refs, фазы, opaque auth и все fixtures |
+| `validate_http_contract.py --schema api/openapi.yaml --responses backend/target/catalog-contract-responses.json` | **139 реальных B1 ответов**, PASS |
+| Тот же validator с `--responses backend/target/b2-contract` | **345 B2 ответов**, все 11 операций и 36 обязательных method/path/status pairs, PASS |
+| Тот же validator с `--responses backend/target/b3-contract` | **102 B3 ответа**, все 3 операции и 19 обязательных method/path/status pairs, PASS |
+| `scripts/b1/run_contract_checks.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar` | **12 HTTP cases, Bruno 10/10, Schemathesis 201/201**, seed 20261020 |
+| `scripts/b2/run_contract_checks.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar` | **30 HTTP cases, Bruno 26/26**, PASS |
+| `scripts/b3/run_contract_checks.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar` | **36 HTTP cases, Bruno 24/24**, PASS; две учётные записи, отзыв всех сессий, повторная регистрация с новым UUID и пустыми списками |
+| Встроенный Chromium, отдельный JAR/PostgreSQL | Вход редактора, сохранение POSTPONED, подтверждение изменения публичным GET, каталог/редактор/очередь, logout — PASS; [screenshots](../backend/artifacts/b3/README.md) |
+| `backend/target/b3-final-checks.py`, `git diff --check`, Gitleaks 8.30.1 `git/dir --redact=100` | Scope, UTF-8/форматирование, локальные Markdown-ссылки и screenshots — PASS; доступная история и изменённые/новые файлы — **no leaks found** |
+
+CLI прогоны выполнены с `/root/.local/share/hackatlas-b2-tools/venv/bin/python` и `--node /root/.local/share/hackatlas-b2-tools/node-v24.19.0-linux-x64/bin/node`; schema validator — с Windows `.venv`. Java 21.0.12.1, Docker 29.1.3, PostgreSQL 17.11; версии не менялись, добавлен только BOM-managed Thymeleaf 3.1.5.RELEASE.
+
+В первом прогоне 2 fault tests выявили 500 вместо 503 после потери соединения при rollback. Исправлена классификация, затем выполнен полный успешный `verify` и проверки окончательного JAR. SQL constraint fault возвращает 500; потеря соединения — 503; в обоих случаях транзакция удаления откатывает аккаунт, все сессии и личные связи. Тестовые ожидания не ослаблялись. Дополнительно исправлены порядок блокировок admin/account и очистка logout cookie с правильным Path; проверки CSRF и prod Secure cookie проходят.
+
+Логи находятся в игнорируемом `backend/target/`: `b3-verify.log`, `surefire-reports/`, `failsafe-reports/`, `catalog-contract-responses.json`, `b2-contract/`, `b3-contract/`, `b3-b1-regression.log`, `b3-b2-regression.log`, `b3-checks/contract-checks.log`. Тесты используют вымышленные данные; токены и тела auth-запросов не публикуются в отчёте. Все runner/JVM и временные PostgreSQL завершены; после очистки остаётся только исходный контейнер другого проекта `focusduo-db-1`, который не изменялся.
+
+### Ограничения и передача
+
+Новый B3 workflow ещё не запускался на GitHub: для этого нужен пользовательский push. После mobile PR #6 свежий [Backend CI main 40225964082](https://github.com/KDvibers/HackAtlas/actions/runs/40225964082) также завершён успешно; это проверка main с B2, без локальных изменений B3. Schemathesis fuzzing выполняет только B1; B2/B3 проверяются сценариями состояния и PostgreSQL fault tests, а не полным security audit.
+
+Админка минимальная: темы/призы/eligibility существующих карточек сохраняются, но не редактируются этой формой; у новых карточек они остаются неизвестными. Очередь показывает первые 100 PENDING; автоматического сбора событий нет. Лимитеры работают в одном процессе. Production signup закрыт. TLS, deployment, backup/retention и предрелизные условия относятся к отдельному B4; они не выполнялись.
+
+Windows→IP WSL проверен на временном сервере, Windows→WSL localhost в этой среде не отвечает. Сервер остановлен, общего staging URL нет. Доступ с компьютера напарника, Android Emulator, физического телефона и iOS не проверялся. [Инструкция для друга](B1_MOBILE_HANDOFF.md) рекомендует собственный запуск из main и даёт адреса/команды/DEMO ID/clock. Авторизацию B2 для публичного каталога подключать не нужно.
+
+Сообщение напарнику: «Публичные list/detail/metadata работают по прежнему Starter. Поднимай main по B1_MOBILE_HANDOFF; гостевые закладки пока локальные. B3 подготовлен отдельно: после его merge появятся suggestions/reports/delete-account. Статусы/даты опубликованного события в saved обновляются; POSTPONED/CANCELLED и архив должны обновлять snapshots/reminders при будущей M3-интеграции. Мобильный UI и контракт не менялись». Сообщение подготовлено, автоматически не отправлялось.
+
+### Пользовательский commit / push / PR
+
+PR title: **Implement B3 catalog moderation and account deletion**.
+
+Описание: «Добавлена админка каталога на Thymeleaf с отдельной сессией и CSRF: черновики, публикация, архив, даты, перенос/отмена и ручная проверка источника. Реализованы suggestions/reports с очередью PENDING и лимитами, удаление аккаунта с подтверждением пароля и атомарным отзывом всех сессий/удалением личных данных. Добавлены миграции V5/V6, минимальный аудит и правила хранения. Контракт Starter и opaque Bearer протокол не изменены. Проверки: Maven 267 тестов, 586 HTTP-ответов по OpenAPI, Bruno B1/B2/B3 10/26/24, Schemathesis B1 201. Админка проверена в браузере на одноразовой БД. B4 и мобильная реализация не входят».
+
+Из корня репозитория, после своего review:
+
+```powershell
+git status --short --branch
+git diff --check
+git add .github/workflows/backend-ci.yml README.md START_HERE.md backend docs/DECISIONS.md docs/STATUS_BACKEND.md docs/PRIVACY.md docs/B1_MOBILE_HANDOFF.md scripts/b3 tools/bruno-b3
+git diff --cached --stat
+git commit -m "feat(backend): implement B3 moderation and account deletion"
+git push -u origin feat/backend-moderation
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...feat/backend-moderation?expand=1'
+```
+
+Последняя команда открывает форму PR; вставьте название/описание выше и создайте PR самостоятельно под `yergaliuly`. GitHub CLI на этой машине не установлен. Никакой force push не нужен. Следующий отдельный этап — **B4**, только по новому поручению. Ниже сохранены исторические статусы: их слова «B3 не начат» относятся к прежним этапам.
+
+## Исторический B2 — аккаунты и личные данные завершены и объединены
 
 **B2 выполнен, B3 не начат.** GitHub проверен до начала: [B1 PR #3](https://github.com/KDvibers/HackAtlas/pull/3) и [mobile PR #4](https://github.com/KDvibers/HackAtlas/pull/4) объединены. Workflow main [40220360992](https://github.com/KDvibers/HackAtlas/actions/runs/40220360992) завершён успешно. Новый чистый checkout `feat/backend-auth` основан на `origin/main=b62306583814d6634bad8dddf826529ba850e872`; мобильные изменения включены в базу и не редактировались.
 

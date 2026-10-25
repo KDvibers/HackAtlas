@@ -73,7 +73,7 @@ class BootstrapIT {
                 "select count(*) from public.flyway_schema_history where version = '1' and success",
                 Integer.class
         )).isEqualTo(1);
-        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(4).allSatisfy(migration -> {
+        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(6).allSatisfy(migration -> {
             assertThat(migration.getState()).isEqualTo(MigrationState.SUCCESS);
         });
         assertThat(flyway.info().pending()).isEmpty();
@@ -87,7 +87,7 @@ class BootstrapIT {
         flyway.validate();
 
         assertThat(flyway.migrate().migrationsExecuted).isZero();
-        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(4);
+        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(6);
         assertThat(flyway.info().pending()).isEmpty();
     }
 
@@ -133,14 +133,16 @@ class BootstrapIT {
         assertThat(request("POST", "/api/v1/auth/logout").statusCode()).isEqualTo(401);
     }
 
+    @Test
+    void refreshEndpointRemainsUnavailable() throws Exception {
+        assertThat(request("POST", "/api/v1/auth/refresh").statusCode()).isEqualTo(404);
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {
-            "/api/v1/auth/refresh",
-            "/api/v1/suggestions",
-            "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e/reports"
-    })
-    void b3AndRefreshEndpointsRemainUnavailable(String path) throws Exception {
-        assertThat(request("POST", path).statusCode()).isEqualTo(404);
+    @ValueSource(strings = {"/api/v1/suggestions", "/api/v1/me/delete-account",
+            "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e/reports"})
+    void moderationAndDeletionRequireBearerAuthentication(String path) throws Exception {
+        assertThat(request("POST", path).statusCode()).isEqualTo(401);
     }
 
     private HttpResponse<String> request(String method, String path) throws Exception {

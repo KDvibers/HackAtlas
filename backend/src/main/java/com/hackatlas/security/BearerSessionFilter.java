@@ -27,7 +27,8 @@ final class BearerSessionFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         // Public catalogue endpoints do not become private because a client has an old token.
         return !(path.equals("/api/v1/me") || path.startsWith("/api/v1/me/")
-                || path.equals("/api/v1/auth/logout"));
+                || path.equals("/api/v1/auth/logout") || path.equals("/api/v1/suggestions")
+                || path.matches("/api/v1/hackathons/[^/]+/reports"));
     }
 
     @Override

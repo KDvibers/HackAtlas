@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "HackAtlas B3 moderation and account deletion",
+  "type": "collection",
+  "ignore": [
+    ".git",
+    "results"
+  ]
+}

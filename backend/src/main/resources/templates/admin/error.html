@@ -1,0 +1,3 @@
+<!doctype html><html lang="ru" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{admin/fragments :: head('Действие не выполнено')}"></head>
+<body><header th:replace="~{admin/fragments :: header}"></header><main><h1>Действие не выполнено</h1>
+<p class="error" th:text="${message}" role="alert">Проверьте данные и повторите попытку.</p><a th:href="@{/admin}">Вернуться к каталогу</a></main></body></html>

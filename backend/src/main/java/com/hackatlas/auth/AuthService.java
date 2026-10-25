@@ -80,7 +80,7 @@ public class AuthService {
         String normalizedEmail = normalizeEmail(email);
         limiter.checkAccount(normalizedEmail);
         List<AccountCredential> users = jdbc.query("""
-                SELECT id, password_hash FROM hackatlas.user_account WHERE email = ?
+                SELECT id, password_hash FROM hackatlas.user_account WHERE email = ? FOR UPDATE
                 """, (rs, row) -> new AccountCredential(rs.getObject("id", UUID.class),
                 rs.getString("password_hash")), normalizedEmail);
         AccountCredential user = users.isEmpty() ? null : users.getFirst();

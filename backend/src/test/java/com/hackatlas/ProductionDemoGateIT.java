@@ -1,5 +1,9 @@
 package com.hackatlas;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import com.hackatlas.catalog.CatalogDemoSeeder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -13,7 +17,8 @@ import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = HackAtlasApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"hackatlas.demo.enabled=true", "hackatlas.auth.registration-enabled=true"})
+        properties = {"hackatlas.demo.enabled=true", "hackatlas.auth.registration-enabled=true",
+                "server.servlet.session.cookie.secure=false"})
 @ActiveProfiles({"test", "prod"})
 @Import(IntegrationTestConfiguration.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -39,5 +44,16 @@ class ProductionDemoGateIT extends B2HttpSupport {
         assertThat(problem.path("code").stringValue()).isEqualTo("FORBIDDEN");
         assertThat(jdbc.queryForObject("select count(*) from hackatlas.user_account", Integer.class)).isZero();
         assertThat(jdbc.queryForObject("select count(*) from hackatlas.auth_session", Integer.class)).isZero();
+    }
+
+    @Test
+    void productionForcesSecureAdminCookiesEvenWhenADevPropertyTriesToDisableThem() throws Exception {
+        try (var http = HttpClient.newHttpClient()) {
+            var response = http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + httpPort() + "/admin/login")).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.headers().allValues("Set-Cookie")).anySatisfy(cookie ->
+                    assertThat(cookie.toLowerCase()).contains("secure", "httponly", "samesite=strict", "path=/admin"));
+        }
     }
 }

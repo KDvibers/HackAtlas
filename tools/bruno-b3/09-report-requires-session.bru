@@ -1,0 +1,32 @@
+meta {
+  name: Report requires session
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e/reports
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"reason":"DATES","message":"DEMO: please verify the event dates."}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Report requires session", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+  });
+}

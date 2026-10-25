@@ -1,0 +1,32 @@
+meta {
+  name: Deleted account cannot log in
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"email":"{{process.env.HACKATLAS_B3_EMAIL_A}}","password":"{{process.env.HACKATLAS_B3_PASSWORD}}"}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Deleted account cannot log in", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+  });
+}

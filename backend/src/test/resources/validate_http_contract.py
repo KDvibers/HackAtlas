@@ -58,6 +58,14 @@ B2_REQUIRED_COVERAGE = {
     ("/me/applications/{id}", "delete", 401),
 }
 
+B3_REQUIRED_COVERAGE = {
+    ("/suggestions", "post", status) for status in (202, 400, 401, 429, 500, 503)
+} | {
+    ("/hackathons/{id}/reports", "post", status) for status in (202, 400, 401, 404, 429, 500, 503)
+} | {
+    ("/me/delete-account", "post", status) for status in (204, 400, 401, 429, 500, 503)
+}
+
 
 def validate_responses(schema_path, responses_path):
     api = yaml.safe_load(schema_path.read_text(encoding="utf-8"))
@@ -70,8 +78,10 @@ def validate_responses(schema_path, responses_path):
         phase = "B1"
     elif source_types == {"B2 HTTP"}:
         phase = "B2"
+    elif source_types == {"B3 HTTP"}:
+        phase = "B3"
     else:
-        raise ValueError("Expected separate non-empty exports of CatalogIT HTTP or B2 HTTP responses.")
+        raise ValueError("Expected separate non-empty exports of CatalogIT HTTP, B2 HTTP or B3 HTTP responses.")
     responses = [response for export in exports for response in export.get("responses", [])]
     if not responses or any(not export.get("responses") for export in exports):
         raise ValueError("Every HTTP export must contain actual responses.")
@@ -118,7 +128,8 @@ def validate_responses(schema_path, responses_path):
             details = "; ".join(f"{list(error.path)}: {error.message}" for error in errors)
             raise ValueError(f"Response {index}: {path} {status}: {details}")
 
-    missing = (REQUIRED_COVERAGE if phase == "B1" else B2_REQUIRED_COVERAGE) - coverage
+    required = {"B1": REQUIRED_COVERAGE, "B2": B2_REQUIRED_COVERAGE, "B3": B3_REQUIRED_COVERAGE}[phase]
+    missing = required - coverage
     if missing:
         raise ValueError(f"HTTP export is missing required coverage: {sorted(missing)}")
     return len(responses)

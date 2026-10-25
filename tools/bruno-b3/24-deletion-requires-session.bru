@@ -1,0 +1,32 @@
+meta {
+  name: Deletion requires session
+  type: http
+  seq: 24
+}
+
+post {
+  url: {{baseUrl}}/me/delete-account
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"password":"{{process.env.HACKATLAS_B3_PASSWORD}}"}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Deletion requires session", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+  });
+}
