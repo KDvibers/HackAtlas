@@ -10,7 +10,7 @@
 
 **Spec:** [ROADMAP: M2](../../ROADMAP.md#m2--основные-сценарии), [PROJECT](../../PROJECT.md), [TECHNOLOGY_DECISIONS](../../TECHNOLOGY_DECISIONS.md), [Starter API](../../../api/README.md), [OpenAPI](../../../api/openapi.yaml), [STYLE_LOCK](../../STYLE_LOCK.md), [текущее состояние mobile](../../STATUS_MOBILE.md), [семантика B1](../../../backend/CATALOG.md). Этот план покрывает только REMOTE-интеграцию внутри M2; весь M2 не объявляется завершённым.
 
-**Статус исполнения:** пользователь поручил только Task 1 (HTTP-клиент и MockEngine), последовательно с итоговым ревью. Task 1 завершена: Android build, 68 тестов, lint и release fixture check прошли. Независимое ревью выявило один P2 (исходящие UNSUPPORTED enum); исправлен с двумя регрессионными тестами RED→GREEN и повторной общей проверкой. Tasks 2–5 не начаты и не разрешены автоматически этим планом. Ветка `feat/mobile-catalog-api` создана от проверенного main `b62306583814d6634bad8dddf826529ba850e872` после merge PR #4. Commit/push выполняет пользователь.
+**Статус исполнения:** Task 1 завершена и закоммичена пользователем как `f5f025a`. По отдельному поручению 26 октября завершена Task 2: 25 новых / 93 всего теста, Android build/lint/release fixture check прошли, независимое ревью без замечаний. Изменения Task 2 оставлены для пользовательского commit/push. Tasks 3–5 не начаты и не разрешены автоматически этим планом. Работа продолжается в `feat/mobile-catalog-api`, созданной от main `b62306583814d6634bad8dddf826529ba850e872` после merge PR #4.
 
 ## Что сделать пользователю сейчас
 
@@ -69,7 +69,7 @@
 
 - [x] Прочитаны AGENTS, спецификации и план, проверены status/main/SDK. Создана отдельная рабочая копия `feat/mobile-catalog-api` от main `b623065`; локальные план/статус перенесены, исходные изменения сохранены без stash.
 - [ ] Зафиксировать доступный для тестового устройства API URL. Если URL ещё нет, пометить только финальный live smoke зависимым; задачи с MockEngine выполнять независимо.
-- [x] Получено поручение реализовать только Task 1. Остальные задачи остаются планом и не начинаются автоматически.
+- [x] Получены отдельные поручения Task 1 (25 октября) и Task 2 (26 октября). Остальные задачи остаются планом и не начинаются автоматически.
 
 ## Task 1: проверяемый HTTP repository
 
@@ -90,12 +90,12 @@
 
 **Interfaces:** потребляет `CatalogRepository`/`CatalogException` задачи 1; производит stores и состояния из карты интерфейсов для App.kt. Сетевые DTO в UI не передавать.
 
-- [ ] Написать `lateSearchCannotReplaceNewResults`: fake repository задерживает A, возвращает B, затем возвращает A даже после запроса отмены; итоговые query/items относятся к B. Текст поиска debounce 300 мс; фильтр/сортировка/сброс применяются сразу и возвращают `page=0`. Использовать `runTest` и виртуальное время.
-- [ ] Написать `pagingIsBoundToQuery`: во время page=1 сменить фильтр, получить старую page=1; она не дописывается. Повторный вызов `loadNext` во время загрузки не создаёт второй запрос; одинаковые ID не дублируются. `hasNext=false` останавливает пагинацию; пустая страница не вызывает бесконечный цикл, даже при противоречивом `hasNext=true` — показывать InvalidResponse, сохранить уже загруженный список.
-- [ ] Написать `metadataFailureDoesNotHideCatalog`, `initialFailureIsNotEmptySuccess`, `appendFailureKeepsItemsAndRetriesSamePage`; metadata имеет собственный retry, базовые фильтры работают без него. Ошибка сети — доступна кнопка повторить; не заявлять «интернет выключен» только по любому IOException.
-- [ ] Написать `detail404IsNotDemo`, `openingNewDetailRejectsLatePreviousResponse`, `snapshotNeedsNoNetwork`. Для snapshot не вызывается repository; у сетевых details старый результат не заменяет новое событие.
-- [ ] Запустить `./gradlew.bat :shared:testDebugUnitTest --tests "*CatalogStoreTest" --tests "*DetailStoreTest" --console=plain`; подтвердить FAIL, реализовать stores с поколением запроса/отменой и запустить до PASS. Сохранять серверный порядок и asOf, не применять повторную локальную фильтрацию.
-- [ ] Подготовить проверяемый дифф задачи; commit выполняет пользователь при выбранной им группировке изменений.
+- [x] Написать `lateSearchCannotReplaceNewResults`: fake repository задерживает A, возвращает B, затем возвращает A даже после запроса отмены; итоговые query/items относятся к B. Текст поиска debounce 300 мс; фильтр/сортировка/сброс применяются сразу и возвращают `page=0`. Использовать `runTest` и виртуальное время.
+- [x] Написать `pagingIsBoundToQuery`: во время page=1 сменить фильтр, получить старую page=1; она не дописывается. Повторный вызов `loadNext` во время загрузки не создаёт второй запрос; одинаковые ID не дублируются. `hasNext=false` останавливает пагинацию; пустая страница не вызывает бесконечный цикл, даже при противоречивом `hasNext=true` — показывать InvalidResponse, сохранить уже загруженный список.
+- [x] Написать `metadataFailureDoesNotHideCatalog`, `initialFailureIsNotEmptySuccess`, `appendFailureKeepsItemsAndRetriesSamePage`; metadata имеет собственный retry, базовые фильтры работают без него. Ошибка сети — доступна кнопка повторить; не заявлять «интернет выключен» только по любому IOException.
+- [x] Написать `detail404IsNotDemo`, `openingNewDetailRejectsLatePreviousResponse`, `snapshotNeedsNoNetwork`. Для snapshot не вызывается repository; у сетевых details старый результат не заменяет новое событие.
+- [x] Запустить `./gradlew.bat :shared:testDebugUnitTest --tests "*CatalogStoreTest" --tests "*DetailStoreTest" --console=plain`; подтвердить FAIL, реализовать stores с поколением запроса/отменой и запустить до PASS. Сохранять серверный порядок и asOf, не применять повторную локальную фильтрацию.
+- [x] Подготовить проверяемый дифф задачи; commit выполняет пользователь при выбранной им группировке изменений.
 
 ## Task 3: REMOTE snapshots и происхождение данных
 

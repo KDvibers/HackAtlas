@@ -1,5 +1,39 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2 Task 2: состояния каталога и подробностей — 26 октября 2026
+
+По поручению пользователя реализована только Task 2 [плана M2](superpowers/plans/2026-10-25-mobile-catalog-api.md). Работа последовательно выполнена в существующей ветке `feat/mobile-catalog-api`, поверх пользовательского commit `f5f025ad185dc47a8186d2f1a035676ec42422f6` (Task 1). Commit/push остаются пользователю.
+
+Новые файлы:
+
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/ui/CatalogStore.kt`, `CatalogUiState.kt`: состояния загрузки, успешной пустой выдачи, результата и отдельных ошибок первой страницы/догрузки/metadata. Поиск задерживается на 300 мс; фильтры, сортировка и очистка поиска применяются сразу с page=0. Сохраняются порядок сервера и asOf.
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/ui/DetailStore.kt`, `DetailUiState.kt`: Idle/Loading/Content/Error, повтор запроса и открытие готового SavedGuestEvent со временем сохранения без HTTP.
+- `mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/ui/CatalogStoreTest.kt`, `DetailStoreTest.kt`, `StoreTestFixtures.kt`: 25 новых тестов на виртуальном времени с fake CatalogRepository и каноническими fixtures.
+
+Каждый store последовательно обрабатывает команды и результаты через Channel. При смене запроса/деталей увеличивается поколение и отменяется предыдущая работа; даже ответ источника, проигнорировавшего отмену, не заменит новое состояние. Пагинация допускает один запрос, удаляет повторные ID, сохраняет список при ошибке и повторяет ту же страницу только по явному retry. Пустая продолжающаяся страница и страница без новых ID при hasNext=true не вызывают бесконечной дозагрузки. Metadata загружается и повторяется независимо. Scope создаёт и отменяет будущий host; публичные методы ставят команды в очередь.
+
+Проверки на Windows/JDK 21:
+
+1. Целевые тесты сначала не компилировались из-за отсутствующих stores/states. После реализации `./gradlew.bat :shared:testDebugUnitTest --tests "*CatalogStoreTest" --tests "*DetailStoreTest" --console=plain --offline` — **25/25 PASS**, exit 0.
+2. Из `mobile/`: `./gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --console=plain --offline` — **BUILD SUCCESSFUL**, exit 0; **93 теста, 0 failures/errors/skipped**, lint 0 issues, release fixture check PASS.
+3. Из корня: `C:/Users/user/Desktop/HackAtlas/mobile/build/pr4-contract-venv/Scripts/python.exe -X utf8 scripts/validate_contract.py` — PASS: OpenAPI, проектные правила и 6 fixtures. `git diff --check` — PASS.
+
+Логи — ignored-каталог `.superpowers/sdd/2026-10-25-mobile-catalog-api/`, файлы `task-2-red.log`, `task-2-green.log`, `task-2-verification.log`. APK: `mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk`, SHA-256 `10F10636754811D663AB7A301696F77CC7717B8EA67F0A63E72235BE9E17DD7D`.
+
+Итоговый независимый read-only reviewer проверил рабочий дифф относительно `f5f025a`, все новые файлы, требования и результаты тестов. Critical/Important/Minor замечаний не обнаружено; Task 2 готова к пользовательскому коммиту. Повторный прогон после ревью не требовался: код не менялся.
+
+Границы ревью: подключение Compose/owner scope, lifecycle HTTP-клиента и холодный REMOTE-запуск остаются Task 4; происхождение snapshots и коллизии ID/isDemo — Task 3; detail-before-save и подтверждение записи — Task 4. Stores получают корректные CatalogQuery/ID от будущего UI; они не добавляют полноценный валидатор ввода или серверной схемы и не гарантируют единый серверный snapshot между страницами. Эти ограничения нужно учитывать при интеграции, не считать текущие unit tests приёмкой всего M2. Рабочая копия и ignored-логи сохранены; посторонние `.agents/` и `.interface-design/` не менялись.
+
+API, зависимости, backend, существующие Compose-экраны, ресурсы и гостевые файлы не менялись. Stores ещё не подключены к AppState/экранам: интеграция — Task 4. Поэтому новых screenshots и UI smoke нет. Live B1, iOS/Kotlin Native и поведение на устройствах этой задачей не проверены. Дизайн сохраняется. Task 3 (происхождение REMOTE snapshots) и следующие задачи не начаты.
+
+Сообщение напарнику для ручной передачи: «На мобильной стороне готовы состояния каталога/подробностей, поиск и пагинация с защитой от запоздалых ответов. Контракт не меняли; для живой проверки всё ещё нужны base URL, запуск и ID опубликованного события».
+
+Следующий отдельный этап — Task 3: разделение REMOTE snapshots по происхождению и сохранение совместимости существующих гостевых данных.
+
+Рекомендуемый заголовок PR: `feat(mobile): add race-safe catalog and detail state stores`.
+
+Описание для PR: «Реализована Task 2 M2: StateFlow-состояния каталога/подробностей, debounce поиска 300 мс, немедленные фильтры/сортировка, пагинация и retry с защитой от запоздалых ответов. Metadata загружается независимо, сохранённые подробности открываются без HTTP. Добавлены 25 тестов; всего 93 PASS, Android build/lint/release fixture check и проверка контракта прошли. Независимое ревью без замечаний. UI/API/зависимости не менялись; подключение экранов, REMOTE-хранилище, live HTTP и iOS остаются следующими задачами».
+
 ## M2 Task 1: HTTP-клиент и MockEngine — 25 октября 2026
 
 По поручению пользователя выполнена **только задача 1** [плана сетевой части M2](superpowers/plans/2026-10-25-mobile-catalog-api.md). Ветка `feat/mobile-catalog-api` создана от main `b62306583814d6634bad8dddf826529ba850e872` в отдельной рабочей копии `C:/Users/user/.codex/worktrees/mobile-catalog-api/HackAtlas`. Исходная рабочая копия и её изменения сохранены; commit/push/PR выполняет пользователь.
