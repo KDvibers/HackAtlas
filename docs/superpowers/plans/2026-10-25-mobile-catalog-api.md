@@ -10,7 +10,7 @@
 
 **Spec:** [ROADMAP: M2](../../ROADMAP.md#m2--основные-сценарии), [PROJECT](../../PROJECT.md), [TECHNOLOGY_DECISIONS](../../TECHNOLOGY_DECISIONS.md), [Starter API](../../../api/README.md), [OpenAPI](../../../api/openapi.yaml), [STYLE_LOCK](../../STYLE_LOCK.md), [текущее состояние mobile](../../STATUS_MOBILE.md), [семантика B1](../../../backend/CATALOG.md). Этот план покрывает только REMOTE-интеграцию внутри M2; весь M2 не объявляется завершённым.
 
-**Статус исполнения:** Task 1 завершена и закоммичена пользователем как `f5f025a`. По отдельному поручению 26 октября завершена Task 2: 25 новых / 93 всего теста, Android build/lint/release fixture check прошли, независимое ревью без замечаний. Изменения Task 2 оставлены для пользовательского commit/push. Tasks 3–5 не начаты и не разрешены автоматически этим планом. Работа продолжается в `feat/mobile-catalog-api`, созданной от main `b62306583814d6634bad8dddf826529ba850e872` после merge PR #4.
+**Статус исполнения:** Task 1 и Task 2 завершены и закоммичены пользователем (`f5f025a`, `35a1168`). По отдельному поручению 26 октября завершена Task 3: 31 целевой / 110 всего тестов, Android build/lint/release fixture check прошли; независимое ревью без замечаний. Изменения Task 3 оставлены для пользовательского commit/push. Tasks 4–5 не начаты и не разрешены автоматически этим планом. Работа продолжается в `feat/mobile-catalog-api`, созданной от main `b623065` после merge PR #4.
 
 ## Что сделать пользователю сейчас
 
@@ -69,7 +69,7 @@
 
 - [x] Прочитаны AGENTS, спецификации и план, проверены status/main/SDK. Создана отдельная рабочая копия `feat/mobile-catalog-api` от main `b623065`; локальные план/статус перенесены, исходные изменения сохранены без stash.
 - [ ] Зафиксировать доступный для тестового устройства API URL. Если URL ещё нет, пометить только финальный live smoke зависимым; задачи с MockEngine выполнять независимо.
-- [x] Получены отдельные поручения Task 1 (25 октября) и Task 2 (26 октября). Остальные задачи остаются планом и не начинаются автоматически.
+- [x] Получены отдельные поручения Task 1 (25 октября), Task 2 и Task 3 (26 октября). Остальные задачи остаются планом и не начинаются автоматически.
 
 ## Task 1: проверяемый HTTP repository
 
@@ -103,12 +103,12 @@
 
 **Interfaces:** потребляет нормализованный base URL из задачи 1; производит `GuestStoreScope`, `SavedEventKey`, `SavedGuestEvent.key`, key-aware remove/save для задачи 4.
 
-- [ ] Написать `legacyBundledDemoStillOpens`: старый `demo-v1.json`, version=1, scope=`demo-guest` читается без переписывания при открытии. Сохранить все существующие тесты атомарности, неизвестной версии, порчи файла, идемпотентности и отмены.
-- [ ] Написать `serverDemoAndRealAreSeparate`: REMOTE store принимает оба `isDemo`, сохраняет одинаковый id с true/false как две разные копии, `remove(SavedEventKey(id,true))` оставляет false. Встроенный DEMO по-прежнему принимает только `isDemo=true`; прежний тест запрета любого server DEMO заменить тестами происхождения, не удалить защиту от смешения.
-- [ ] Написать `originsCannotReadOrOverwriteEachOther`: разные scheme/host/port/base path дают разные имена файлов и разные ожидаемые scope; несоответствие scope не перезаписывает данные. Нормализация завершающего `/` и default port даёт одну identity. Файл никогда не называется сырым URL.
-- [ ] Зафиксировать формат: сохранить поля GuestDocument и version=1; bundled scope=`demo-guest`, REMOTE scope=`remote-guest@<canonicalBaseUrl>`. В remote entries уникальны пары `(isDemo,id)`, не только id. Файл REMOTE: `remote-<sha256 canonicalBaseUrl>-v1.json`; старый bundled файл остаётся на месте. Незнакомые/старые иные remote-файлы не удалять и не импортировать молча.
-- [ ] Запустить целевые tests до реализации (FAIL), затем реализовать новые scope/key и platform filenames с прежней атомарной записью. Команда: `./gradlew.bat :shared:testDebugUnitTest --tests "*GuestSavedRepositoryTest" --tests "*GuestStoreScopeTest" --tests "*AtomicGuestFileStorageTest" --console=plain`; ожидается PASS. iOS digest/файловую часть на Windows пометить непроверенной до Mac.
-- [ ] REMOTE seed всегда пустой. Source фиксирован на процесс; изменение настроек источника требует нового AppState/перезапуска, не меняет scope открытого repository. Не вводить аккаунты или серверные saved endpoints.
+- [x] Написать `legacyBundledDemoStillOpens`: старый `demo-v1.json`, version=1, scope=`demo-guest` читается без переписывания при открытии. Сохранить все существующие тесты атомарности, неизвестной версии, порчи файла, идемпотентности и отмены.
+- [x] Написать `serverDemoAndRealAreSeparate`: REMOTE store принимает оба `isDemo`, сохраняет одинаковый id с true/false как две разные копии, `remove(SavedEventKey(id,true))` оставляет false. Встроенный DEMO по-прежнему принимает только `isDemo=true`; прежний тест запрета любого server DEMO заменить тестами происхождения, не удалить защиту от смешения.
+- [x] Написать `originsCannotReadOrOverwriteEachOther`: разные scheme/host/port/base path дают разные имена файлов и разные ожидаемые scope; несоответствие scope не перезаписывает данные. Нормализация завершающего `/` и default port даёт одну identity. Файл никогда не называется сырым URL.
+- [x] Зафиксировать формат: сохранить поля GuestDocument и version=1; bundled scope=`demo-guest`, REMOTE scope=`remote-guest@<canonicalBaseUrl>`. В remote entries уникальны пары `(isDemo,id)`, не только id. Файл REMOTE: `remote-<sha256 canonicalBaseUrl>-v1.json`; старый bundled файл остаётся на месте. Незнакомые/старые иные remote-файлы не удалять и не импортировать молча.
+- [x] Запустить целевые tests до реализации (FAIL), затем реализовать новые scope/key и platform filenames с прежней атомарной записью. Команда: `./gradlew.bat :shared:testDebugUnitTest --tests "*GuestSavedRepositoryTest" --tests "*GuestStoreScopeTest" --tests "*AtomicGuestFileStorageTest" --console=plain`; ожидается PASS. iOS digest/файловую часть на Windows пометить непроверенной до Mac.
+- [x] REMOTE seed всегда пустой. Source фиксирован на процесс; изменение настроек источника требует нового AppState/перезапуска, не меняет scope открытого repository. Не вводить аккаунты или серверные saved endpoints.
 
 ## Task 4: связать источники, экраны и platform hosts
 

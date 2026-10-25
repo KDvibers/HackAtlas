@@ -1,5 +1,43 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2 Task 3: источники REMOTE snapshots — 26 октября 2026
+
+По отдельному поручению пользователя реализована Task 3 [плана M2](superpowers/plans/2026-10-25-mobile-catalog-api.md), последовательно, поверх пользовательского commit `35a11683dc212a8ffdb0802be66bb62b8425aadd` (Task 2), в ветке `feat/mobile-catalog-api`. Commit/push остаются пользователю.
+
+Изменения:
+
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/GuestStoreScope.kt`: immutable BundledDemo/Remote, нормализованный API origin и составной SavedEventKey(id, isDemo).
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/data/StorageNamespace.kt` и actual-файлы `mobile/shared/src/androidMain/kotlin/dev/hackatlas/mobile/data/StorageNamespace.android.kt`, `mobile/shared/src/iosMain/kotlin/dev/hackatlas/mobile/data/StorageNamespace.ios.kt`: имя REMOTE-файла `remote-<sha256 UTF-8 canonicalBaseUrl>-v1.json`. SHA-256 реализован платформенными API, новых зависимостей нет.
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/data/GuestSavedRepository.kt`: document version=1 и поля сохранены; bundled scope=`demo-guest`, REMOTE scope=`remote-guest@<canonicalBaseUrl>`. Сохранение, toggle и удаление различают одинаковые ID с разным isDemo. REMOTE принимает серверное DEMO и реальные события; BundledDemo по-прежнему принимает только isDemo=true. REMOTE seed обязан быть пустым.
+- `mobile/shared/src/androidMain/kotlin/dev/hackatlas/mobile/data/AndroidGuestSnapshotStorage.kt`, `mobile/shared/src/iosMain/kotlin/dev/hackatlas/mobile/data/IosGuestSnapshotStorage.kt`: добавлены конструкторы с явным scope; пути прежних Boolean-конструкторов сохранены для текущих hosts. Атомарная запись не менялась. Старые/неизвестные remote-файлы не удаляются и не импортируются в новый origin.
+- Тесты `GuestSavedRepositoryTest.kt`, `GuestStoreScopeTest.kt`, `LegacyGuestSnapshot.kt` в `mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/data/` и `mobile/shared/src/androidUnitTest/kotlin/dev/hackatlas/mobile/data/AtomicGuestFileStorageTest.kt`. Legacy JSON получен из прежней реализации до изменения и зафиксирован; тест не генерирует его новым serializer.
+
+Проверки на Windows/JDK 21:
+
+1. До реализации целевые тесты завершились FAIL из-за отсутствующих scope/key/namespacing API. После реализации из `mobile/`: `./gradlew.bat :shared:testDebugUnitTest --tests "*GuestSavedRepositoryTest" --tests "*GuestStoreScopeTest" --tests "*AtomicGuestFileStorageTest" --console=plain --offline` — **31/31 PASS**, exit 0 (21 repository, 6 scope/digest, 4 filesystem).
+2. `./gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --console=plain --offline` — **BUILD SUCCESSFUL**, exit 0; **110 тестов, 0 failures/errors/skipped**, lint 0 issues, release fixture check PASS. Число тестов выросло на 17; прежний запрет server DEMO заменён проверкой происхождения и защиты bundled.
+3. Из корня: `C:/Users/user/Desktop/HackAtlas/mobile/build/pr4-contract-venv/Scripts/python.exe -X utf8 scripts/validate_contract.py` — PASS: OpenAPI/правила/6 fixtures; `git diff --check` — PASS.
+
+Тесты проверили старый `demo-v1.json` без перезаписи/reseed, пару DEMO/real с одинаковым ID, восстановление после создания нового repository, изоляцию scheme/host/port/base path, одинаковую identity default port/trailing slash, несовпадение document scope без перезаписи, ошибку записи без потери StateFlow/диска и сохранение старых неизвестных файлов. Прежние тесты cancellation, corruption/version и атомарной замены сохранены. Digest проверен на известных пустом/abc/UTF-8 векторах и заданном API URL.
+
+Логи: ignored `.superpowers/sdd/2026-10-25-mobile-catalog-api/task-3-*.log`. APK: `mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk`, SHA-256 `32EF3FD052E150335472C331D03046BE564FDAF614D9D4E99BB74FBEB6028F23`.
+
+Итоговый независимый read-only reviewer проверил рабочий diff относительно `35a1168`, новые файлы, совместимость, происхождение данных, точное удаление и исходники Native digest. Critical/Important/Minor замечаний нет; Task 3 готова к пользовательскому коммиту. Проверены логи/XML 110 тестов и `git diff --check`. Код после общей проверки не менялся, повторная сборка не требовалась. Рабочая копия и логи сохранены; чужие `.agents/` и `.interface-design/` не менялись.
+
+Совместимость: `remove(id)` оставлен только для старого bundled UI; REMOTE требует `SavedEventKey`. Boolean-конструкторы storage остаются для прежних hosts до Task 4. Nonempty REMOTE seed отклоняется до I/O. Scope неизменен в открытом repository; выбор источника на процесс и согласованное связывание storage/repository/экранов — Task 4. HTTP URL здесь допустим как identity dev-хранилища, сетевую политику это не меняет; release HTTPS проверяется при подключении hosts.
+
+iOS код опирается на [binding Kotlin 2.2.21](https://raw.githubusercontent.com/JetBrains/kotlin/v2.2.21/kotlin-native/platformLibs/src/platform/ios/CommonCrypto.def), [CommonDigest Apple](https://raw.githubusercontent.com/apple-oss-distributions/CommonCrypto/main/include/CommonDigest.h) и [правила C interop](https://kotlinlang.org/docs/native-c-interop.html). Mac/Xcode недоступны: Native compile/link, iOS digest/файловое поведение и UIKit host не проверены. Файловые тесты выполнены на JVM во временных папках; UI smoke, live backend и физические устройства не запускались. Реальные пользовательские файлы не мигрировались и не удалялись.
+
+API, backend, зависимости, текущие экраны и дизайн не менялись. Новых screenshots нет. Task 4 не начата; REMOTE пока не включён в приложении.
+
+Сообщение напарнику для ручной передачи: «Готова изоляция локальных копий по адресу API и isDemo. Старое гостевое DEMO читается без перезаписи, контракт не меняли. Дальше подключаем stores/источники к экранам; для живой проверки нужны base URL, запуск и ID опубликованного события».
+
+Границы итогового ревью: Task 4 должен связать один выбранный source, один repository owner, scoped storage и callbacks с SavedEventKey. Холодный REMOTE startup, detail-before-save и успешная запись с точки зрения UI пока не проверены; auth/account/import не входят в этот этап. Одновременная запись несколькими repository/process owners не поддерживается текущей архитектурой. Дополнительные URL-алиасы сверх правил CatalogSource могут создавать отдельные хранилища. Следующий отдельный этап — Task 4, подключение источников/stores/экранов; автоматически он не начинается.
+
+Рекомендуемый заголовок PR: `feat(mobile): isolate guest snapshots by API source`.
+
+Описание для PR: «Реализована Task 3 M2: REMOTE snapshots разделены по нормализованному API URL, ключ записи учитывает id/isDemo. Старый demo-v1.json и формат version=1 совместимы; чужие/неизвестные файлы сохраняются без импорта или сброса. Добавлены scoped storage adapters и SHA-256 namespaces для Android/iOS. 31 целевой / 110 всего тестов прошли, Android build/lint/release fixture check и контракт — PASS; независимое ревью без замечаний. UI/API/зависимости не менялись. Native/iOS и live-интеграция требуют отдельной проверки».
+
 ## M2 Task 2: состояния каталога и подробностей — 26 октября 2026
 
 По поручению пользователя реализована только Task 2 [плана M2](superpowers/plans/2026-10-25-mobile-catalog-api.md). Работа последовательно выполнена в существующей ветке `feat/mobile-catalog-api`, поверх пользовательского commit `f5f025ad185dc47a8186d2f1a035676ec42422f6` (Task 1). Commit/push остаются пользователю.

@@ -1,6 +1,8 @@
 package dev.hackatlas.mobile.data
 
 import dev.hackatlas.mobile.domain.HackathonDetail
+import dev.hackatlas.mobile.domain.GuestStoreScope
+import dev.hackatlas.mobile.domain.SavedEventKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -22,7 +24,10 @@ interface GuestSnapshotStorage {
 
 /** savedAt describes this local copy, never a verification of the official source. */
 @Serializable
-data class SavedGuestEvent(val detail: HackathonDetail, val savedAt: String)
+data class SavedGuestEvent(val detail: HackathonDetail, val savedAt: String) {
+    // Computed property: the version-1 serialized entry still contains only detail and savedAt.
+    val key: SavedEventKey get() = SavedEventKey(detail.hackathon.id, detail.hackathon.isDemo)
+}
 
 @Serializable
 private data class GuestDocument(val version: Int, val scope: String, val entries: List<SavedGuestEvent>)
@@ -36,7 +41,7 @@ class GuestStorageException(cause: Exception? = null) : Exception("Guest saved d
  */
 class GuestSavedRepository private constructor(
     private val storage: GuestSnapshotStorage,
-    private val scope: String,
+    val scope: GuestStoreScope,
     initial: List<SavedGuestEvent>,
     private val now: () -> String,
 ) {
@@ -45,26 +50,35 @@ class GuestSavedRepository private constructor(
     val entries = mutableEntries.asStateFlow()
 
     suspend fun toggle(detail: HackathonDetail) = mutex.withLock {
-        val id = detail.hackathon.id
+        guarded { validateDetail(detail, scope) }
+        val key = SavedEventKey(detail.hackathon.id, detail.hackathon.isDemo)
         val current = mutableEntries.value
-        val next = if (current.any { it.detail.hackathon.id == id }) current.filterNot { it.detail.hackathon.id == id }
+        val next = if (current.any { it.key == key }) current.filterNot { it.key == key }
             else listOf(SavedGuestEvent(detail, now())) + current
         commit(next)
     }
 
-    suspend fun remove(id: String) = mutex.withLock {
+    /** Compatibility for the existing bundled UI. REMOTE callers must supply a classification. */
+    suspend fun remove(id: String) {
+        require(scope == GuestStoreScope.BundledDemo) { "Remote removal requires SavedEventKey" }
+        remove(SavedEventKey(id, isDemo = true))
+    }
+
+    suspend fun remove(key: SavedEventKey) = mutex.withLock {
         val current = mutableEntries.value
-        if (current.none { it.detail.hackathon.id == id }) return@withLock
-        commit(current.filterNot { it.detail.hackathon.id == id })
+        if (current.none { it.key == key }) return@withLock
+        commit(current.filterNot { it.key == key })
     }
 
     suspend fun save(detail: HackathonDetail) = mutex.withLock {
-        if (mutableEntries.value.any { it.detail.hackathon.id == detail.hackathon.id }) return@withLock
+        guarded { validateDetail(detail, scope) }
+        val key = SavedEventKey(detail.hackathon.id, detail.hackathon.isDemo)
+        if (mutableEntries.value.any { it.key == key }) return@withLock
         commit(listOf(SavedGuestEvent(detail, now())) + mutableEntries.value)
     }
 
     private suspend fun commit(next: List<SavedGuestEvent>) = guarded {
-        val document = GuestDocument(VERSION, scope, next)
+        val document = GuestDocument(VERSION, scope.documentScope, next)
         validate(document, scope)
         // A platform write may finish after UI cancellation. Keep disk and this process's
         // single repository owner consistent across rotation/host disposal.
@@ -80,27 +94,31 @@ class GuestSavedRepository private constructor(
 
         suspend fun open(
             storage: GuestSnapshotStorage,
-            scope: String = "demo-guest",
+            scope: GuestStoreScope = GuestStoreScope.BundledDemo,
             seed: List<HackathonDetail> = emptyList(),
             now: () -> String = { Clock.System.now().toString() },
         ): GuestSavedRepository = guarded {
+            require(scope == GuestStoreScope.BundledDemo || seed.isEmpty()) { "Remote guest stores must start empty" }
             val text = storage.read()
-            val document = if (text == null) GuestDocument(VERSION, scope, seed.map { SavedGuestEvent(it, now()) })
+            val document = if (text == null) GuestDocument(VERSION, scope.documentScope, seed.map { SavedGuestEvent(it, now()) })
                 else json.decodeFromString<GuestDocument>(text)
             validate(document, scope)
             if (text == null) storage.write(json.encodeToString(document))
             GuestSavedRepository(storage, scope, document.entries, now)
         }
 
-        private fun validate(document: GuestDocument, scope: String) {
-            require(document.version == VERSION && document.scope == scope)
-            require(scope == "demo-guest" || scope == "remote-guest")
-            require(document.entries.map { it.detail.hackathon.id }.distinct().size == document.entries.size)
+        private fun validate(document: GuestDocument, scope: GuestStoreScope) {
+            require(document.version == VERSION && document.scope == scope.documentScope)
+            require(document.entries.map { it.key }.distinct().size == document.entries.size)
             document.entries.forEach {
-                require(it.detail.hackathon.id.isNotBlank())
-                require(it.detail.hackathon.isDemo == (scope == "demo-guest"))
+                validateDetail(it.detail, scope)
                 Instant.parse(it.savedAt)
             }
+        }
+
+        private fun validateDetail(detail: HackathonDetail, scope: GuestStoreScope) {
+            require(detail.hackathon.id.isNotBlank())
+            require(scope != GuestStoreScope.BundledDemo || detail.hackathon.isDemo)
         }
 
         private suspend inline fun <T> guarded(block: () -> T): T = try {
