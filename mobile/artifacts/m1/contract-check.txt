@@ -1,0 +1,7 @@
+PASS catalog-page.json: HackathonPage
+PASS catalog-empty.json: HackathonPage
+PASS hackathon-detail.json: HackathonDetail
+PASS profile.json: Profile
+PASS filter-metadata.json: FilterMetadata
+PASS validation-error.json: Problem
+PASS local references and demo schemas; server/build not tested.

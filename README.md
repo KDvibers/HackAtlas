@@ -2,7 +2,9 @@
 
 Мобильный каталог хакатонов для Android и iOS: общий клиент на Kotlin Multiplatform + Compose Multiplatform и сервер на Java 21 + Spring Boot.
 
-**Состояние:** G0 объединён в main. Поверх B0 локально реализован B1: публичный API каталога, поиск, фильтры, детали, metadata и явный DEMO seed. Команды запуска и результаты проверок — в [backend README](backend/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Авторизация относится к следующему отдельному этапу B2. Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
+**Состояние:** G0, B0 и B1 объединены в main (B1 — PR #3). Реализован публичный API каталога, поиск, фильтры, детали, metadata и явный DEMO seed. Команды запуска и результаты проверок — в [backend README](backend/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Авторизация относится к следующему отдельному этапу B2. Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
+
+**Мобильная часть:** реализованы M0/M1 и независимая от backend часть M2: постоянные гостевые закладки, офлайн-копии подробностей и календарь. Визуал M1 утверждён; Android проверен, iOS требует Mac/Xcode. Подключение REMOTE-каталога остаётся следующим отдельно согласованным шагом. См. [mobile README](mobile/README.md), [статус mobile](docs/STATUS_MOBILE.md) и [результаты M2](mobile/artifacts/m2/review.html).
 
 Репозиторий: [KDvibers/HackAtlas](https://github.com/KDvibers/HackAtlas). Единственный актуальный комплект — **Starter**. Handoff больше не является спецификацией.
 

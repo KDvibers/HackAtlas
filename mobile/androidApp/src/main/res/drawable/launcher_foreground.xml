@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Development launcher mark, not a final approved store icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#E727F4" android:pathData="M34,31h10v18h20v-18h10v46h-10v-18h-20v18h-10z" />
+    <path android:fillColor="#54CCF9" android:pathData="M29,31h3v46h-3zM77,31h2v46h-2z" />
+</vector>

@@ -1,0 +1,22 @@
+[
+  {
+    "name": "bookmark isolation, detail/back, demo registration, profile and saved state",
+    "status": "PASS"
+  },
+  {
+    "name": "bounded search, empty/reset, local filter and return state",
+    "status": "PASS"
+  },
+  {
+    "name": "profile settings, font specimen, Android back and calendar boundary",
+    "status": "PASS"
+  },
+  {
+    "name": "four actual Android screenshots",
+    "status": "PASS"
+  },
+  {
+    "name": "360dp with 1.3x text and 430dp layout captures",
+    "status": "PASS"
+  }
+]

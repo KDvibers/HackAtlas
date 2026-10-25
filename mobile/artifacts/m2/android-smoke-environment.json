@@ -1,0 +1,10 @@
+{
+  "serial": "emulator-5554",
+  "package": "dev.hackatlas.mobile.debug",
+  "apk_sha256": "a81262703280484f67501337726dbbed2c2994c2f0748329f3f6453bc7c6b955",
+  "display_size": "Physical size: 1080x2400\r\nOverride size: 1080x2340",
+  "display_density": "Physical density: 420\r\nOverride density: 443",
+  "font_scale": "1.0",
+  "capture_variants": true,
+  "passed": 6
+}
