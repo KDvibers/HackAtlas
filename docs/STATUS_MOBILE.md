@@ -1,5 +1,79 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2 Task 4: stores и источники в Android/iOS — 26 октября 2026
+
+Пользователь поручил Task 4 после своего commit `0a8ee69f75fe9a5f3087917f529a09e47a8e89de` (Task 3). Реализация последовательная в прежней ветке `feat/mobile-catalog-api`; commit, push и PR остаются пользователю. Task 5 с живым B1 этим поручением не запущена.
+
+Изменено:
+
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/ui/AppState.kt`, `CatalogRuntime.kt`, `RemoteSaveCoordinator.kt`, `BookmarkStore.kt`: один process owner, scoped storage открывается до запуска сетевых запросов, независимые catalog/detail stores. REMOTE не читает fixtures. Полный detail и ID/isDemo проверяются до записи; ошибки HTTP/записи не меняют сохранённое. Удаление не требует сети. Pending keys и очередь неподтверждённых ошибок живут в process StateFlow, поэтому пересоздание host не теряет обратную связь; каждая ошибка снимается явным подтверждением.
+- `.../domain/CatalogConfiguration.kt`, `.../ui/ScreenIdentity.kt`: явный источник из build settings, запрет DEMO/HTTP в release, строковые state keys с source/origin/classification/id/view. Android saved-state не получает custom data class. Старые гостевые файлы и схема Task 3 сохранены.
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/App.kt`, `ui/CatalogueScreen.kt`, `DetailScreen.kt`, `ProfileScreen.kt`, `CalendarScreen.kt`, `Components.kt`, `NetworkStates.kt` и `composeResources/values/strings.xml`: состояния загрузки/ошибки/пустой выдачи, retry/дозагрузка, четыре прежних пресета плюс Казахстан, компактный лист сортировки и metadata-фильтров. Пресеты комбинируются AND. Гостевой REMOTE-профиль без mock user; DEMO подпись только по источнику/событию. Источник/проверка/сохранение различаются. Browser/share пока объясняют недоступность, заявок не создают. Шрифты, изображения, палитра и основные карточки сохранены.
+- `mobile/shared/src/androidMain/kotlin/dev/hackatlas/mobile/data/network/PlatformHttpEngine.android.kt`, соответствующий iosMain и common expect: OkHttp/Darwin 3.3.3. `mobile/gradle/libs.versions.toml`, `shared/build.gradle.kts` — только эти два engine dependency, существующий стек не обновлялся.
+- Android: `mobile/androidApp/src/main/kotlin/dev/hackatlas/mobile/{HackAtlasApplication,MainActivity}.kt`, manifests main/debug, `build.gradle.kts`: INTERNET, immutable source на процесс, отдельные debug/release URL; debug HTTP требует explicit opt-in и XML только для точного host. Release manifest `usesCleartextTraffic=false`, без debug network-security XML.
+- iOS: `mobile/shared/src/iosMain/kotlin/dev/hackatlas/mobile/MainViewController.kt`, Swift host, Info.plist, project.pbxproj — build settings `HACKATLAS_SOURCE`/`HACKATLAS_API_BASE_URL`, один runtime и Darwin. ATS исключений нет, REMOTE только HTTPS. Это подготовленный исходный код, не подтверждение сборки iOS.
+- Тесты: `mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/data/OfflineBootstrapTest.kt`, `ui/RemoteSaveCoordinatorTest.kt`, `SourceNavigationTest.kt`, `BookmarkStoreTest.kt`; новый emulator-only `mobile/scripts/android_catalog_smoke.py`. Настройка и команды — `mobile/README.md`, версии — `mobile/TOOLCHAIN.md`.
+
+Проверки на Windows/JBR 21/SDK 36:
+
+1. TDD: bootstrap/save tests и config/filter/navigation tests сначала FAIL из-за отсутствующих API, затем PASS: **12 + 4 целевых теста**. При исправлении замечания ревью добавлены ещё 3 RED→GREEN теста смены наблюдателя во время сохранения, успешной записи/офлайн удаления/восстановления и независимого подтверждения нескольких ошибок. Новых тестов относительно Task 3 — 16, исходные offline tests сохранены.
+2. Из `mobile`: `./gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --console=plain --offline` — BUILD SUCCESSFUL; **126 tests, 0 failures/errors/skipped**, lint 0 issues, release без fixture JSON. XML/BuildConfig release проверены: REMOTE, пустой URL до локальной настройки, `ALLOW_DEBUG_HTTP=false`, cleartext=false. После исправления ревью повторный полный прогон прошёл (`task-4-review-verification.log`).
+3. `scripts/validate_contract.py` — PASS OpenAPI/правила/6 fixtures; `git diff --check` — PASS. API, backend, CI и дизайн-ассеты не изменены.
+4. Существующий `android_m2_smoke.py` с отдельным каталогом результатов: **6 PASS**, включая перезапуск, авиарежим/savedOnly, календарь, неизвестную версию без сброса, пустое хранилище без reseed, 360dp/130% text. Файл debug-приложения и настройки эмулятора восстановлены в finally. Первая попытка до установки завершённой сборки не получила UI hierarchy; после установки актуального APK сценарий прошёл.
+
+Финальный REMOTE mock smoke после исправления ревью прошёл **7 групп**: полная копия из detail; AND/metadata retry; пагинация; pending/error при пересоздании Activity; 404 и одинаковый ID с двумя isDemo; холодное сохранённое/детали/календарь без HTTP; отсутствие auth и неизменность bundled файла. Тестовый HTTP/1.0 стенд сначала дал EOF; переведён на HTTP/1.1 с явным Connection: close. После одного непостоянного сетевого сбоя повторный полный прогон прошёл без ослабления проверок. Диагностический println удалён, RemoteCatalogRepository остался без diff. Отдельно добавлен RED→GREEN тест сохранения исходной NEWEST-сортировки DEMO; REMOTE сохраняет DEADLINE_ASC. [Галерея](../mobile/artifacts/m2-catalog/review.html) содержит реальные Android screenshots: три основных экрана, типографику, состояния REMOTE, 360dp/130% text и 430dp. Проверены все 24 ссылки галереи; визуально проверены каталог, подробности и профиль, включая узкий экран. Результат итогового ревью и исправление указаны ниже. Логи — ignored `.superpowers/sdd/2026-10-25-mobile-catalog-api/task-4-*.log`.
+
+Финальный DEMO APK: `mobile/build/task4/HackAtlas-demo-debug.apk`, SHA-256 `8C9D592ADCD1BC1C7D9EF9946D55770A8FCFA908516360E7B3742AF07B7C212B`. APK находится в ignored build-каталоге и не добавляется в Git. [Заголовок и описание PR](../mobile/artifacts/m2-catalog/PR_DESCRIPTION.md) подготовлены для ручной публикации.
+
+Итоговое независимое read-only ревью: 1 Important P2 — потеря pending/error feedback при пересоздании Activity во время сохранения; Critical/Minor нет. Замечание подтверждено по владению состоянием и исправлено в одном проходе через BookmarkStore; новые тесты и полная проверка 126 тестов прошли. Второе независимое ревью не выполнялось. Отложенных мелких замечаний нет. Ограничения reviewer по Native/live B1, исключённым функциям, автообновлению каталога, расширенной эквивалентности URL и полной валидации схемы приняты и зафиксированы в ledger; они не считаются проверенными сценариями.
+
+Происхождение проверок и SHA-256 обоих APK записаны в `mobile/artifacts/m2-catalog/verification.json`: исходные 6 offline smoke групп выполнены до исправления lifecycle, финальные 7 REMOTE групп — после него и повторно покрывают затронутые общие/offline сценарии. В первом прогоне после исправления однократное чтение UI после холодного запуска не увидело карточку; причина не установлена. Ограниченное ожидание рендера без сетевого retry и сбор UI при сбое добавлены в smoke-скрипт; полный повтор прошёл. Android event log подтверждает два пересоздания Activity в том же процессе во время ожидания/ошибки. Основные DEMO screenshots обновлены с финального APK.
+
+Ограничения: Mac/Xcode отсутствуют, поэтому Native/Swift/Darwin compile/link и iPhone не проверены. Реальный B1/HTTPS сервер и физический Android не проверены; локальный synthetic HTTP smoke не заменяет Task 5. Auth, серверные saved, guest import, browser/share, reminders и remote images не входят. `.agents/` и `.interface-design/` пользователя не менялись.
+
+Сообщение напарнику для ручной передачи: «Подключили shared stores и REMOTE к мобильным экранам по Starter без изменения API. Для следующей приёмки нужны доступный base URL с /api/v1, команды запуска и ID опубликованного события; уточни DEMO seed. Вход и приватные endpoints пока не подключаем».
+
+Ниже — исторические отчёты Task 1–3 и M0/M1; их прежние ограничения по отсутствию UI-интеграции относятся к тем этапам.
+
+
+## M2 Task 3: источники REMOTE snapshots — 26 октября 2026
+
+По отдельному поручению пользователя реализована Task 3 [плана M2](superpowers/plans/2026-10-25-mobile-catalog-api.md), последовательно, поверх пользовательского commit `35a11683dc212a8ffdb0802be66bb62b8425aadd` (Task 2), в ветке `feat/mobile-catalog-api`. Commit/push остаются пользователю.
+
+Изменения:
+
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/GuestStoreScope.kt`: immutable BundledDemo/Remote, нормализованный API origin и составной SavedEventKey(id, isDemo).
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/data/StorageNamespace.kt` и actual-файлы `mobile/shared/src/androidMain/kotlin/dev/hackatlas/mobile/data/StorageNamespace.android.kt`, `mobile/shared/src/iosMain/kotlin/dev/hackatlas/mobile/data/StorageNamespace.ios.kt`: имя REMOTE-файла `remote-<sha256 UTF-8 canonicalBaseUrl>-v1.json`. SHA-256 реализован платформенными API, новых зависимостей нет.
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/data/GuestSavedRepository.kt`: document version=1 и поля сохранены; bundled scope=`demo-guest`, REMOTE scope=`remote-guest@<canonicalBaseUrl>`. Сохранение, toggle и удаление различают одинаковые ID с разным isDemo. REMOTE принимает серверное DEMO и реальные события; BundledDemo по-прежнему принимает только isDemo=true. REMOTE seed обязан быть пустым.
+- `mobile/shared/src/androidMain/kotlin/dev/hackatlas/mobile/data/AndroidGuestSnapshotStorage.kt`, `mobile/shared/src/iosMain/kotlin/dev/hackatlas/mobile/data/IosGuestSnapshotStorage.kt`: добавлены конструкторы с явным scope; пути прежних Boolean-конструкторов сохранены для текущих hosts. Атомарная запись не менялась. Старые/неизвестные remote-файлы не удаляются и не импортируются в новый origin.
+- Тесты `GuestSavedRepositoryTest.kt`, `GuestStoreScopeTest.kt`, `LegacyGuestSnapshot.kt` в `mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/data/` и `mobile/shared/src/androidUnitTest/kotlin/dev/hackatlas/mobile/data/AtomicGuestFileStorageTest.kt`. Legacy JSON получен из прежней реализации до изменения и зафиксирован; тест не генерирует его новым serializer.
+
+Проверки на Windows/JDK 21:
+
+1. До реализации целевые тесты завершились FAIL из-за отсутствующих scope/key/namespacing API. После реализации из `mobile/`: `./gradlew.bat :shared:testDebugUnitTest --tests "*GuestSavedRepositoryTest" --tests "*GuestStoreScopeTest" --tests "*AtomicGuestFileStorageTest" --console=plain --offline` — **31/31 PASS**, exit 0 (21 repository, 6 scope/digest, 4 filesystem).
+2. `./gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --console=plain --offline` — **BUILD SUCCESSFUL**, exit 0; **110 тестов, 0 failures/errors/skipped**, lint 0 issues, release fixture check PASS. Число тестов выросло на 17; прежний запрет server DEMO заменён проверкой происхождения и защиты bundled.
+3. Из корня: `C:/Users/user/Desktop/HackAtlas/mobile/build/pr4-contract-venv/Scripts/python.exe -X utf8 scripts/validate_contract.py` — PASS: OpenAPI/правила/6 fixtures; `git diff --check` — PASS.
+
+Тесты проверили старый `demo-v1.json` без перезаписи/reseed, пару DEMO/real с одинаковым ID, восстановление после создания нового repository, изоляцию scheme/host/port/base path, одинаковую identity default port/trailing slash, несовпадение document scope без перезаписи, ошибку записи без потери StateFlow/диска и сохранение старых неизвестных файлов. Прежние тесты cancellation, corruption/version и атомарной замены сохранены. Digest проверен на известных пустом/abc/UTF-8 векторах и заданном API URL.
+
+Логи: ignored `.superpowers/sdd/2026-10-25-mobile-catalog-api/task-3-*.log`. APK: `mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk`, SHA-256 `32EF3FD052E150335472C331D03046BE564FDAF614D9D4E99BB74FBEB6028F23`.
+
+Итоговый независимый read-only reviewer проверил рабочий diff относительно `35a1168`, новые файлы, совместимость, происхождение данных, точное удаление и исходники Native digest. Critical/Important/Minor замечаний нет; Task 3 готова к пользовательскому коммиту. Проверены логи/XML 110 тестов и `git diff --check`. Код после общей проверки не менялся, повторная сборка не требовалась. Рабочая копия и логи сохранены; чужие `.agents/` и `.interface-design/` не менялись.
+
+Совместимость: `remove(id)` оставлен только для старого bundled UI; REMOTE требует `SavedEventKey`. Boolean-конструкторы storage остаются для прежних hosts до Task 4. Nonempty REMOTE seed отклоняется до I/O. Scope неизменен в открытом repository; выбор источника на процесс и согласованное связывание storage/repository/экранов — Task 4. HTTP URL здесь допустим как identity dev-хранилища, сетевую политику это не меняет; release HTTPS проверяется при подключении hosts.
+
+iOS код опирается на [binding Kotlin 2.2.21](https://raw.githubusercontent.com/JetBrains/kotlin/v2.2.21/kotlin-native/platformLibs/src/platform/ios/CommonCrypto.def), [CommonDigest Apple](https://raw.githubusercontent.com/apple-oss-distributions/CommonCrypto/main/include/CommonDigest.h) и [правила C interop](https://kotlinlang.org/docs/native-c-interop.html). Mac/Xcode недоступны: Native compile/link, iOS digest/файловое поведение и UIKit host не проверены. Файловые тесты выполнены на JVM во временных папках; UI smoke, live backend и физические устройства не запускались. Реальные пользовательские файлы не мигрировались и не удалялись.
+
+API, backend, зависимости, текущие экраны и дизайн не менялись. Новых screenshots нет. Task 4 не начата; REMOTE пока не включён в приложении.
+
+Сообщение напарнику для ручной передачи: «Готова изоляция локальных копий по адресу API и isDemo. Старое гостевое DEMO читается без перезаписи, контракт не меняли. Дальше подключаем stores/источники к экранам; для живой проверки нужны base URL, запуск и ID опубликованного события».
+
+Границы итогового ревью: Task 4 должен связать один выбранный source, один repository owner, scoped storage и callbacks с SavedEventKey. Холодный REMOTE startup, detail-before-save и успешная запись с точки зрения UI пока не проверены; auth/account/import не входят в этот этап. Одновременная запись несколькими repository/process owners не поддерживается текущей архитектурой. Дополнительные URL-алиасы сверх правил CatalogSource могут создавать отдельные хранилища. Следующий отдельный этап — Task 4, подключение источников/stores/экранов; автоматически он не начинается.
+
+Рекомендуемый заголовок PR: `feat(mobile): isolate guest snapshots by API source`.
+
+Описание для PR: «Реализована Task 3 M2: REMOTE snapshots разделены по нормализованному API URL, ключ записи учитывает id/isDemo. Старый demo-v1.json и формат version=1 совместимы; чужие/неизвестные файлы сохраняются без импорта или сброса. Добавлены scoped storage adapters и SHA-256 namespaces для Android/iOS. 31 целевой / 110 всего тестов прошли, Android build/lint/release fixture check и контракт — PASS; независимое ревью без замечаний. UI/API/зависимости не менялись. Native/iOS и live-интеграция требуют отдельной проверки».
+
 ## M2 Task 2: состояния каталога и подробностей — 26 октября 2026
 
 По поручению пользователя реализована только Task 2 [плана M2](superpowers/plans/2026-10-25-mobile-catalog-api.md). Работа последовательно выполнена в существующей ветке `feat/mobile-catalog-api`, поверх пользовательского commit `f5f025ad185dc47a8186d2f1a035676ec42422f6` (Task 1). Commit/push остаются пользователю.

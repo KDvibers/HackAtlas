@@ -31,10 +31,10 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun IconAction(icon: AtlasIcon, label: String, onClick: () -> Unit, tint: Color = AtlasColors.TextSecondary, modifier: Modifier = Modifier) {
-    Box(modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
+fun IconAction(icon: AtlasIcon, label: String, onClick: () -> Unit, tint: Color = AtlasColors.TextSecondary, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    Box(modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick)
         .semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
-        OutlineIcon(icon, Modifier.size(22.dp), tint)
+        OutlineIcon(icon, Modifier.size(22.dp), if (enabled) tint else AtlasColors.TextMuted)
     }
 }
 
@@ -109,7 +109,7 @@ fun MetaLine(icon: AtlasIcon, text: String, modifier: Modifier = Modifier, color
 }
 
 @Composable
-fun HackathonCard(event: Hackathon, saved: Boolean, format: DisplayFormat, onOpen: () -> Unit, onBookmark: () -> Unit) {
+fun HackathonCard(event: Hackathon, saved: Boolean, format: DisplayFormat, onOpen: () -> Unit, onBookmark: () -> Unit, bookmarkEnabled: Boolean = true) {
     val shape = RoundedCornerShape(14.dp)
     Box(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border, shape)
         .clickable(role = Role.Button, onClick = onOpen)) {
@@ -119,15 +119,15 @@ fun HackathonCard(event: Hackathon, saved: Boolean, format: DisplayFormat, onOpe
             Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to AtlasColors.Surface, .40f to AtlasColors.Surface.copy(alpha = .91f), .82f to Color.Transparent)))
         }
         Column(Modifier.padding(start = 14.dp, top = 11.dp, end = 12.dp, bottom = 12.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            TechLabel("— ${event.topics.firstOrNull()?.label?.uppercase().orEmpty()} —", Modifier.padding(end = 40.dp))
+            TechLabel("— ${event.topics.firstOrNull()?.label?.uppercase().orEmpty()} —" + if (event.isDemo) " · ${stringResource(Res.string.demo_label)}" else "", Modifier.padding(end = 40.dp))
             Text(event.title, Modifier.fillMaxWidth(.84f), style = MaterialTheme.typography.titleLarge, color = AtlasColors.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             MetaLine(AtlasIcon.Calendar, format.range(event), Modifier.fillMaxWidth(.76f))
             MetaLine(AtlasIcon.Pin, format.location(event), Modifier.fillMaxWidth(.7f))
             MetaLine(AtlasIcon.Trophy, format.prize(event.prize), Modifier.fillMaxWidth(.7f), AtlasColors.TextPrimary)
             Text("${stringResource(Res.string.deadline_short)} ${format.date(event.registrationDeadline, false)}", Modifier.fillMaxWidth(.73f), color = AtlasColors.TextMuted, style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
         }
-        IconAction(AtlasIcon.Bookmark, stringResource(if (saved) Res.string.unsave_event else Res.string.save_event), onBookmark,
-            if (saved) AtlasColors.Primary else AtlasColors.TextSecondary, Modifier.align(Alignment.TopEnd))
+        IconAction(AtlasIcon.Bookmark, stringResource(if (!bookmarkEnabled) Res.string.saving else if (saved) Res.string.unsave_event else Res.string.save_event), onBookmark,
+            if (saved) AtlasColors.Primary else AtlasColors.TextSecondary, Modifier.align(Alignment.TopEnd), enabled = bookmarkEnabled)
         Text(stringResource(when (event.artwork) {
             Artwork.FINTECH_CITY -> Res.string.card_fintech_kicker
             Artwork.GAMEPAD -> Res.string.card_gamedev_kicker
@@ -138,12 +138,13 @@ fun HackathonCard(event: Hackathon, saved: Boolean, format: DisplayFormat, onOpe
 }
 
 @Composable
-fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Unit, onRemove: () -> Unit) {
+fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Unit, onRemove: () -> Unit, showDemoLabel: Boolean = true) {
     val shape = RoundedCornerShape(11.dp)
     Box(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border.copy(alpha = .65f), shape).clickable(role = Role.Button, onClick = onOpen)) {
         ArtworkView(event.artwork, Modifier.align(Alignment.CenterEnd).width(105.dp).height(75.dp).padding(end = 28.dp), .66f)
         Row(Modifier.fillMaxWidth().padding(start = 11.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                if (showDemoLabel && event.isDemo) Text(stringResource(Res.string.demo_label), color = AtlasColors.Primary, fontSize = 9.sp)
                 Text(event.title, Modifier.fillMaxWidth(.84f), style = MaterialTheme.typography.titleMedium, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                 Text("${format.range(event)} · ${format.location(event)}", Modifier.fillMaxWidth(.82f), color = AtlasColors.TextSecondary, fontSize = 10.sp, lineHeight = 14.sp)
             }

@@ -16,9 +16,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.hackatlas.mobile.data.DemoRepository
-import dev.hackatlas.mobile.data.GuestSavedRepository
-import dev.hackatlas.mobile.data.GuestStorageException
+import dev.hackatlas.mobile.data.SavedGuestEvent
 import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.resources.*
@@ -28,26 +26,17 @@ import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun App(appState: AppState, initialRoute: String = "home", demoEnabled: Boolean = true) {
+fun App(appState: AppState, initialRoute: String = "home") {
     HackAtlasTheme {
         Surface(Modifier.fillMaxSize(), color = AtlasColors.Background) {
             Box(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                if (!demoEnabled) {
-                    StatePanel(stringResource(Res.string.release_title), stringResource(Res.string.release_body))
-                } else {
-                    val state by appState.state.collectAsState()
-                    val scope = rememberCoroutineScope()
-                    LaunchedEffect(appState) { appState.load() }
-                    when (val current = state) {
-                        BootstrapState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                                CircularProgressIndicator(color = AtlasColors.Primary, strokeWidth = 2.dp)
-                                Text(stringResource(Res.string.loading), color = AtlasColors.TextSecondary)
-                            }
-                        }
-                        BootstrapState.StorageFailed -> StatePanel(stringResource(Res.string.storage_read_error), stringResource(Res.string.storage_read_error_body), stringResource(Res.string.retry), { scope.launch { appState.load() } })
-                        is BootstrapState.Ready -> DemoApp(current.repository, current.saved, initialRoute)
-                    }
+                val state by appState.state.collectAsState()
+                LaunchedEffect(appState) { appState.ownerScope.launch { appState.load() } }
+                when (val current = state) {
+                    BootstrapState.Loading -> LoadingPanel()
+                    BootstrapState.ConfigurationUnavailable -> StatePanel(stringResource(Res.string.release_title), stringResource(Res.string.release_body))
+                    BootstrapState.StorageFailed -> StatePanel(stringResource(Res.string.storage_read_error), stringResource(Res.string.storage_read_error_body), stringResource(Res.string.retry), { appState.ownerScope.launch { appState.load() } })
+                    is BootstrapState.Ready -> CatalogApp(appState, current, initialRoute)
                 }
             }
         }
@@ -56,84 +45,132 @@ fun App(appState: AppState, initialRoute: String = "home", demoEnabled: Boolean 
 
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
-private fun DemoApp(repository: DemoRepository?, savedRepository: GuestSavedRepository, initialRoute: String) {
+private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute: String) {
     var route by rememberSaveable { mutableStateOf(initialRoute) }
     var previousRoute by rememberSaveable { mutableStateOf("home") }
-    var selectedId by rememberSaveable { mutableStateOf(repository?.catalog(CatalogQuery(sort = CatalogSort.NEWEST))?.items?.firstOrNull()?.id.orEmpty()) }
+    var selectedId by rememberSaveable { mutableStateOf("") }
+    var selectedDemo by rememberSaveable { mutableStateOf(false) }
     var openLocalCopy by rememberSaveable { mutableStateOf(false) }
-    var query by rememberSaveable { mutableStateOf("") }
-    var filter by rememberSaveable { mutableIntStateOf(0) }
     var dialog by remember { mutableStateOf<String?>(null) }
-    val snapshots by savedRepository.entries.collectAsState()
-    val savedIds = remember(snapshots) { snapshots.map { it.detail.hackathon.id }.toSet() }
-    val savedHackathons = remember(snapshots) { snapshots.map { it.detail.hackathon } }
-    val profile = repository?.profile?.collectAsState()?.value
-    val scope = rememberCoroutineScope()
+    val bookmarks by ready.bookmarks.state.collectAsState()
+    val pendingKeys = bookmarks.pendingKeys
+    val snapshots by ready.saved.entries.collectAsState()
+    val catalog by ready.catalog.state.collectAsState()
+    val details by ready.details.state.collectAsState()
+    val savedKeys = remember(snapshots) { snapshots.map { it.key }.toSet() }
+    val profile = ready.repository?.profile?.collectAsState()?.value
     val saveableStates = rememberSaveableStateHolder()
     val catalogueScroll = rememberLazyListState()
     val format = displayFormat()
-    val openEvent: (String, Boolean) -> Unit = { id, local -> previousRoute = route; selectedId = id; openLocalCopy = local; route = "detail" }
-    val toggleSaved: (String) -> Unit = { id ->
-        val detail = snapshots.firstOrNull { it.detail.hackathon.id == id }?.detail ?: repository?.detail(id)
-        val remove = id in savedIds
-        if (detail != null) scope.launch {
-            try { if (remove) savedRepository.remove(id) else savedRepository.save(detail) }
-            catch (_: GuestStorageException) { dialog = "storage" }
-        }
-    }
-    val removeSaved: (String) -> Unit = { id ->
-        scope.launch {
-            try { savedRepository.remove(id) }
-            catch (_: GuestStorageException) { dialog = "storage" }
-        }
-    }
+    val bundled = app.source == CatalogSource.BundledDemo
+    val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
+
+    val openEvent: (Hackathon) -> Unit = { event ->
+        previousRoute = route; selectedId = event.id; selectedDemo = event.isDemo; openLocalCopy = false
+        ready.details.open(event.id); route = "detail"
+    }
+    val openSnapshot: (SavedGuestEvent) -> Unit = { snapshot ->
+        previousRoute = route; selectedId = snapshot.key.id; selectedDemo = snapshot.key.isDemo; openLocalCopy = true
+        ready.details.showSnapshot(snapshot); route = "detail"
+    }
+    // Restores navigation after host recreation without refetching an already opened local copy.
+    LaunchedEffect(route, selectedId, selectedDemo, openLocalCopy, catalog.items.firstOrNull()?.id) {
+        if (route == "detail") {
+            if (selectedId.isEmpty()) {
+                catalog.items.firstOrNull()?.let { selectedId = it.id; selectedDemo = it.isDemo }
+            } else {
+                val content = ready.details.state.value as? DetailUiState.Content
+                if (openLocalCopy) {
+                    if (content?.snapshot?.key != SavedEventKey(selectedId, selectedDemo))
+                        snapshots.firstOrNull { it.key == SavedEventKey(selectedId, selectedDemo) }?.let(ready.details::showSnapshot)
+                } else if (ready.details.state.value == DetailUiState.Idle) ready.details.open(selectedId)
+            }
+        }
+    }
+
+    fun changeBookmark(event: Hackathon, remove: Boolean, snapshot: SavedGuestEvent? = null) {
+        ready.bookmarks.change(event, remove, snapshot)
+    }
+    val onQuery: (CatalogQuery) -> Unit = {
+        ready.catalog.setQuery(it)
+        app.ownerScope.launch { catalogueScroll.scrollToItem(0) }
+    }
     BackHandler(enabled = route == "detail" || route == "typography", onBack = back)
+    val content = details as? DetailUiState.Content
+    val screenKey = if (route == "detail") ready.saved.scope.detailStateKey(
+        if (!openLocalCopy && content?.detail?.hackathon?.id == selectedId) content.detail.hackathon.savedKey()
+        else SavedEventKey(selectedId, selectedDemo), openLocalCopy) else "$sourceId:$route"
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f)) {
-            saveableStates.SaveableStateProvider(route) {
-            when (route) {
-                "detail" -> {
-                    // Keep the opened copy visible when its bookmark is removed while reading.
-                    val openedSnapshot = remember(selectedId, openLocalCopy) { snapshots.firstOrNull { it.detail.hackathon.id == selectedId } }
-                    val detail = if (openLocalCopy) openedSnapshot?.detail else repository?.detail(selectedId)
-                    if (detail != null) DetailScreen(detail, selectedId in savedIds, format, back, {
-                        val id = detail.hackathon.id
-                        val remove = id in savedIds
-                        scope.launch {
-                            try { if (remove) savedRepository.remove(id) else savedRepository.save(detail) }
-                            catch (_: GuestStorageException) { dialog = "storage" }
+            saveableStates.SaveableStateProvider(screenKey) {
+                when (route) {
+                    "detail" -> {
+                        val matches = content?.detail?.hackathon?.id == selectedId &&
+                            if (openLocalCopy) content.snapshot?.key == SavedEventKey(selectedId, selectedDemo) else content.snapshot == null
+                        if (matches) {
+                            val event = content.detail.hackathon
+                            DetailScreen(content.detail, event.savedKey() in savedKeys, format, back,
+                                { changeBookmark(event, event.savedKey() in savedKeys, content.snapshot) },
+                                { dialog = "share" }, { dialog = if (bundled) "demo-register" else "register" },
+                                content.snapshot?.savedAt, bundled, event.savedKey() in pendingKeys)
+                        } else Column {
+                            IconAction(AtlasIcon.Back, stringResource(Res.string.back), back)
+                            when {
+                                details is DetailUiState.Error && !openLocalCopy -> StatePanel(stringResource(Res.string.detail_unavailable),
+                                    catalogErrorText((details as DetailUiState.Error).error), stringResource(Res.string.retry), ready.details::retry)
+                                openLocalCopy -> StatePanel(stringResource(Res.string.detail_unavailable), stringResource(Res.string.snapshot_missing))
+                                else -> LoadingPanel()
+                            }
                         }
-                    }, { dialog = "feature" }, { dialog = "register" }, if (openLocalCopy) openedSnapshot?.savedAt else null)
-                    else StatePanel(stringResource(Res.string.detail_unavailable), stringResource(Res.string.catalog_unavailable_body), stringResource(Res.string.back), back)
+                    }
+                    "profile" -> if (profile != null) ProfileScreen(profile.copy(savedCount = snapshots.size),
+                        snapshots.map { it.detail.hackathon }, format,
+                        { event -> snapshots.firstOrNull { it.key == event.savedKey() }?.let(openSnapshot) },
+                        { changeBookmark(it, true) }, { route = "saved" }, { dialog = "settings" }, { dialog = "feature" }, { dialog = "about" })
+                    else GuestProfileScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
+                        { route = "saved" }, { dialog = "settings" })
+                    "saved" -> SavedScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
+                        { route = "home" }, { dialog = "about" }, bundled)
+                    "calendar" -> CalendarScreen(snapshots, format, openSnapshot, { route = "home" })
+                    "typography" -> TypographyScreen(back)
+                    else -> CatalogueScreen(catalog, savedKeys, pendingKeys, format, onQuery, catalogueScroll,
+                        openEvent, { changeBookmark(it, it.savedKey() in savedKeys) }, { dialog = "about" },
+                        ready.catalog::retry, ready.catalog::retryMetadata, ready.catalog::loadNext, bundled)
                 }
-                "profile" -> if (profile != null) ProfileScreen(profile.copy(savedCount = snapshots.size), savedHackathons, format, { openEvent(it.id, true) }, { removeSaved(it.id) }, { route = "saved" }, { dialog = "settings" }, { dialog = "feature" }, { dialog = "about" })
-                    else StatePanel(stringResource(Res.string.guest_profile), stringResource(Res.string.guest_profile_body), stringResource(Res.string.saved), { route = "saved" })
-                "saved" -> SavedScreen(snapshots, format, { openEvent(it.id, true) }, { removeSaved(it.id) }, { route = "home" }, { dialog = "about" })
-                "calendar" -> CalendarScreen(snapshots, format, { openEvent(it, true) }, { route = "home" })
-                "typography" -> TypographyScreen(back)
-                else -> if (repository != null) CatalogueScreen(
-                    events = repository.catalog(CatalogQuery(query = query, format = when (filter) { 1 -> EventFormat.ONLINE; 2 -> EventFormat.OFFLINE; else -> null }, registrationStatus = if (filter == 3) RegistrationStatus.OPEN else null, sort = CatalogSort.NEWEST)).items,
-                    savedIds = savedIds, format = format, query = query, onQuery = { query = it.take(120) }, filter = filter, onFilter = { filter = it }, scrollState = catalogueScroll,
-                    onOpen = { openEvent(it.id, false) }, onBookmark = { toggleSaved(it.id) }, onDemo = { dialog = "about" }, onReset = { query = ""; filter = 0 },
-                )
-                else StatePanel(stringResource(Res.string.catalog_unavailable), stringResource(Res.string.catalog_unavailable_body), stringResource(Res.string.saved), { route = "saved" })
-            }
             }
         }
         if (route != "detail" && route != "typography") AtlasTabBar(route) { route = it }
     }
-
-    if (dialog != null) {
-        val title = stringResource(when (dialog) { "settings" -> Res.string.settings; "storage" -> Res.string.storage_write_error; else -> Res.string.demo_dialog_title })
-        val body = stringResource(when (dialog) { "register" -> Res.string.demo_register_body; "feature" -> Res.string.demo_feature_body; "storage" -> Res.string.storage_write_error_body; else -> Res.string.demo_dialog_body })
-        AlertDialog(
-            onDismissRequest = { dialog = null }, title = { Text(title) }, text = { Text(body, color = AtlasColors.TextSecondary) },
+    val bookmarkFailure = bookmarks.failures.firstOrNull()
+    if (bookmarkFailure != null) {
+        val acknowledge = { ready.bookmarks.acknowledgeFailure(bookmarkFailure.id) }
+        val body = when (val error = bookmarkFailure.error) {
+            BookmarkError.Storage -> stringResource(Res.string.storage_write_error_body)
+            is BookmarkError.Catalog -> catalogErrorText(error.error)
+        }
+        AlertDialog(onDismissRequest = acknowledge, title = { Text(stringResource(Res.string.storage_write_error)) },
+            text = { Text(body, color = AtlasColors.TextSecondary) }, containerColor = AtlasColors.SurfaceRaised,
+            titleContentColor = AtlasColors.TextPrimary,
+            confirmButton = { TextButton(onClick = acknowledge) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
+    } else if (dialog != null) {
+        val title = stringResource(when (dialog) {
+            "settings" -> Res.string.settings
+            "about" -> if (bundled) Res.string.demo_dialog_title else Res.string.server_demo_title
+            else -> Res.string.feature_pending_title
+        })
+        val body = stringResource(when (dialog) {
+                "demo-register" -> Res.string.demo_register_body
+                "register" -> Res.string.registration_pending
+                "share" -> Res.string.share_pending
+                "about" -> if (bundled) Res.string.demo_dialog_body else Res.string.server_demo_body
+                else -> Res.string.demo_feature_body
+            })
+        AlertDialog(onDismissRequest = { dialog = null }, title = { Text(title) }, text = { Text(body, color = AtlasColors.TextSecondary) },
             containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
             confirmButton = { TextButton(onClick = { dialog = null }) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } },
-            dismissButton = if (dialog == "settings") ({ TextButton(onClick = { previousRoute = route; route = "typography"; dialog = null }) { Text(stringResource(Res.string.typography), color = AtlasColors.Cyan) } }) else null,
-        )
+            dismissButton = if (dialog == "settings") ({ TextButton(onClick = { previousRoute = route; route = "typography"; dialog = null }) { Text(stringResource(Res.string.typography), color = AtlasColors.Cyan) } }) else null)
     }
 }
 

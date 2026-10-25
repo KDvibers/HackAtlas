@@ -16,7 +16,7 @@
 | kotlinx.coroutines | 1.10.2 |
 | kotlinx.serialization | 1.9.0 |
 | kotlinx.datetime | 0.6.2 |
-| Ktor Client core / content-negotiation / serialization-kotlinx-json / MockEngine | 3.3.3 |
+| Ktor core / content-negotiation / serialization / MockEngine / OkHttp / Darwin | 3.3.3 |
 | iOS deployment target | 16.0 |
 | Kotlin/Native targets | iosArm64, iosSimulatorArm64 |
 | Xcode для проверки на Mac | 26.0 по матрице Kotlin 2.2.21; локально отсутствует |
@@ -37,7 +37,7 @@ Wrapper scripts/JAR взяты из официального тега Gradle v8.
 
 Для общей фабрики клиента и MockEngine выбран Ktor **3.3.3**. Проверены [release notes](https://github.com/ktorio/ktor/releases/tag/3.3.3) и [upstream version catalog](https://raw.githubusercontent.com/ktorio/ktor/3.3.3/gradle/libs.versions.toml): Kotlin 2.2.21, coroutines 1.10.2 и serialization 1.9.0 совпадают с существующими версиями проекта. Все четыре Ktor-модуля закреплены одной версией; Kotlin, AGP, Gradle и Compose не обновлялись.
 
-Общий код и MockEngine проверяются задачей `:shared:testDebugUnitTest` на Android/JVM. Это не проверка настоящего HTTP-сервера или Kotlin/Native. Платформенные engines OkHttp/Darwin и подключение клиента к UI отложены до задачи 4 плана M2; их зависимости сейчас не добавлены. `createApiClient` получает engine извне; владелец закрывает и клиент, и engine. Release-host в будущей интеграции обязан запретить `allowDebugHttp`; сейчас этот флаг используется только явной конфигурацией и тестами.
+Общий код и MockEngine проверяются задачей `:shared:testDebugUnitTest` на Android/JVM. Это не проверка настоящего HTTP-сервера или Kotlin/Native. В Task 4 добавлены OkHttp в androidMain и Darwin в iosMain, оба 3.3.3; Android/common build и тесты проходят, iOS Native пока не проверен. `createApiClient` получает engine извне; владелец закрывает и клиент, и engine. Release-host запрещает `allowDebugHttp`; Android debug требует явный opt-in и config точного host. iOS ATS exceptions отсутствуют.
 
 ## Локальное окружение и ограничения
 
@@ -46,3 +46,5 @@ Wrapper scripts/JAR взяты из официального тега Gradle v8.
 Наличие iOS targets и Xcode project не означает успешную iOS-сборку. Mac/Xcode недоступны: компиляция Kotlin/Native, Swift, линковка, упаковка ресурсов и запуск на iPhone пока не проверены. Intel iOS simulator не входит в текущие targets; для него нужен отдельно согласованный target/toolchain.
 
 Фактические результаты сборок и UI-проверок находятся в `../docs/STATUS_MOBILE.md`. SDK 36 задаёт заявленную цель компиляции; тест на одном более новом эмуляторе не доказывает работу на всех Android 8+ устройствах.
+
+Task 4 использует [платформенные engines Ktor](https://ktor.io/docs/client-engines.html) без обновления существующего toolchain и [точечную Android network security configuration](https://developer.android.com/privacy-and-security/security-config). У Darwin 3.3.3 [delegate запрещает встроенные redirects](https://raw.githubusercontent.com/ktorio/ktor/3.3.3/ktor-client/ktor-client-darwin/darwin/src/io/ktor/client/engine/darwin/KtorNSURLSessionDelegate.kt); runtime-проверка этого на iOS остаётся за Mac.

@@ -32,7 +32,7 @@ import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun CalendarScreen(saved: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (String) -> Unit, onCatalog: () -> Unit) {
+fun CalendarScreen(saved: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit, onCatalog: () -> Unit) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     var monthText by rememberSaveable { mutableStateOf(SavedCalendar.shiftMonth(today, 0).toString()) }
     var selectedText by rememberSaveable { mutableStateOf(today.toString()) }
@@ -121,13 +121,13 @@ fun CalendarScreen(saved: List<SavedGuestEvent>, format: DisplayFormat, onOpen: 
             }
             item { SectionTitle(format.date(selection.moment())) }
             if (entries.isEmpty()) item { Text(stringResource(Res.string.calendar_no_entries), color = AtlasColors.TextSecondary, fontSize = 13.sp) }
-            items(entries, key = { "${it.kind}:${it.saved.detail.hackathon.id}" }) { entry ->
-                CalendarEventCard(entry, format) { onOpen(entry.saved.detail.hackathon.id) }
+            items(entries, key = { "${it.kind}:${it.saved.key.listKey()}" }) { entry ->
+                CalendarEventCard(entry, format) { onOpen(entry.saved) }
             }
             if (undated.isNotEmpty()) {
                 item { SectionTitle(stringResource(Res.string.calendar_undated)) }
-                items(undated, key = { "undated:${it.detail.hackathon.id}" }) { snapshot ->
-                    CalendarEventCard(SavedCalendarEntry(snapshot, CalendarEntryKind.EVENT, null), format) { onOpen(snapshot.detail.hackathon.id) }
+                items(undated, key = { "undated:${it.key.listKey()}" }) { snapshot ->
+                    CalendarEventCard(SavedCalendarEntry(snapshot, CalendarEntryKind.EVENT, null), format) { onOpen(snapshot) }
                 }
             }
         }

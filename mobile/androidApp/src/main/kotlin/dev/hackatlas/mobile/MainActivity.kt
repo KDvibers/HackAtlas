@@ -17,6 +17,6 @@ class MainActivity : ComponentActivity() {
         // Debug-only proof that saved details do not depend on the bundled catalog.
         val savedOnly = BuildConfig.DEBUG && intent.getBooleanExtra("savedOnly", false)
         val appState = (application as HackAtlasApplication).guestState(catalogEnabled = !savedOnly)
-        setContent { App(appState, initialRoute = route, demoEnabled = BuildConfig.DEBUG) }
+        setContent { App(appState, initialRoute = route) }
     }
 }
