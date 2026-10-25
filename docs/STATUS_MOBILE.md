@@ -1,5 +1,44 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2 Task 1: HTTP-клиент и MockEngine — 25 октября 2026
+
+По поручению пользователя выполнена **только задача 1** [плана сетевой части M2](superpowers/plans/2026-10-25-mobile-catalog-api.md). Ветка `feat/mobile-catalog-api` создана от main `b62306583814d6634bad8dddf826529ba850e872` в отдельной рабочей копии `C:/Users/user/.codex/worktrees/mobile-catalog-api/HackAtlas`. Исходная рабочая копия и её изменения сохранены; commit/push/PR выполняет пользователь.
+
+Изменения:
+
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/CatalogRepository.kt`, `CatalogSource.kt`, `CatalogError.kt`: общий suspend-интерфейс, явный источник, нормализация base URL и типизированные ошибки.
+- `mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/data/RemoteCatalogRepository.kt`, `DemoCatalogRepository.kt`, `data/network/ApiClient.kt`: три публичных GET, Starter DTO/mappers, отдельный DEMO-адаптер; таймауты request/connect/socket 15/10/15 с, автоматические redirects отключены. Ошибка сети не включает DEMO; отмена coroutine распространяется вызывающему коду.
+- `mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/data/RemoteCatalogRepositoryTest.kt`, `CatalogSourceTest.kt`, `DemoCatalogRepositoryTest.kt`: 25 новых тестов; маршруты/параметры, JSON/Problem, 400/404/500/redirect, timeout/network/cancellation, nullable значения и точные даты, неизвестные enum в ответах, запрет UNSUPPORTED в запросах, URL и явный DEMO.
+- `mobile/gradle/libs.versions.toml`, `mobile/shared/build.gradle.kts`, `mobile/TOOLCHAIN.md`: Ktor 3.3.3; версии существующего стека сохранены.
+
+Проверки с JDK 21 и имеющимся Android SDK:
+
+1. До реализации: целевые тесты не компилировались из-за отсутствующих новых классов. После реализации та же команда `./gradlew.bat :shared:testDebugUnitTest --tests "*RemoteCatalogRepositoryTest" --tests "*CatalogSourceTest" --tests "*DemoCatalogRepositoryTest" --console=plain` — **23/23 PASS**, exit 0.
+2. После исправления по ревью из `mobile/`: `./gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --console=plain --offline` — **BUILD SUCCESSFUL**, exit 0; **68 тестов, 0 failures/errors/skipped**. Lint: **0 ошибок и предупреждений**. Release-проверка отсутствия DEMO fixtures — PASS.
+3. Из корня: существующий Python venv `C:/Users/user/Desktop/HackAtlas/mobile/build/pr4-contract-venv/Scripts/python.exe -X utf8 scripts/validate_contract.py` — PASS, OpenAPI/правила/6 fixtures. Diff API/backend/infra/design/UI относительно базы пустой.
+
+Логи red/green/общей проверки и ledger находятся в ignored-каталоге `.superpowers/sdd/2026-10-25-mobile-catalog-api/`; итоговый прогон — `final-verification.log`. Debug APK: `mobile/androidApp/build/outputs/apk/debug/androidApp-debug.apk`, SHA-256 `3879588143AFE17E90BBE65D5F126C1D1C3442CB7F528BABB718C95B015D7A3F`.
+
+Независимый агент провёл read-only ревью рабочего диффа относительно базы (новых коммитов нет). Найден один P2: локальные enum `UNSUPPORTED` могли отправляться как API-фильтры. Два новых теста сначала упали из-за отсутствия отказа, затем прошли после проверки параметров до HTTP-запроса; каждый подтверждает ноль запросов. Общий набор после исправления — 68/68. Других критических, важных или отложенных мелких замечаний не выявлено. Повторное ревью не запускалось; исправление проверено тестами.
+
+Решения по границам ревью: гонки поиска/пагинации и независимость metadata/offline startup относятся к stores; разделение происхождения snapshots и detail-before-save — к хранилищу/coordinator; engines, lifecycle и запрет dev HTTP в release — к hosts. Эти сценарии ещё нельзя считать проверенными для REMOTE. Использованы существующие DTO/mappers, без полной runtime-валидации каждой JSON-schema; нормализация URL ограничена согласованными host/default-port/trailing-slash и проверкой пути. При дальнейшей интеграции нужны тесты изоляции источников, чтобы адреса-алиасы и одинаковые ID не давали неверные копии. Сохранены рабочая копия и ignored-логи для пользовательского коммита. Посторонние untracked `.agents/` и `.interface-design/` не менялись и не входят в рекомендуемый commit.
+
+**Граница результата:** приложение пока использует прежний DEMO-источник. HTTP-клиент не связан с UI; OkHttp/Darwin factories, stores, REMOTE snapshots и живой B1 smoke относятся к следующим задачам. iOS/Kotlin Native, реальная сеть/TLS, CI, UI smoke этой версии APK и подписанный release не проверялись. Визуал, шрифты и ресурсы не менялись; новых screenshots нет. API не менялся, auth не добавлялся.
+
+Сообщение напарнику для ручной передачи: «Готов HTTP-слой трёх публичных операций Starter с MockEngine-тестами. Авторизация не требуется, API не меняли. Для живой проверки по-прежнему нужны доступный base URL с /api/v1, команды запуска и ID опубликованного события; укажи, включён ли DEMO seed».
+
+Следующий отдельный шаг после этого задания — Task 2: состояния каталога и подробностей, поиск/пагинация без гонок запросов. Он не начат; весь M2 не объявляется завершённым.
+
+## После merge PR #4: план сетевой части M2 — 25 октября 2026
+
+GitHub подтвердил merge PR #4 в main: `b62306583814d6634bad8dddf826529ba850e872`; локальный пользовательский merge-коммит — `4201df8`. Сообщения о незавершённом merge в отчётах ниже относятся к предыдущим проверкам и больше не описывают состояние PR.
+
+По запросу пользователя с применением `superpowers:writing-plans` подготовлен [план следующего PR `feat/mobile-catalog-api`](superpowers/plans/2026-10-25-mobile-catalog-api.md): HTTP repository, асинхронные состояния каталога/подробностей, snapshots с происхождением данных, подключение существующего UI и проверка с B1. Учтено, что серверное DEMO приходит по сети и не должно смешиваться со встроенным DEMO или реальными данными.
+
+На момент планирования реализация ещё не была начата: изменены были только этот статус и файл плана. Исходники, API, дизайн и зависимости на этапе планирования не менялись; сборки и тесты не запускались, ветка не переключалась, commit/push не выполнялись. Позже пользователь поручил Task 1 — её результат приведён выше. Для живой интеграции ещё нужен доступный API base URL и команды запуска от backend-разработчика; MockEngine-часть не зависит от доступности сервера.
+
+Следующий отдельный этап после принятия плана — только сетевой каталог M2. Browser/share остаются следующим PR; M3 зависит от готового B2. Сообщение напарнику для ручной передачи приведено в плане; автоматически не отправлялось.
+
 ## Повторная проверка PR #4 — 25 октября 2026
 
 **Причина сохраняющегося конфликта на GitHub:** подготовленное 21 октября разрешение ещё не закоммичено и не отправлено. GitHub API подтверждает открытый PR #4 с одним коммитом `5bc21123543c5e6cd966243420c1aaa052a7478e`, `mergeable=false`, `mergeable_state=dirty`. Ветка main осталась на `959e2f4db19a87ec13b60646d969d39a3e509859`; новых удалённых изменений относительно подготовленного merge нет.
