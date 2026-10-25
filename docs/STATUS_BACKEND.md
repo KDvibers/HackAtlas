@@ -1,8 +1,61 @@
 # BACKEND: статус
 
-Дата актуального дополнения: 20 октября 2026.
+Дата актуального дополнения: 25 октября 2026.
 
-## B1 — публичный каталог завершён локально
+## B2 — аккаунты и личные данные завершены локально
+
+**B2 выполнен, B3 не начат.** GitHub проверен до начала: [B1 PR #3](https://github.com/KDvibers/HackAtlas/pull/3) и [mobile PR #4](https://github.com/KDvibers/HackAtlas/pull/4) объединены. Workflow main [40220360992](https://github.com/KDvibers/HackAtlas/actions/runs/40220360992) завершён успешно. Новый чистый checkout `feat/backend-auth` основан на `origin/main=b62306583814d6634bad8dddf826529ba850e872`; мобильные изменения включены в базу и не редактировались.
+
+Изменения B2 оставлены без staging и коммита. GitHub connector и отдельно локальные Git HTTPS credentials подтверждены как `yergaliuly` через API `/user`; автор Git — `softache <itsyergaliuly@gmail.com>`. Commit, push, PR и deployment не выполнялись. У новой ветки нет upstream до пользовательского `git push -u`.
+
+### Что реализовано и зачем
+
+- `backend/src/main/java/com/hackatlas/auth/`, `security/`: Spring Security 7.1.1, Argon2id, случайные opaque sessions, SHA-256 token hashes, абсолютный TTL, отзыв текущей сессии, IP/account limits и ограничение параллельных Argon2 вычислений. No-store и безопасный Problem без токенов/паролей/PII в логах; CSRF сохраняется вне native API.
+- `backend/src/main/java/com/hackatlas/personal/`, `web/AuthController.java`, `web/PersonalController.java`, `web/JsonRequests.java`, `web/PersonalQueryParser.java`: все 11 операций B2, профиль, strict JSON/allowlist/absent-null, интересы из metadata, независимые личные списки с идемпотентными PUT/DELETE и изоляцией по principal.
+- `backend/src/main/java/com/hackatlas/catalog/CatalogService.java`: сохранённые используют тот же расчёт статусов и ограниченную выборку без N+1; опубликованные ended/cancelled доступны, draft/archived скрыты. Счётчики соответствуют доступным спискам.
+- `backend/src/main/resources/db/migration/V3__accounts_and_sessions.sql`, `V4__personal_lists.sql`: новые таблицы, FK, уникальные ключи и индексы. Старые миграции и существующие данные не изменены; seed-аккаунтов нет.
+- `backend/pom.xml`, `backend/src/main/resources/application.yaml`: Security/Validation starters, Bouncy Castle 1.86; закрытая регистрация, configurable session TTL, отсутствие доверия к Forwarded headers. Подробности и причины выбора — [AUTH](../backend/AUTH.md) и [TOOLCHAIN](../backend/TOOLCHAIN.md).
+- `backend/src/test/java/com/hackatlas/`, `backend/src/test/resources/validate_http_contract.py`: HTTP/PostgreSQL tests, экспорт ответов без настоящих токенов, проверка схем/форматов/обязательных operation-status pairs.
+- `scripts/b2/`, `tools/bruno-b2/`, `.github/workflows/backend-ci.yml`: изолированный запуск собранного JAR, 26 читаемых Bruno requests и CI. B1 Bruno/Schemathesis сохранены. `api/`, fixtures, mobile, design и STATUS_MOBILE не менялись.
+
+### Выполненные проверки
+
+| Команда / проверка | Фактический результат |
+|---|---|
+| WSL root, `cd backend && bash ./mvnw --batch-mode --no-transfer-progress verify` | **BUILD SUCCESS; 190 тестов: 9 unit + 181 integration, 0 failures/errors/skipped** |
+| `.venv/Scripts/python.exe scripts/validate_contract.py` | OpenAPI 3.1, refs, фазы/opaque auth и все fixtures проходят |
+| `validate_http_contract.py --schema api/openapi.yaml --responses backend/target/catalog-contract-responses.json` | **139 реальных HTTP-ответов B1** соответствуют контракту |
+| Тот же validator, `--responses backend/target/b2-contract` | **345 реальных HTTP-ответов B2**, все 11 операций и 36 обязательных method/path/status pairs соответствуют контракту |
+| `scripts/b1/run_contract_checks.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar` | 12 deterministic HTTP cases, **Bruno 10/10**, **Schemathesis 201/201**, seed 20261020 |
+| `scripts/b2/run_contract_checks.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar` | **30 HTTP/schema сценариев + Bruno 26/26**, две учётные записи, отзыв сессии, независимые списки, повторный guest import |
+| Argon2id локальный замер Java 21 / WSL | 19 MiB / t2 / p1, 3 warmups + 9 verify samples: **min 20 ms, median 25 ms, max 47 ms**; это локальное измерение, перед публичным запуском параметры проверяются на целевом сервере |
+| `backend/target/b2-final-checks.py`, Gitleaks 8.30.1 `git/dir --redact=100` | **77 изменённых/новых файлов, 95 относительных Markdown-ссылок**, scope/text и `git diff --check` проходят; доступная Git-история и изменённые файлы — **no leaks found** |
+
+В независимом review и тестах исправлены два реальных пограничных случая: Spring Security `RequestRejectedException` теперь даёт безопасный 400 вместо регрессионного 500 для плохих query names; длина email повторно проверяется после Unicode lowercase, которое может расширить строку перед PostgreSQL. Проверки firewall и тестовые ожидания не ослаблялись. Отдельно исправлены ошибки самих новых проверок: изменение пароля в unit-тесте внутри surrogate pair и пропущенная JSON-скобка одного Bruno login request.
+
+Логи: `backend/target/b2-verify.log`, `surefire-reports/`, `failsafe-reports/`, `b2-contract/`, `b1-checks/contract-checks.log`, `b2-checks/contract-checks.log`, `b2-argon2-benchmark.log` (все под `backend/target/`, игнорируются Git). В export accessToken заменяется placeholder; Authorization и request bodies не экспортируются.
+
+### Окружение и границы проверки
+
+Проверено в Ubuntu WSL2 с Java 21.0.12.1, Docker 29.1.3 и PostgreSQL 17.11. CLI: Bruno 4.2.1/Node 24.19.0, Schemathesis 4.32.2; локальные инструменты размещены в `/root/.local/share/hackatlas-b2-tools/`, чтобы переживать очистку WSL `/tmp`. Оба runner удалили только собственные временные БД и остановили собственные JVM. Dev volume и БД другого проекта не затрагивались.
+
+Schemathesis проверяет только публичные B1 операции: 201 fuzz cases; request Examples отсутствуют, Coverage/Stateful не входят в выбранный прогон. Для B2 выполнены явные сценарии состояния; B2 fuzzing или полный security audit не заявляются. Обновлённый GitHub Actions workflow ещё не запускался удалённо — нужен пользовательский push; успешный main workflow выше относится к базе.
+
+Регистрация закрыта по умолчанию и всегда при активном prod; private dev/test включается отдельно. Rate limiter — один процесс, сбрасывается при рестарте и не объединяется между экземплярами. Email verification/reset и общая anti-abuse политика нужны до публичного запуска, в отдельном согласованном scope. Админка/удаление аккаунта B3 не реализованы.
+
+Проверен loopback внутри WSL. Внешнего staging URL нет; доступ телефона/другого компьютера и Windows forwarding в B2 не проверялись. Android/iOS и мобильная интеграция не запускались. Результаты из mobile PR — работа напарника, не проверка этой сессии.
+
+### Передача и пользовательский PR
+
+Напарнику: «B2 готов в `feat/backend-auth`, контракт Starter не менялся. Есть register/login/logout, GET/PATCH me, saved и applications. Подключение клиента выполняется после отдельного согласования и передачи доступного base URL; см. [AUTH](../backend/AUTH.md), [запуск](../backend/README.md), [Bruno B2](../tools/bruno-b2/README.md). Токен хранить через native SecureTokenStore; при 401 нужен вход, refresh нет. Guest import — повторяемые PUT с подтверждением каждого ID; аккаунты/кеши не смешивать. Я подал заявку — личная отметка selfReported, не результат организатора». Сообщение подготовлено, автоматически никому не отправлялось.
+
+PR title: **Implement B2 authentication and personal APIs**.
+
+Описание: «Реализованы opaque Bearer sessions, регистрация/вход/выход, профиль, личные закладки и отметки заявок по неизменённому Starter API. Добавлены Argon2id, ограничения попыток входа, миграции V3/V4, тесты изоляции пользователей и коллекция Bruno. Maven: 190 тестов; 484 HTTP-ответа проверены по OpenAPI; Bruno B1/B2 10/10 и 26/26; Schemathesis B1 201/201. Регистрация production закрыта. B3 и мобильная интеграция не входят».
+
+Следующий отдельный серверный этап — **B3**, только после пользовательского review B2 и нового поручения. Ниже сохранены исторические отчёты; их формулировки «B2 не начат» и «auth нет» относятся к прошлым этапам.
+
+## Исторический B1 — публичный каталог завершён и объединён
 
 **B1 выполнен, B2 не начат.** Ветка `feat/catalog-api` создана от B0 `208e097`; в начале задания checkout был чистым. Повторный `git fetch origin` подтвердил, что пользователь уже объединил B0: `origin/main=43b11e4` (merge PR #2), `208e097` входит в его историю. База PR B1 — **main**. Merge/rebase текущей ветки не выполнялся.
 

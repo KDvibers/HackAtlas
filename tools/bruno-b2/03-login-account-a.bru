@@ -1,0 +1,34 @@
+meta {
+  name: Login account A
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {"email":"{{process.env.HACKATLAS_B2_EMAIL_A}}","password":"{{process.env.HACKATLAS_B2_PASSWORD}}"}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Login account A", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("cache-control")).to.include("no-store");
+    expect(res.getBody().tokenType).to.equal("Bearer");
+    expect(res.getBody().accessToken.length >= 32).to.equal(true);
+    bru.setVar("loginToken", res.getBody().accessToken);
+  });
+}

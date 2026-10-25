@@ -71,6 +71,34 @@ public class CatalogService {
         return new CatalogDtos.HackathonPage(items, filter.page(), filter.size(), count, totalPages, hasNext, asOf);
     }
 
+    public CatalogDtos.HackathonPage saved(UUID userId, BigInteger page, int size) {
+        Instant asOf = clock.instant();
+        var parameters = new LinkedHashMap<String, Object>();
+        parameters.put("asOf", asOf);
+        parameters.put("user", userId);
+        String from = """
+                 FROM effective_catalog h JOIN hackatlas.saved_hackathon s ON s.hackathon_id = h.id
+                 WHERE s.user_id = :user AND h.publication_status = 'PUBLISHED'
+                """;
+        long count = ((Number) nativeQuery(CatalogStatusPolicy.CTE + "SELECT count(*)" + from, parameters)
+                .getSingleResult()).longValue();
+        long pages = count / size + (count % size == 0 ? 0 : 1);
+        BigInteger offset = page.multiply(BigInteger.valueOf(size));
+        if (offset.compareTo(BigInteger.valueOf(count)) >= 0) {
+            return new CatalogDtos.HackathonPage(List.of(), page, size, count, pages, false, asOf);
+        }
+        parameters.put("limit", size);
+        parameters.put("offset", offset.longValueExact());
+        var rows = rows(nativeQuery(CatalogStatusPolicy.CTE
+                + "SELECT h.id, h.effective_registration_status, h.effective_event_status" + from
+                + " ORDER BY s.saved_at DESC, h.id ASC LIMIT :limit OFFSET :offset", parameters));
+        var entities = fetchWithTopics(rows.stream().map(row -> (UUID) row[0]).toList());
+        var items = rows.stream().map(row -> mapper.summary(entities.get((UUID) row[0]), (String) row[1], (String) row[2]))
+                .toList();
+        return new CatalogDtos.HackathonPage(items, page, size, count, pages,
+                offset.add(BigInteger.valueOf(items.size())).compareTo(BigInteger.valueOf(count)) < 0, asOf);
+    }
+
     public Optional<CatalogDtos.HackathonDetail> detail(UUID id) {
         var query = nativeQuery(CatalogStatusPolicy.CTE + """
                 SELECT h.id, h.effective_registration_status, h.effective_event_status

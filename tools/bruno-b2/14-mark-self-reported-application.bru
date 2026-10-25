@@ -1,0 +1,29 @@
+meta {
+  name: Mark self reported application
+  type: http
+  seq: 14
+}
+
+put {
+  url: {{baseUrl}}/me/applications/39287368-5259-5235-a1c4-25b4e1e8421e
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenA}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Mark self reported application", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().selfReported).to.equal(true);
+    expect(res.getBody().status).to.equal("APPLIED");
+    bru.setVar("markedAt", res.getBody().markedAt);
+  });
+}

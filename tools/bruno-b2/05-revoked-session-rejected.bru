@@ -1,0 +1,28 @@
+meta {
+  name: Revoked session rejected
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/me
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{loginToken}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Revoked session rejected", function () {
+    expect(res.getStatus()).to.equal(401);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getHeader("content-type")).to.include("application/problem+json");
+    expect(res.getBody().status).to.equal(401);
+  });
+}

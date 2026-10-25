@@ -73,11 +73,13 @@ class BootstrapIT {
                 "select count(*) from public.flyway_schema_history where version = '1' and success",
                 Integer.class
         )).isEqualTo(1);
-        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(2).allSatisfy(migration -> {
+        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(4).allSatisfy(migration -> {
             assertThat(migration.getState()).isEqualTo(MigrationState.SUCCESS);
         });
         assertThat(flyway.info().pending()).isEmpty();
         assertThat(jdbc.queryForObject("select count(*) from hackatlas.catalog_hackathon", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.user_account", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.auth_session", Integer.class)).isZero();
     }
 
     @Test
@@ -85,7 +87,7 @@ class BootstrapIT {
         flyway.validate();
 
         assertThat(flyway.migrate().migrationsExecuted).isZero();
-        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(flyway.info().applied()).hasSizeGreaterThanOrEqualTo(4);
         assertThat(flyway.info().pending()).isEmpty();
     }
 
@@ -126,17 +128,18 @@ class BootstrapIT {
     }
 
     @Test
-    void profileEndpointIsNotImplementedInB1() throws Exception {
-        assertThat(request("GET", "/api/v1/me").statusCode()).isEqualTo(404);
+    void profileAndLogoutRequireAnAuthenticatedSession() throws Exception {
+        assertThat(request("GET", "/api/v1/me").statusCode()).isEqualTo(401);
+        assertThat(request("POST", "/api/v1/auth/logout").statusCode()).isEqualTo(401);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "/api/v1/auth/register",
-            "/api/v1/auth/login",
-            "/api/v1/auth/logout"
+            "/api/v1/auth/refresh",
+            "/api/v1/suggestions",
+            "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e/reports"
     })
-    void authEndpointsAreNotImplementedInB1(String path) throws Exception {
+    void b3AndRefreshEndpointsRemainUnavailable(String path) throws Exception {
         assertThat(request("POST", path).statusCode()).isEqualTo(404);
     }
 

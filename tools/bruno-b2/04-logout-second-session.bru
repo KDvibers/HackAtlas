@@ -1,0 +1,26 @@
+meta {
+  name: Logout second session
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{loginToken}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Logout second session", function () {
+    expect(res.getStatus()).to.equal(204);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+  });
+}

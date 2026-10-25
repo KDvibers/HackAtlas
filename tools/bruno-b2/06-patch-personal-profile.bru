@@ -1,0 +1,32 @@
+meta {
+  name: Patch personal profile
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/me
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{tokenA}}
+}
+
+body:json {
+  {"city":"Астана","countryCode":"KZ","interests":["java","ai-ml"]}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Patch personal profile", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().stats.interestsCount).to.equal(2);
+  });
+}

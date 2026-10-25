@@ -1,0 +1,27 @@
+meta {
+  name: Application page B is empty
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/me/applications
+  body: none
+  auth: none
+}
+
+headers {
+  Authorization: Bearer {{tokenB}}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Application page B is empty", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().items).to.have.lengthOf(0);
+  });
+}

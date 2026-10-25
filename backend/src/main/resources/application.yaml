@@ -28,6 +28,7 @@ spring:
       include-exception: false
 
 server:
+  forward-headers-strategy: none
   address: ${HACKATLAS_BIND_ADDRESS:127.0.0.1}
   port: ${PORT:8080}
   shutdown: graceful
@@ -54,3 +55,13 @@ management:
       group:
         readiness:
           include: readinessState,db
+
+hackatlas:
+  auth:
+    registration-enabled: ${HACKATLAS_REGISTRATION_ENABLED:false}
+    session-ttl: ${HACKATLAS_SESSION_TTL:P30D}
+    rate-limit:
+      window: PT15M
+      ip-limit: 30
+      account-limit: 10
+      max-keys: 10000

@@ -1,0 +1,33 @@
+meta {
+  name: Clear nullable city
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/me
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Authorization: Bearer {{tokenA}}
+}
+
+body:json {
+  {"city":null}
+}
+
+settings {
+  followRedirects: false
+}
+
+tests {
+  test("Clear nullable city", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(Boolean(res.getHeader("x-request-id"))).to.equal(true);
+    expect(res.getBody().city).to.equal(null);
+    expect(res.getBody().countryCode).to.equal("KZ");
+  });
+}
