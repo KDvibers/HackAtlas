@@ -16,6 +16,7 @@
 | kotlinx.coroutines | 1.10.2 |
 | kotlinx.serialization | 1.9.0 |
 | kotlinx.datetime | 0.6.2 |
+| Ktor Client core / content-negotiation / serialization-kotlinx-json / MockEngine | 3.3.3 |
 | iOS deployment target | 16.0 |
 | Kotlin/Native targets | iosArm64, iosSimulatorArm64 |
 | Xcode для проверки на Mac | 26.0 по матрице Kotlin 2.2.21; локально отсутствует |
@@ -31,6 +32,12 @@
 - [Compose resources](https://kotlinlang.org/docs/multiplatform/compose-multiplatform-resources-setup.html): общий `Res`, изображения, шрифты и строки.
 
 Wrapper scripts/JAR взяты из официального тега Gradle v8.13.0. SHA-256 wrapper JAR: `81a82aaea5abcc8ff68b3dfcb58b3c3c429378efd98e7433460610fecd7ae45f`, совпадает с [официальной суммой](https://services.gradle.org/distributions/gradle-8.13-wrapper.jar.sha256).
+
+## M2: HTTP-слой — 25 октября 2026
+
+Для общей фабрики клиента и MockEngine выбран Ktor **3.3.3**. Проверены [release notes](https://github.com/ktorio/ktor/releases/tag/3.3.3) и [upstream version catalog](https://raw.githubusercontent.com/ktorio/ktor/3.3.3/gradle/libs.versions.toml): Kotlin 2.2.21, coroutines 1.10.2 и serialization 1.9.0 совпадают с существующими версиями проекта. Все четыре Ktor-модуля закреплены одной версией; Kotlin, AGP, Gradle и Compose не обновлялись.
+
+Общий код и MockEngine проверяются задачей `:shared:testDebugUnitTest` на Android/JVM. Это не проверка настоящего HTTP-сервера или Kotlin/Native. Платформенные engines OkHttp/Darwin и подключение клиента к UI отложены до задачи 4 плана M2; их зависимости сейчас не добавлены. `createApiClient` получает engine извне; владелец закрывает и клиент, и engine. Release-host в будущей интеграции обязан запретить `allowDebugHttp`; сейчас этот флаг используется только явной конфигурацией и тестами.
 
 ## Локальное окружение и ограничения
 
