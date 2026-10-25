@@ -1,0 +1,11 @@
+# Compose >= 2.24.4: !override REPLACES public bindings, never adds loopback alongside them.
+services:
+  proxy:
+    environment:
+      HACKATLAS_SITE: localhost
+      HACKATLAS_HTTPS_PORT: ${HACKATLAS_HTTPS_PORT:?Set a free loopback HTTPS port}
+    ports: !override
+      - "127.0.0.1:${HACKATLAS_HTTP_PORT:?Set a free loopback HTTP port}:8080"
+      - "127.0.0.1:${HACKATLAS_HTTPS_PORT:?Set a free loopback HTTPS port}:8443"
+    volumes:
+      - ./proxy/Caddyfile.local:/etc/caddy/Caddyfile:ro

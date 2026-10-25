@@ -2,7 +2,86 @@
 
 Дата актуального дополнения: 26 октября 2026.
 
-## B3 — модерация и удаление аккаунта завершены локально
+## B4 — подготовка и локальная проверка выполнены; внешнего staging нет
+
+**Текущая согласованная часть B4 выполнена. Полный B4 по ROADMAP ещё не закрыт.** Пользователь ответил: «Пока только подготовка и локальные проверки». Хостинг, бюджет, регион и домен не выбирались, deployment/DNS/публикация не выполнялись. Публичная регистрация закрыта; реальный HTTPS staging, M4 и предрелизные условия остаются отдельной работой.
+
+Перед началом проверены [объединённый B3 PR #8](https://github.com/KDvibers/HackAtlas/pull/8), [mobile PR #7](https://github.com/KDvibers/HackAtlas/pull/7) и успешный [main Backend CI 40227105790](https://github.com/KDvibers/HackAtlas/actions/runs/40227105790). Чистая ветка **`chore/backend-release`** создана без upstream от `origin/main=c8b6d1895253320879d6bb3a902750d9d15a1012`; финальный fetch подтвердил ту же main. Изменения не добавлены в staging и не закоммичены, push и PR не выполнялись. Git HTTPS credential проверен через GitHub `/user`: **yergaliuly**. Автор проверен отдельно: **softache <itsyergaliuly@gmail.com>**.
+
+### Изменения и назначение
+
+- [infra/release](../infra/release/README.md), [backend/Dockerfile](../backend/Dockerfile), [backend/.dockerignore](../backend/.dockerignore): воспроизводимый Compose-контур Caddy → Spring Boot → PostgreSQL с digest-pinned images. Локальные порты только loopback, TLS с явно доверенным тестовым CA, минимальные health/readiness, non-root/read-only/capability isolation и ограничения ресурсов. Секреты — отдельные файлы вне репозитория; приложение и БД не публикуют host ports.
+- [ReleaseConfiguration](../backend/src/main/java/com/hackatlas/config/ReleaseConfiguration.java), [application-release.yaml](../backend/src/main/resources/application-release.yaml), [HackAtlasApplication](../backend/src/main/java/com/hackatlas/HackAtlasApplication.java): профиль `prod,release`, ранняя проверка несовместимых настроек, запрет DEMO/fixed clock/signup/Forwarded trust; отдельный завершающийся migration-only процесс. `application-dev.yaml` не читает dev-настройки при одновременно активном prod.
+- [DB bootstrap](../infra/release/database/10-release-roles.sh), [Flyway grants](../infra/release/database/flyway/afterMigrate.sql): разные роли оператора/мигратора/runtime; runtime без DDL, выдачи admin-доступа, чтения Flyway history и изменения аудита. [AdminAccessService](../backend/src/main/java/com/hackatlas/admin/AdminAccessService.java) сохраняет lock аккаунта, но membership читает без требующего UPDATE-привилегии `FOR SHARE`; точная семантика отзыва описана в [MODERATION](../backend/MODERATION.md).
+- [backup.py](../infra/release/ops/backup.py), [restore.py](../infra/release/ops/restore.py): custom-format dump + SHA-256, запрет overwrite; восстановление только в новую БД, проверка checksum, отзыв восстановленных сессий и закрытый runtime CONNECT до завершения. [PRIVACY](PRIVACY.md) описывает обязательную сверку удалений после snapshot.
+- [scripts/b4](../scripts/b4/README.md): автоматическая локальная репетиция HTTPS/admin/миграций/backup/restore с синтетическими данными, проверкой схем и cleanup только собственных ресурсов.
+- [pom.xml](../backend/pom.xml), [TOOLCHAIN](../backend/TOOLCHAIN.md), [scripts/security](../scripts/security/README.md): Boot BOM **4.1.1 → 4.1.2** устраняет найденные совпадения OSV в Tomcat/Jackson. Проверяется реальный runtime dependency graph; сетевой сбой и неполный ответ не превращаются в успешный аудит.
+- [infra/compose.yaml](../infra/compose.yaml), [IntegrationTestConfiguration](../backend/src/test/java/com/hackatlas/IntegrationTestConfiguration.java), [B1 runner](../scripts/b1/run_contract_checks.py): свежая официальная пересборка PostgreSQL 17.11 от 21 октября закреплена единым digest `858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27` во всех dev/test/release контурах. Существующая dev-БД не запускалась и не менялась.
+- [Backend CI](../.github/workflows/backend-ci.yml): сохранены B1–B3 и Gitleaks, добавлены dependency audit и локальный B4 rehearsal. CI не разворачивает внешний сервер. Решения, общие README и передача каталога актуализированы; изменён только backend status.
+
+**API не изменён:** `api/`, fixtures, mobile, дизайн и `STATUS_MOBILE.md` сохранены. Opaque Bearer sessions без JWT/refresh сохранены. Backend, инфраструктура и QA работали в непересекающихся файлах; итог проверен координатором.
+
+### Реально выполненные проверки
+
+| Команда / проверка | Результат |
+|---|---|
+| WSL root, из backend: `bash ./mvnw --batch-mode --no-transfer-progress verify dependency:list -DincludeScope=runtime -DoutputFile=target/b4-runtime-dependencies.txt` | **BUILD SUCCESS: 279 тестов — 21 unit + 258 integration; 0 failures/errors/skipped** |
+| `.venv/Scripts/python.exe scripts/validate_contract.py` | PASS канонический контракт и все fixtures |
+| `validate_http_contract.py` по `target/catalog-contract-responses.json`, `target/b2-contract`, `target/b3-contract` | **139 B1 + 345 B2 + 102 B3 = 586 реальных HTTP-ответов**, PASS |
+| `scripts/b1/run_contract_checks.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar` | **12 HTTP cases, Bruno 10/10, Schemathesis 201/201**, seed 20261020 |
+| Аналогичный `scripts/b2/run_contract_checks.py` | **30 HTTP cases, Bruno 26/26**, PASS |
+| Аналогичный `scripts/b3/run_contract_checks.py` | **36 HTTP cases, Bruno 24/24**, PASS |
+| `python -m unittest discover -s scripts/security -p 'test_*.py'` и аналогично `scripts/b4` | **5 + 7 = 12 проверок**, PASS |
+| `scripts/security/check_maven_dependencies.py --dependencies backend/target/b4-runtime-dependencies.txt --output backend/target/b4-dependency-audit.json` | **106 runtime dependencies, 0 совпадений OSV** после обновления BOM; отдельные container findings остаются |
+| `scripts/b4/run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b4-rehearsal` | **PASS, 101.833 с** на окончательном PG image; TLS validation включён, отдельные миграции, runtime permissions, admin login/CSRF/verify/archive/publish, 3 публичных GET, полный backup/restore |
+| Gitleaks 8.30.1 `git --redact=100 --log-opts=--all` и `dir` по изменённым/новым файлам | Доступная история и рабочие изменения проверены; **no leaks found** |
+| `git diff --check`, scope/UTF-8/Markdown links, CI YAML, Python syntax и secret/backup ignore rules | PASS; staged/API/mobile/design изменений нет |
+
+CLI runner использовал `/root/.local/share/hackatlas-b2-tools/venv/bin/python` и Node `/root/.local/share/hackatlas-b2-tools/node-v24.19.0-linux-x64/bin/node`. Java 21.0.12.1, Docker 29.1.3, Compose 2.40.3, PostgreSQL 17.11. SHA-256 проверенного JAR: `4cc10be9e211c5ca304fec12efd873de9af4fec8a1b38133d2aa39ed16bf6b38`.
+
+В первых проверках исправлены ошибочный configtree path в тесте, capability официального Caddy binary при строгом запуске и явный HTTP→HTTPS redirect 308. Introspection запрета Flyway перенесён на оператора с указанием проверяемой runtime-роли; сами реальные запрещённые SELECT/DDL по-прежнему выполняются runtime и получают SQLSTATE 42501. Привилегии не расширялись, assertions не ослаблялись. После исправлений итоговый полный verify и rehearsal выполнены успешно.
+
+При смене PostgreSQL image первый повтор verify встретил timeout загрузки образа в Testcontainers. После успешного `docker pull` выполнен полный повтор, а не отключение теста или увеличение watchdog ради зелёного результата. Диагностика неудачной загрузки сохранена отдельно в `b4-verify-image-pull.log`.
+
+### Восстановление и его пределы
+
+Резервная копия синтетической БД: **38 600 байт, 0.260 с**. Восстановление в новую БД: **1.299 с**; до повторного HTTPS smoke — **39.849 с**. Сверены fingerprints 11 таблиц приложения и истории Flyway; ожидаемое отличие — удаление 2 сессий. Оба старых токена получили 401, исходная БД осталась без изменений от restore, повторная проверка миграций прошла.
+
+Специально проверено удаление аккаунта после backup: в исходной БД остался 1 аккаунт, старый snapshot вернул 2. Поэтому результат содержит `requiresPrivacyReview=true`, `publicReleaseReady=false`. Отзыв сессий не предотвращает повторный вход восстановленного аккаунта по паролю. Перед открытием восстановленного сервиса нужно применить последующие удаления. Эти локальные времена не являются обещанием production RPO/RTO: расписание/off-site backup, retention, журнал удалений, время оператора, DNS и production объём не реализованы/не измерены.
+
+Логи и JSON находятся в игнорируемом `backend/target/`: `b4-verify.log`, `b4-b1-regression.log`, `b4-b2-regression.log`, `b4-b3-regression.log`, `b4-dependency-audit.json`, `b4-rehearsal/report.json`, `b4-security/`. Временные БД, контейнеры, volumes, passwords и dump rehearsal удалены. Это были синтетические данные; внешних пользователей и серверов нет.
+
+Окончательный Trivy scan выполнен по app/proxy images из успешного rehearsal `hackatlas-b4-3e5371b6f85b` и новому PostgreSQL digest. Собственные Linux scanner cache/image также очищены; финальный `docker ps` показывает только исходный чужой `focusduo-db-1`, который не изменялся. Собранные app/proxy images и raw audit reports сохранены локально для проверки.
+
+### Что остаётся перед внешним выпуском
+
+Trivy обнаружил уязвимости в container dependencies; итоговый состав, severity и пределы анализа — в [аудите](research/2026-10-26-release-security.md). Функциональный PASS и отсутствие OSV findings в Maven не означают, что security gate внешнего выпуска пройден. Потребуются исправленные/проверенные образы и triage без скрытия известных проблем.
+
+App image: 32 MEDIUM/LOW package matches, 0 в 94 распознанных Java packages; proxy: 6 HIGH; PostgreSQL: 4 CRITICAL/96 HIGH до контекстного triage. Trivy не распознал сам Temurin JRE; upstream 21.0.13+9 уже есть, официальный Docker image этой версии ещё отсутствует. Ни одна из этих границ не скрыта за общим «тесты зелёные».
+
+Автоматическая проверка разрешений отклонила удаление временного Windows-кэша Trivy `backend/target/b4-security/cache` с единственным объяснением «blocked by policy». Удаление не повторялось, кэш оставлен в игнорируемой области. Это не данные приложения и не изменение исходников.
+
+Новый B4 workflow ещё не запускался на GitHub — пользователь не сделал push. Не проверялись внешний домен/ACME, целевой сервер, Android/iOS/телефон/компьютер напарника и M4. IP-лимит за единственным proxy общий, account limits остаются индивидуальными; лимитеры однопроцессные. Публичная регистрация закрыта, email verification/reset не добавлены. Следующий отдельный шаг: устранить release security blockers, согласовать инфраструктуру и только затем провести внешний staging/M4 и проверить эксплуатационные процедуры на целевой среде.
+
+Сообщение напарнику: «B3 уже в main; публичные list/detail/filters работают по прежнему Starter без входа. Поднимай свой main по B1_MOBILE_HANDOFF: общего staging URL пока нет. B4 добавляет локальные HTTPS и backup/restore проверки, API и мобильный UI не меняет. Подключение реальных устройств остаётся отдельной проверкой». Сообщение подготовлено, автоматически не отправлялось.
+
+### Пользовательский commit / push / PR
+
+PR title: **Prepare B4 release infrastructure and recovery checks**.
+
+Описание для GitHub: «Подготовлен локальный release-контур Caddy / Java / PostgreSQL: HTTPS, отдельные роли мигратора и runtime, file secrets, безопасная конфигурация и backup/restore в новую БД с отзывом сессий. Добавлены автоматическая репетиция выпуска и OSV-проверка зависимостей в CI; Boot обновлён до 4.1.2. Пройдены 279 Java-тестов, 586 проверок HTTP-контракта, Bruno для B1–B3, Schemathesis для B1 и полное восстановление с HTTPS smoke. Внешний deployment не выполнялся: контейнерные security findings и восстановление позднее удалённых аккаунтов явно документированы. API, opaque sessions и mobile не изменены».
+
+```powershell
+git status --short --branch
+git add .github/workflows/backend-ci.yml .gitignore README.md START_HERE.md backend infra scripts/b1/run_contract_checks.py scripts/b4 scripts/security docs/DECISIONS.md docs/STATUS_BACKEND.md docs/PRIVACY.md docs/TECHNOLOGY_DECISIONS.md docs/B1_MOBILE_HANDOFF.md docs/research/2026-10-26-release-security.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "chore(backend): prepare B4 release infrastructure and recovery checks"
+git push -u origin chore/backend-release
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...chore/backend-release?expand=1'
+```
+
+## B3 — исторический отчёт о модерации и удалении аккаунта
 
 **B3 выполнен, B4 не начат.** Перед работой проверены GitHub и чистый checkout: [B2 PR #5](https://github.com/KDvibers/HackAtlas/pull/5) пользователя `yergaliuly` объединён 25 октября; [main workflow 40223237200](https://github.com/KDvibers/HackAtlas/actions/runs/40223237200) завершён успешно. Ветка `feat/backend-moderation` создана без upstream от `origin/main=20464e76534e64e424b4ea98acc965d4c6aaaf04`. Это база с B2 и мобильным PR #4.
 

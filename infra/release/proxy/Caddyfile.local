@@ -1,0 +1,43 @@
+{
+	admin off
+	http_port 8080
+	https_port 8443
+	auto_https disable_redirects
+	skip_install_trust
+	servers {
+		protocols h1 h2
+	}
+	log default {
+		output stdout
+		format filter {
+			wrap json
+			fields {
+				request delete
+			}
+		}
+	}
+}
+
+http://localhost:8080 {
+	handle /__proxy_health {
+		respond "ok" 200
+	}
+	handle {
+		redir https://localhost:{$HACKATLAS_HTTPS_PORT}{uri} 308
+	}
+}
+
+https://localhost:8443 {
+	tls internal
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy app:8080 {
+		header_up -Forwarded
+		header_up -X-Forwarded-For
+		header_up -X-Forwarded-Proto
+		header_up -X-Forwarded-Host
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 30s
+		}
+	}
+}

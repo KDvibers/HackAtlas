@@ -1,5 +1,7 @@
 spring:
   config:
+    activate:
+      on-profile: "dev & !prod"
     import: optional:file:../infra/.env[.properties]
   datasource:
     url: ${HACKATLAS_DB_URL:jdbc:postgresql://localhost:5432/hackatlas}

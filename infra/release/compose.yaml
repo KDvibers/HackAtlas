@@ -1,0 +1,229 @@
+# Preparation template only. Local checks MUST also load compose.local.yaml.
+# Every operator command uses --env-file /dev/null and an explicit project name.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+x-labels: &labels
+  hackatlas.release: "true"
+x-app-env: &app-env
+  SPRING_PROFILES_ACTIVE: prod,release
+  HACKATLAS_BIND_ADDRESS: 0.0.0.0
+  PORT: "8080"
+  HACKATLAS_DB_URL: jdbc:postgresql://postgres:5432/${HACKATLAS_DB_NAME:-hackatlas}
+  HACKATLAS_DB_USERNAME: hackatlas_runtime
+  SPRING_FLYWAY_ENABLED: "false"
+  HACKATLAS_REGISTRATION_ENABLED: "false"
+  HACKATLAS_DEMO_ENABLED: "false"
+  SERVER_TOMCAT_THREADS_MAX: "50"
+  SERVER_TOMCAT_ACCEPT_COUNT: "50"
+  SERVER_TOMCAT_MAX_CONNECTIONS: "200"
+x-app: &app
+  image: ${HACKATLAS_APP_IMAGE:?Set an explicit local application image tag}
+  pull_policy: never
+  user: "10001:10001"
+  read_only: true
+  init: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=64m,uid=10001,gid=10001,mode=1770
+  mem_limit: 1g
+  cpus: 1.0
+  pids_limit: 160
+  logging: *logging
+  labels: *labels
+
+services:
+  init-volumes:
+    image: postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        chmod 0700 /postgres-data /caddy-data /caddy-config;
+        chown -R 999:999 /postgres-data;
+        chown -R 10001:10001 /caddy-data /caddy-config
+    read_only: true
+    network_mode: none
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      - postgres-data:/postgres-data
+      - caddy-data:/caddy-data
+      - caddy-config:/caddy-config
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 20
+    restart: "no"
+    logging: *logging
+    labels: *labels
+
+  postgres:
+    image: postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27
+    user: "999:999"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_DB: hackatlas
+      POSTGRES_USER: hackatlas_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-admin-password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+    command:
+      - postgres
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - max_connections=50
+      - -c
+      - log_statement=none
+      - -c
+      - log_min_error_statement=fatal
+      - -c
+      - log_error_verbosity=terse
+      - -c
+      - log_parameter_max_length_on_error=0
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/10-release-roles.sh:/docker-entrypoint-initdb.d/10-release-roles.sh:ro
+    secrets:
+      - postgres-admin-password
+      - migrator-password
+      - runtime-password
+    tmpfs:
+      - /var/run/postgresql:rw,nosuid,noexec,size=16m,uid=999,gid=999,mode=3775
+      - /tmp:rw,nosuid,noexec,size=16m,uid=999,gid=999,mode=1770
+    networks: [database]
+    depends_on:
+      init-volumes:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U hackatlas_admin -d hackatlas"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 15s
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 100
+    shm_size: 128m
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging: *logging
+    labels: *labels
+
+  migrate:
+    <<: *app
+    profiles: [ops]
+    environment:
+      <<: *app-env
+      HACKATLAS_DB_USERNAME: hackatlas_migrator
+      HACKATLAS_FLYWAY_USERNAME: hackatlas_migrator
+      HACKATLAS_MIGRATION_ONLY: "true"
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,filesystem:/opt/hackatlas/flyway
+    secrets:
+      - source: migrator-password
+        target: HACKATLAS_DB_PASSWORD
+      - source: migrator-password
+        target: HACKATLAS_FLYWAY_PASSWORD
+    volumes:
+      - ./database/flyway:/opt/hackatlas/flyway:ro
+    networks: [database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    <<: *app
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    environment: *app-env
+    secrets:
+      - source: runtime-password
+        target: HACKATLAS_DB_PASSWORD
+    networks: [frontend, database]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:8080/actuator/health/readiness >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+    restart: unless-stopped
+    stop_grace_period: 35s
+
+  proxy:
+    image: ${HACKATLAS_PROXY_IMAGE:-hackatlas-proxy:b4-local}
+    pull_policy: never
+    build:
+      context: ./proxy
+      dockerfile: Dockerfile
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      HACKATLAS_SITE: ${HACKATLAS_SITE:?Set an explicitly approved hostname; local checks use localhost}
+    ports:
+      - "80:8080"
+      - "443:8443"
+    volumes:
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=16m,uid=10001,gid=10001,mode=1770
+    networks: [edge, frontend]
+    depends_on:
+      init-volumes:
+        condition: service_completed_successfully
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, "wget -q -T 3 -O /dev/null --header=Host:$$HACKATLAS_SITE http://127.0.0.1:8080/__proxy_health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 60
+    restart: unless-stopped
+    stop_grace_period: 15s
+    logging: *logging
+    labels: *labels
+
+networks:
+  edge:
+    labels: *labels
+  frontend:
+    internal: true
+    labels: *labels
+  database:
+    internal: true
+    labels: *labels
+
+volumes:
+  postgres-data:
+    labels: *labels
+  caddy-data:
+    labels: *labels
+  caddy-config:
+    labels: *labels
+
+secrets:
+  postgres-admin-password:
+    file: ${HACKATLAS_SECRET_DIR:?Set an absolute private Linux secrets directory}/postgres-admin-password
+  migrator-password:
+    file: ${HACKATLAS_SECRET_DIR:?Set an absolute private Linux secrets directory}/migrator-password
+  runtime-password:
+    file: ${HACKATLAS_SECRET_DIR:?Set an absolute private Linux secrets directory}/runtime-password
