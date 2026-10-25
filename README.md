@@ -2,9 +2,9 @@
 
 Мобильный каталог хакатонов для Android и iOS: общий клиент на Kotlin Multiplatform + Compose Multiplatform и сервер на Java 21 + Spring Boot.
 
-**Состояние:** G0–B2 объединены в main (B2 — PR #5). В `feat/backend-moderation` подготовлен B3: админка каталога, очередь предложений/жалоб и удаление аккаунта. Публичный каталог остаётся доступен без входа. Команды запуска и результаты проверок — в [backend README](backend/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
+**Состояние:** G0–B3 объединены в main (B3 — PR #8). В `chore/backend-release` подготовлен локальный комплект B4: контейнеры, HTTPS через Caddy, раздельные роли БД и file secrets, backup/restore и проверки выпуска. Публичный каталог остаётся доступен без входа. Команды и фактические результаты — в [release runbook](infra/release/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
 
-**Мобильная часть:** реализованы M0/M1 и независимая от backend часть M2: постоянные гостевые закладки, офлайн-копии подробностей и календарь. Визуал M1 утверждён; Android проверен, iOS требует Mac/Xcode. В main также объединён [PR #6](https://github.com/KDvibers/HackAtlas/pull/6) напарника с HTTP-слоем каталога и MockEngine tests; подключение живого backend к экранам остаётся отдельным шагом. Эта серверная ветка создана до PR #6 и не включает его мобильные файлы до объединения с main. См. [mobile README](mobile/README.md), [статус mobile](docs/STATUS_MOBILE.md) и [результаты M2](mobile/artifacts/m2/review.html).
+**Мобильная часть:** реализованы M0/M1 и независимая от backend часть M2: постоянные гостевые закладки, офлайн-копии подробностей и календарь. Визуал M1 утверждён; Android проверен, iOS требует Mac/Xcode. В main также объединены [HTTP-клиент PR #6](https://github.com/KDvibers/HackAtlas/pull/6) и [state stores PR #7](https://github.com/KDvibers/HackAtlas/pull/7) напарника. Их наличие не подтверждает живую интеграцию backend или проверку устройств. См. [mobile README](mobile/README.md), [статус mobile](docs/STATUS_MOBILE.md) и [результаты M2](mobile/artifacts/m2/review.html).
 
 Репозиторий: [KDvibers/HackAtlas](https://github.com/KDvibers/HackAtlas). Единственный актуальный комплект — **Starter**. Handoff больше не является спецификацией.
 
@@ -30,4 +30,6 @@
 | Мобильный разработчик; GitHub handle пока не указан | `mobile/`, мобильные ресурсы и CI |
 | Оба разработчика | `api/`, референс, общие продуктовые решения |
 
-Следующий отдельный этап backend — **B4**, эксплуатационная подготовка и согласованный deployment. Он не начат; текущая граница — проверенный локально B3.
+Текущая граница — **подготовка и локальные проверки B4**, как уточнил пользователь. Внешний HTTPS-staging, hosting/DNS, backup retention и совместная приёмка M4 требуют следующего согласованного задания; полный B4 и публичный выпуск ещё не объявляются завершёнными.
+
+Проверка контейнеров выявила уязвимости и отставание официального JRE image: [security gate внешнего выпуска пока не пройден](docs/research/2026-10-26-release-security.md). Успешные локальные тесты это ограничение не снимают.

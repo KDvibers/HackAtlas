@@ -1,6 +1,6 @@
 # Локальная инфраструктура B0/B1
 
-Только dev PostgreSQL для HackAtlas. Backend запускается отдельно; production deployment здесь не настроен.
+Этот файл описывает dev PostgreSQL для HackAtlas; backend запускается отдельно. Подготовка B4 отделена в [release/README](release/README.md): Docker Compose, Caddy, file secrets и восстановление в новую БД. Внешний staging/production не развёрнут; dev `.env` и volume не используются release-проверками.
 
 ## Конфигурация
 
@@ -84,15 +84,16 @@ docker compose --env-file infra/.env -f infra/compose.yaml stop postgres
 
 ## Проверенные источники фиксации
 
-Версии и SHA проверены 20 октября 2026 по первичным источникам:
+Исходные версии и SHA проверены 20 октября 2026 по первичным источникам; B4 обновил PostgreSQL digest и добавил upload-artifact 26 октября:
 
 | Компонент | Фиксация | Источник |
 |---|---|---|
-| PostgreSQL | `17.11-bookworm`, multiarch digest `sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826` | [Поддерживаемая линия](https://www.postgresql.org/support/versioning/), [Docker Official Image](https://hub.docker.com/_/postgres), [metadata тега](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm) |
+| PostgreSQL | `17.11-bookworm`, multiarch digest `sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27` (пересборка 21.10, закреплена B4) | [Поддерживаемая линия](https://www.postgresql.org/support/versioning/), [Docker Official Image](https://hub.docker.com/_/postgres), [metadata тега](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm) |
 | checkout | `v7.0.1` → `3d3c42e5aac5ba805825da76410c181273ba90b1` | [Официальный release](https://github.com/actions/checkout/releases/tag/v7.0.1) |
 | setup-java | `v6.1.0` → `b843ebf9b913146b38da2eaa7aeddf76074ae1ad` | [Официальный release](https://github.com/actions/setup-java/releases/tag/v6.1.0) |
 | setup-python | `v7.0.0` → `5fda3b95a4ea91299a34e894583c3862153e4b97` | [Официальный release](https://github.com/actions/setup-python/releases/tag/v7.0.0) |
 | setup-node | `v7.1.0` → `949feb2413d6458794dcd2491c4babbbce0c15c1` | [Официальный release](https://github.com/actions/setup-node/releases/tag/v7.1.0) |
+| upload-artifact | `v7.0.2` → `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | [Официальный release](https://github.com/actions/upload-artifact/releases/tag/v7.0.2), [tag → commit](https://api.github.com/repos/actions/upload-artifact/git/ref/tags/v7.0.2) |
 | Gitleaks CLI | `8.30.1`, Linux x64 SHA-256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` | [Release](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1), [checksums](https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_checksums.txt) |
 
-Action SHA сверены через `git ls-remote --tags` официальных репозиториев. Архив Gitleaks Linux x64 скачан для проверки в память, его SHA-256 совпал с upstream checksum. При обновлении версии заново проверить связанные SHA/digest и выполнить соответствующие проверки; не заменять их плавающими tags.
+Исходные Action SHA сверены через `git ls-remote --tags` официальных репозиториев; B4 upload-artifact — через официальный GitHub tag ref и action.yml по commit SHA. Он сохраняет на 7 дней только dependency-audit.json и report.json/commands.log B4, включая неудачный запуск; весь target, SQL, secrets и auth responses не загружаются. Архив Gitleaks Linux x64 скачан для проверки в память, его SHA-256 совпал с upstream checksum. При обновлении версии заново проверить связанные SHA/digest и выполнить соответствующие проверки; не заменять их плавающими tags.

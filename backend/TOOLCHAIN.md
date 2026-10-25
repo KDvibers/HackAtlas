@@ -1,19 +1,21 @@
-# Backend toolchain — B0/B1/B2/B3
+# Backend toolchain — B0/B1/B2/B3 и подготовка B4
 
-Фиксация от 20 октября 2026. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
+Первичная фиксация — 20 октября 2026; обновление безопасности B4 — 26 октября. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
 
 | Компонент | Зафиксировано |
 |---|---|
 | Java | Language / bytecode target 21; локально проверен JDK 21.0.12.1 |
-| Spring Boot parent / BOM | 4.1.1 |
-| Spring Security | 7.1.1 через Boot BOM, подключён B2 |
+| Spring Boot parent / BOM | 4.1.2; patch-обновление безопасности B4 |
+| Spring Security | 7.1.2 через Boot BOM, подключён B2 |
+| Embedded Tomcat | 11.0.27 через Boot BOM |
+| Jackson 3 BOM | 3.1.7 через Boot BOM |
 | Thymeleaf | 3.1.5.RELEASE через Boot BOM, server-side HTML админка B3 |
 | Bouncy Castle | `bcprov-jdk18on:1.86`, нужен Spring Argon2id encoder |
 | Maven | 3.9.16 |
 | Maven Wrapper | 3.3.4, `only-script`, без wrapper JAR в Git |
 | PostgreSQL | 17.11, официальный `bookworm` image, digest ниже |
 | Flyway | 12.4.0 через Boot BOM |
-| PostgreSQL JDBC | 42.7.13 через Boot BOM |
+| PostgreSQL JDBC | 42.7.14 через Boot BOM |
 | Testcontainers | 2.0.5 через Boot BOM |
 | Maven Surefire / Failsafe | 3.5.6 через Boot parent |
 | Bruno CLI | 4.2.1, npm lock в `tools/bruno/` |
@@ -24,9 +26,13 @@
 
 Mockito из `spring-boot-starter-test` запускается явным Java agent в Surefire/Failsafe по [официальной инструкции для Java 21+](https://javadoc.io/static/org.mockito/mockito-core/5.24.0/org.mockito/org/mockito/Mockito.html#0.3). Maven dependency plugin разрешает путь к JAR; late `argLine` сохраняет совместимость с будущими test agents. Это устраняет динамическое self-attach при старте Spring test context; тесты и listeners не отключаются.
 
-PostgreSQL digest: `sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826`. Он используется и для Compose, и для интеграционных тестов; тесты не зависят от состояния dev volume. Exact versions и hashes CI Actions / Gitleaks собраны в [infra/README](../infra/README.md).
+PostgreSQL digest: `sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27`. В B4 закреплена свежая официальная пересборка 17.11 от 21 октября; версия PostgreSQL не меняется. Один digest используется в dev/release Compose, Testcontainers и B1–B3 CLI runners; тесты не зависят от состояния dev volume. Exact versions и hashes CI Actions / Gitleaks собраны в [infra/README](../infra/README.md).
 
 B3 добавляет только `spring-boot-starter-thymeleaf` из существующего Boot BOM. HTML формируется на сервере, дополнительный JavaScript runtime или сборщик UI не нужен. Spring Security сохраняет opaque Bearer API и отдельно защищает admin browser session/CSRF. Для модерации переиспользуется проверенный алгоритм ограниченных окон B2 с отдельными счётчиками: Bucket4j и Redis не добавлялись. PostgreSQL row locks, FK и транзакции обеспечивают атомарное удаление аккаунта и аудит. Подробности — [MODERATION](MODERATION.md).
+
+В B4 проверка OSV обнаружила advisory для прежних Tomcat 11.0.24 и Jackson 3.1.5. Обновлён единый stable Boot BOM до 4.1.2, без отдельных несогласованных overrides и без RC-релизов. Источник — [официальный BOM в Maven Central](https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-dependencies/4.1.2/spring-boot-dependencies-4.1.2.pom). Фактические runtime версии проверяет [dependency audit](../scripts/security/README.md); его результат не является гарантией отсутствия неизвестных уязвимостей.
+
+Контейнерный JRE, Caddy и PostgreSQL закреплены digest в [release runbook](../infra/release/README.md). Локальная подготовка B4 не обновляет ОС пользовательского компьютера, не включает bot PR и не публикует образы в registry.
 
 ## Wrapper и проверка загрузок
 

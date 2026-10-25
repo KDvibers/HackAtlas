@@ -1,0 +1,26 @@
+# Add to prod explicitly. This profile never imports the local development .env.
+spring:
+  config:
+    import: optional:configtree:/run/secrets/
+  main:
+    web-application-type: servlet
+    keep-alive: false
+  flyway:
+    enabled: false
+    url: ${HACKATLAS_FLYWAY_URL:${HACKATLAS_DB_URL}}
+    user: ${HACKATLAS_FLYWAY_USERNAME:${HACKATLAS_DB_USERNAME}}
+    password: ${HACKATLAS_FLYWAY_PASSWORD:${HACKATLAS_DB_PASSWORD}}
+
+server:
+  forward-headers-strategy: none
+  tomcat:
+    use-relative-redirects: true
+    redirect-context-root: false
+
+hackatlas:
+  release:
+    migration-only: ${HACKATLAS_MIGRATION_ONLY:false}
+  demo:
+    enabled: false
+  auth:
+    registration-enabled: false

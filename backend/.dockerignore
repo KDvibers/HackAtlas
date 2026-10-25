@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!.dockerignore
+!target/
+target/*
+!target/hackatlas-backend-0.1.0-SNAPSHOT.jar

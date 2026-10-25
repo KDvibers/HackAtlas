@@ -25,7 +25,7 @@ SCHEMA = ROOT / "api/openapi.yaml"
 COLLECTION = ROOT / "tools/bruno"
 POSTGRES_IMAGE = (
     "postgres:17.11-bookworm@sha256:"
-    "3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826"
+    "858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
 )
 OPERATIONS = {
     ("get", "/hackathons"),
