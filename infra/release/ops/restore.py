@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Restore into a NEW gated database, purge old sessions, then grant runtime access."""
+"""Restore into a NEW quarantined database; runtime access requires a separate review."""
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -14,6 +15,7 @@ import tempfile
 import time
 
 from common import client_command, container_for, database_name, sql
+from restore_review import literal, quarantine_state
 
 
 def main():
@@ -66,11 +68,16 @@ def main():
         if restored.returncode:
             raise RuntimeError("pg_restore failed. The new target is retained for diagnosis with runtime CONNECT still denied; source DB is untouched.")
     grants = (Path(__file__).resolve().parents[1] / "database/flyway/afterMigrate.sql").read_text(encoding="utf-8")
+    state = quarantine_state(args.project, target, actual, now=datetime.now(timezone.utc))
     revoked = sql(container, target,
-                  "BEGIN;\nSELECT count(*) FROM hackatlas.auth_session;\nDELETE FROM hackatlas.auth_session;\n"
-                  + grants + f'\nGRANT CONNECT ON DATABASE "{target}" TO hackatlas_runtime;\nCOMMIT;', role="migrator")
+                  f'BEGIN;\nREVOKE CONNECT ON DATABASE "{target}" FROM PUBLIC, hackatlas_runtime;\n'
+                  "SELECT count(*) FROM hackatlas.auth_session;\nDELETE FROM hackatlas.auth_session;\n"
+                  + grants + f'\nCOMMENT ON DATABASE "{target}" IS {literal(json.dumps(state))};\nCOMMIT;', role="migrator")
     print(json.dumps({"database": target, "sourceArchive": str(source), "sha256": actual,
-                      "revokedSessions": int(revoked), "readyForSmoke": True, "requiresPrivacyReview": True,
+                      "project": args.project, "restoreId": state["restoreId"], "restoredAt": state["restoredAt"],
+                      "state": "QUARANTINED", "runtimeAccessGranted": False,
+                      "revokedSessions": int(revoked), "readyForSmoke": False, "requiresPrivacyReview": True,
+                      "publicReleaseReady": False,
                       "durationSeconds": round(time.monotonic() - started, 3)}))
 
 

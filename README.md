@@ -2,7 +2,7 @@
 
 Мобильный каталог хакатонов для Android и iOS: общий клиент на Kotlin Multiplatform + Compose Multiplatform и сервер на Java 21 + Spring Boot.
 
-**Состояние:** G0–B3 и локальная подготовка B4 объединены в main (B4 — PR #10). В `fix/backend-release-security` подготовлена следующая часть: исправления Brotli/curl в proxy и воспроизводимая проверка готовности контейнеров к внешнему выпуску. Публичный каталог остаётся доступен без входа. Команды и фактические результаты — в [release runbook](infra/release/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
+**Состояние:** G0–B3, локальная подготовка B4 и проверка контейнеров B4.1 объединены в main (B4.1 — PR #11). В `fix/backend-restore-quarantine` подготовлен B4.2: новая восстановленная БД закрыта до операторского review и повторного применения подтверждённых удалений. Публичный каталог остаётся доступен без входа. Команды и фактические результаты — в [release runbook](infra/release/README.md) и [статусе backend](docs/STATUS_BACKEND.md). Внешнего staging URL пока нет; commit, push и PR выполняет пользователь.
 
 **Мобильная часть:** реализованы M0/M1 и независимая от backend часть M2: постоянные гостевые закладки, офлайн-копии подробностей и календарь. Визуал M1 утверждён; Android проверен, iOS требует Mac/Xcode. В main также объединены [HTTP-клиент PR #6](https://github.com/KDvibers/HackAtlas/pull/6) и [state stores PR #7](https://github.com/KDvibers/HackAtlas/pull/7) напарника. Их наличие не подтверждает живую интеграцию backend или проверку устройств. См. [mobile README](mobile/README.md), [статус mobile](docs/STATUS_MOBILE.md) и [результаты M2](mobile/artifacts/m2/review.html).
 
