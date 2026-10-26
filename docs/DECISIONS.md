@@ -1,5 +1,15 @@
 # Принятые решения
 
+## 26 октября 2026 — продолжение B4: проверяемая готовность контейнеров
+
+B4 объединён пользователем через PR #10, main `35614e30a5d27eb50c58a088eef12de313f3df8c`, Backend CI `40236439132` завершён успешно. Продолжение поручено в `fix/backend-release-security`; внешняя инфраструктура по-прежнему не разрешена. Это подготовка к staging, без изменения продукта, API, авторизации и мобильной части.
+
+Официальные stable pins Caddy, PostgreSQL и Temurin проверены повторно и не изменились. Для Caddy derivative доступны точечные исправления Alpine: signed `brotli-libs=1.2.1-r0` для CVE-2026-111497, `curl=8.23.0-r0` и `libcurl=8.23.0-r0` для curl advisories, включая CVE-2026-92392. Они закреплены по версиям; встроенные Go/x/net этим не исправляются. Custom Go/JRE supply chain, смена ОС PostgreSQL и новые frameworks не вводились.
+
+Trivy 0.76.1 закреплён digest. Воспроизводимый audit связывает все три реально испытанные images с архивами/config digests и хешами отчётов; сканирует offline без Docker socket. Результат `BLOCKED` отличается от неполного анализа. HIGH/CRITICAL/UNKNOWN остаются blockers, включая unpatched findings; suppressions и автоматическое принятие риска отсутствуют. Сам JRE проверяется отдельно, поскольку scanner не распознаёт tar-installed runtime.
+
+В CI добавлен **отдельный ручной External release readiness** с реальным отказом на blockers, Maven/OSV/HTTPS/restore и сохранением evidence на 7 дней. Backend CI продолжает проверять работоспособность и unit tests политики. Успех Backend CI не является разрешением внешнего выпуска; ручной release workflow ничего не разворачивает. Подробности — [security tools](../scripts/security/README.md) и [backend status](STATUS_BACKEND.md).
+
 ## 26 октября 2026 — B4: подготовка и локальная проверка выпуска
 
 Пользователь уточнил границу: **«Пока только подготовка и локальные проверки»**. Поэтому не выбираем провайдера, регион, бюджет или домен; не создаём внешний staging, DNS, платные ресурсы и публичную регистрацию. Полный B4 по ROADMAP остаётся открытым до согласованного HTTPS deployment и совместной проверки M4. Commit, push и PR выполняет пользователь.

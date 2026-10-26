@@ -34,6 +34,8 @@ B3 добавляет только `spring-boot-starter-thymeleaf` из суще
 
 Контейнерный JRE, Caddy и PostgreSQL закреплены digest в [release runbook](../infra/release/README.md). Локальная подготовка B4 не обновляет ОС пользовательского компьютера, не включает bot PR и не публикует образы в registry.
 
+Продолжение B4 закрепляет существующие proxy packages `brotli-libs=1.2.1-r0`, `curl=8.23.0-r0` и `libcurl=8.23.0-r0` из signed Alpine v3.23 repositories; это исправляет Brotli/curl advisories без замены Caddy binary. Trivy 0.76.1 закреплён image digest в [container policy](../scripts/security/container_policy.py). Минимум runtime gate — Temurin 21.0.13+9; текущий официальный image пока содержит 21.0.12.1+1 и остаётся blocked. Runtime gate не обновляет установленный host JDK и не является новым language target.
+
 ## Wrapper и проверка загрузок
 
 [maven-wrapper.properties](.mvn/wrapper/maven-wrapper.properties) закрепляет HTTPS URL Maven Central и SHA-256 Maven ZIP:

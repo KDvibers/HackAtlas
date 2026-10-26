@@ -1,0 +1,63 @@
+name: External release readiness
+
+# Explicit release check. Known blockers make this workflow fail; it never deploys.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    name: Rehearse and enforce container release gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+          overwrite-settings: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build and verify the candidate
+        working-directory: backend
+        run: >-
+          bash ./mvnw --batch-mode --no-transfer-progress verify dependency:list
+          -DincludeScope=runtime -DoutputFile=target/runtime-dependencies.txt
+      - name: Install pinned rehearsal tools and test audit policy
+        run: |
+          python -m venv scripts/b1/.venv
+          scripts/b1/.venv/bin/python -m pip install --disable-pip-version-check -r scripts/b1/requirements.txt
+          scripts/b1/.venv/bin/python -m pip check
+          scripts/b1/.venv/bin/python -m unittest discover -s scripts/security -p 'test_*.py'
+          scripts/b1/.venv/bin/python scripts/security/check_maven_dependencies.py --dependencies backend/target/runtime-dependencies.txt --output backend/target/dependency-audit.json
+      - name: Rehearse local HTTPS and recovery
+        run: >-
+          scripts/b1/.venv/bin/python scripts/b4/run_rehearsal.py
+          --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar
+          --output-dir backend/target/release-rehearsal
+      - name: Scan exact rehearsed images and block unresolved findings
+        run: >-
+          scripts/b1/.venv/bin/python scripts/security/run_container_audit.py
+          --rehearsal-report backend/target/release-rehearsal/report.json
+          --output-dir backend/target/container-audit
+      - name: Preserve release evidence even when the gate is blocked
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: external-release-readiness
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            backend/target/release-rehearsal/report.json
+            backend/target/release-rehearsal/commands.log
+            backend/target/dependency-audit.json
+            backend/target/container-audit/*.json
+            backend/target/container-audit/*.log

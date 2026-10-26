@@ -130,6 +130,8 @@ class Http:
 class Rehearsal:
     def __init__(self, jar, output, timeout):
         self.jar, self.output, self.timeout = jar, output, timeout
+        require(not any((output / name).exists() for name in ("report.json", "commands.log")),
+                "Choose a fresh output directory; previous rehearsal evidence must not be overwritten")
         self.output.mkdir(parents=True, exist_ok=True)
         self.project = "hackatlas-b4-" + uuid.uuid4().hex[:12]
         self.temp = Path(tempfile.mkdtemp(prefix=self.project + "-"))
@@ -200,6 +202,9 @@ class Rehearsal:
             self.report["images"][service] = {"tag": tag, "id": inspect["Id"]}
         self.started = True
         self.dc("Start isolated database", "up", "-d", "--wait", "--wait-timeout", str(self.timeout), "postgres", timeout=self.timeout + 60)
+        tag = config["services"]["postgres"]["image"]
+        inspect = json.loads(self.run("Inspect rehearsed PostgreSQL image", ["docker", "image", "inspect", tag]).stdout)[0]
+        self.report["images"]["postgres"] = {"tag": tag, "id": inspect["Id"]}
         self.dc("Run migrations as separate migrator role", "--profile", "ops", "run", "--rm", "migrate", timeout=self.timeout)
         self.dc("Start least-privilege runtime and TLS proxy", "up", "-d", "--wait", "--wait-timeout", str(self.timeout), "app", "proxy", timeout=self.timeout + 60)
         self.dc("Export disposable Caddy root certificate", "cp", "proxy:/data/caddy/pki/authorities/local/root.crt", str(self.temp / "root.crt"))
@@ -217,6 +222,7 @@ class Rehearsal:
             identifier = self.dc("Find owned " + service, "ps", "-q", service).stdout.strip()
             container = json.loads(self.run("Inspect owned " + service, ["docker", "inspect", identifier]).stdout)[0]
             validate_owned([container], self.project)
+            self.report["images"][service]["containerImageId"] = container["Image"]
             require(container["Config"]["User"] == uid, service + " must run without root")
             require(container["HostConfig"]["ReadonlyRootfs"], service + " requires a read-only root filesystem")
             require("ALL" in container["HostConfig"].get("CapDrop", []), service + " capabilities must be dropped")

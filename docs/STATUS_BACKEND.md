@@ -2,6 +2,63 @@
 
 Дата актуального дополнения: 26 октября 2026.
 
+## B4.1 — исправление proxy и воспроизводимая проверка контейнеров
+
+Продолжение B4 выполнено в локальной границе: **внешний выпуск остаётся BLOCKED**. На GitHub объединён [B4 PR #10](https://github.com/KDvibers/HackAtlas/pull/10); [Backend CI main 40236439132](https://github.com/KDvibers/HackAtlas/actions/runs/40236439132) завершился успешно. Ветка `fix/backend-release-security` создана от `origin/main=35614e30a5d27eb50c58a088eef12de313f3df8c` при чистом checkout. Staging/публикация, commit, staging Git, push и PR этой доработки не выполнялись.
+
+### Изменения
+
+- [Proxy Dockerfile](../infra/release/proxy/Dockerfile): fixed `brotli-libs=1.2.1-r0`, `curl=8.23.0-r0`, `libcurl=8.23.0-r0` из signed Alpine repositories для Brotli/curl advisories, включая CVE-2026-111497 и CVE-2026-92392. Caddy binary, Go/x/net и остальные official base pins не заменялись; актуальные stable refs проверены повторно. [Brotli package](https://pkgs.alpinelinux.org/package/v3.23/main/x86_64/brotli-libs), [curl package](https://pkgs.alpinelinux.org/package/v3.23/main/x86_64/curl), [Alpine security DB](https://secdb.alpinelinux.org/v3.23/main.json).
+- [run_container_audit.py](../scripts/security/run_container_audit.py): pinned Trivy 0.76.1, offline scan app/proxy/PostgreSQL archives без Docker socket. Проверены image/container IDs из реального rehearsal, config digest из tar и SHA-256 отчётов. Нужен новый каталог evidence. Созданный Linux cache имеет уникальную ownership label; очистка не принимает чужие ресурсы. Незавершённую загрузку можно продолжить через явно указанный собственный cache volume.
+- [container_policy.py](../scripts/security/container_policy.py), [tests](../scripts/security/test_container_policy.py): неполные/устаревшие/подменённые evidence не дают PASS. HIGH/CRITICAL/UNKNOWN и пакеты без версии блокируют gate; минимальный JRE — Temurin 21.0.13+9, поскольку Trivy не распознаёт tar-installed JRE. Все findings сохраняются, suppressions/risk acceptances отсутствуют.
+- [External release readiness](../.github/workflows/release-readiness.yml): отдельный ручной workflow с Maven/OSV, HTTPS/restore, container gate и allowlist JSON/log artifacts на 7 дней. Известные blockers дают nonzero exit; workflow ничего не разворачивает. Обычный Backend CI автоматически подхватывает unit tests новой политики. Новый ручной workflow на GitHub ещё не запускался.
+- [B4 runner](../scripts/b4/run_rehearsal.py), [safety tests](../scripts/b4/test_rehearsal.py): существующие report/log не перезаписываются и не смешиваются; сохранены точные PostgreSQL и runtime container image IDs для привязки scan. Runbook, toolchain, проектные решения и README актуализированы.
+
+**API/авторизация не изменены.** Java runtime/API code, миграции, `api/`, `mobile/`, дизайн и `STATUS_MOBILE.md` не менялись. Opaque Bearer sessions сохранены. Новые продуктовые функции, внешние сервисы и новая Go/JRE supply chain не вводились.
+
+### Выполненные проверки
+
+| Проверка | Результат |
+|---|---|
+| `backend/mvnw --batch-mode --no-transfer-progress verify dependency:list -DincludeScope=runtime -DoutputFile=target/b41-runtime-dependencies.txt` через WSL root | **BUILD SUCCESS; 279 тестов (21 unit + 258 integration), 0 failures/errors/skips** |
+| `validate_http_contract.py` по новым B1/B2/B3 exports | **139 + 345 + 102 = 586 реальных ответов**, PASS |
+| `python -m unittest discover -s scripts/security -p 'test_*.py'` | **22 теста**, PASS: evidence binding/свежесть/ошибки/сохранение findings/старый JRE/защита cleanup/версионированный Caddy module |
+| Аналогично `scripts/b4` | **8 тестов**, PASS, включая отказ перезаписывать предыдущие evidence |
+| `check_maven_dependencies.py --dependencies backend/target/b41-runtime-dependencies.txt --output backend/target/b41-dependency-audit.json` | **106 packages, 0 совпадений OSV** |
+| `run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b41-rehearsal-final` | **PASS, 105.641 с** на окончательном Brotli/curl image: TLS, CSRF/admin, permissions, 3 GET, миграции, backup/restore, hashes/history и old-token 401 |
+| `run_container_audit.py --rehearsal-report backend/target/b41-rehearsal-final/report.json --output-dir backend/target/b41-security-release` | **Все 3 scans завершены, exit 1 / BLOCKED**, полные evidence; Brotli/curl advisories в Alpine части proxy отсутствуют |
+| `container_policy.py --evidence backend/target/b41-security-release` по окончательному коду политики | **Exit 1, `evidenceComplete=true`**; real canonical Caddy module учтён, остальные findings не исключены |
+| `validate_contract.py`, Python syntax, workflow YAML/pins/permissions, `git diff --check`, scope/UTF-8/Markdown links | PASS; 17 изменённых/новых файлов, staged/API/mobile/design изменений нет |
+| Gitleaks 8.30.1 по доступной Git history и всем изменённым/новым файлам, `--redact=100` | **No leaks found**; это проверенный scope, не гарантия отсутствия любых секретов |
+
+Backup синтетической БД: 38 587 байт / 0.267 с, restore: 1.256 с, recovery через HTTPS: 39.539 с. Старые 2 сессии удалены. Позднейший deleted account по-прежнему возвращается из старого snapshot: это отдельный privacy blocker, не исправление этого этапа. Production RPO/RTO не обещаются.
+
+Логи/JSON — в игнорируемом `backend/target/`: `b41-verify.log`, `b41-rehearsal-final/`, `b41-dependency-audit.json`, `b41-security-release/`. Во время первого download Trivy прерывалась работа WSL/Docker, причина перезапуска не установлена; сохранённый собственный DB cache использован для продолжения. Ошибки cleanup больше не скрывают исходный сбой; публичные диагностические логи пишутся во время команды. Реальные Trivy reports содержат unversioned build wrapper `caddy`, но canonical `github.com/caddyserver/caddy/v2` указан с `v2.11.7`: политика сохраняет этот факт, не исключая findings. Неизвестный wrapper без подтверждённого опубликованного модуля продолжает блокировать gate.
+
+Ограничения: исправления Go/x/net и актуальный официальный Temurin image ещё нужны; состав container findings не равен доказанной эксплуатации. External staging, Android/iOS/M4, retention/offsite backups и сверка удалений после snapshot не выполнены. Полный B4 по ROADMAP остаётся открыт.
+
+Окончательные package/advisory matches: app **28 MEDIUM + 4 LOW**, proxy **5 HIGH + 14 MEDIUM + 1 LOW + 1 UNKNOWN** (Alpine часть 0), PostgreSQL **4 CRITICAL + 96 HIGH + 195 MEDIUM + 173 LOW + 6 UNKNOWN**. Это не количество уникальных CVE и не доказанная сетевая эксплуатация. [Область анализа, источники и triage](research/2026-10-26-release-security.md). Временные rehearsal containers/volumes/secrets/dump и audit Linux cache/archives очищены; Docker inventory содержит только исходный `focusduo-db-1`, команды управления им не выполнялись.
+
+Git HTTPS account подтверждён как **yergaliuly**, commit author отдельно — **softache <itsyergaliuly@gmail.com>**. Финальный fetch сохранил main `35614e3`; staged изменений нет.
+
+Сообщение напарнику: «B4 объединён в main. API публичного каталога прежний; Task 5 можно продолжать на переданном commit. Доработка B4.1 касается proxy и release evidence, не мобильной интеграции; общего staging URL пока нет». Сообщение подготовлено, не отправлялось.
+
+Следующий отдельный шаг: процедура безопасного восстановления с учётом последующих удалений и политика регулярных backup; container blockers повторно проверять при появлении upstream fixes. Hosting/domain/deployment требуют отдельного решения.
+
+PR title: **Patch proxy packages and enforce container release readiness**.
+
+Описание: «Обновлены Brotli и curl/libcurl в Caddy image для устранения известных Alpine advisories. Добавлены воспроизводимый offline Trivy audit конкретных испытанных app/proxy/PostgreSQL images и fail-closed policy: повреждённые/устаревшие evidence, HIGH/CRITICAL/UNKNOWN, непроверенные версии и старый JRE не дают разрешения выпуска. Отдельный ручной GitHub workflow выполняет verify/OSV/HTTPS/restore и сохраняет отчёты даже при blocked. Проверены 279 Java-тестов, 586 HTTP-ответов, 30 Python-тестов и локальное восстановление. Остальные container/privacy blockers задокументированы; внешнего deployment и изменений API нет».
+
+```powershell
+git status --short --branch
+git add .github/workflows/release-readiness.yml README.md START_HERE.md backend/TOOLCHAIN.md docs/DECISIONS.md docs/STATUS_BACKEND.md docs/TECHNOLOGY_DECISIONS.md docs/research/2026-10-26-release-security.md infra/release/README.md infra/release/proxy/Dockerfile scripts/b4 scripts/security
+git diff --cached --check
+git diff --cached --stat
+git commit -m "fix(backend): patch proxy packages and add container release gate"
+git push -u origin fix/backend-release-security
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...fix/backend-release-security?expand=1'
+```
+
 ## B4 — подготовка и локальная проверка выполнены; внешнего staging нет
 
 **Текущая согласованная часть B4 выполнена. Полный B4 по ROADMAP ещё не закрыт.** Пользователь ответил: «Пока только подготовка и локальные проверки». Хостинг, бюджет, регион и домен не выбирались, deployment/DNS/публикация не выполнялись. Публичная регистрация закрыта; реальный HTTPS staging, M4 и предрелизные условия остаются отдельной работой.

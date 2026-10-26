@@ -21,10 +21,12 @@
 | Caddy base | `caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f` | HTTPS и reverse proxy |
 
 Digest фиксирует содержимое, tag показывает версию. Caddy собирается из этого
-официального образа с единственным изменением `setcap -r /usr/bin/caddy`:
+официального образа с точечными обновлениями `brotli-libs=1.2.1-r0`,
+`curl=8.23.0-r0` и `libcurl=8.23.0-r0` из подписанных Alpine repositories
+(CVE-2026-111497 и curl advisories, включая CVE-2026-92392), а также `setcap -r /usr/bin/caddy`:
 file capability официального бинарника мешает запуску с `cap_drop: ALL`.
 Внутри контейнера используются непривилегированные порты 8080/8443. Дополнительные
-пакеты не устанавливаются. Java Dockerfile копирует только JAR из `backend/target`;
+пакеты не добавляются; обновляются только указанные существующие пакеты. Java Dockerfile копирует только JAR из `backend/target`;
 исходники, Maven, `.env` и секреты в build context не попадают.
 
 Источники проверки версий:
