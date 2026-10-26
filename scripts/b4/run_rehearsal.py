@@ -29,6 +29,8 @@ from jsonschema import Draft202012Validator, FormatChecker
 
 ROOT = Path(__file__).resolve().parents[2]
 RELEASE = ROOT / "infra/release"
+sys.path.insert(0, str(RELEASE / "ops"))
+from restore_review import approval_sql
 SERVICES = {"init-volumes", "postgres", "migrate", "app", "proxy"}
 SECRET_FILES = ("postgres-admin-password", "migrator-password", "runtime-password")
 
@@ -407,6 +409,12 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         return result
 
     def backup_restore(self):
+        # Exercise cascade removal of every personal relation and submitted free text.
+        self.sql("INSERT INTO hackatlas.user_interest(user_id,tag_id) VALUES(" + sql_value(self.users[1]) + ",'ai-ml');\n"
+                 "INSERT INTO hackatlas.application_mark(user_id,hackathon_id,marked_at) VALUES(" + sql_value(self.users[1]) + "," + sql_value(self.event) + ",now());\n"
+                 "INSERT INTO hackatlas.moderation_submission(id,user_id,kind,url,comment,created_at) VALUES("
+                 + sql_value(str(uuid.uuid4())) + "," + sql_value(self.users[1])
+                 + ",'SUGGESTION','https://example.com','Synthetic private review text',now());")
         backup_snapshot = self.snapshot("hackatlas")
         backup_path = self.temp / "release.dump"
         backup_command = [sys.executable, str(RELEASE / "ops/backup.py"), "--project", self.project, "--output", str(backup_path)]
@@ -416,6 +424,7 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         self.http.request("POST", "/api/v1/me/delete-account", 204, token=self.tokens[1], data={"password": self.password})
         post_delete_source = self.snapshot("hackatlas")
         require(post_delete_source["user_account"]["rows"] == 1, "Post-backup synthetic deletion must reach source database")
+        self.dc("Freeze owned source application writers for operator review", "stop", "--timeout", "30", "app")
         target = "hackatlas_restore_" + uuid.uuid4().hex[:12]
         restore = [sys.executable, str(RELEASE / "ops/restore.py"), "--project", self.project,
                    "--input", str(backup_path), "--database", target]
@@ -427,8 +436,15 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         require(not self.sql("SELECT 1 FROM pg_database WHERE datname=" + sql_value(target) + ";", "postgres"), "Invalid backup must not create a database")
         started = time.monotonic()
         self.report["restore"] = json.loads(self.run("Restore into a new isolated database", restore).stdout)
-        require(self.report["restore"].get("readyForSmoke") is True and self.report["restore"].get("requiresPrivacyReview") is True,
-                "Restore helper must distinguish smoke readiness from required privacy review")
+        require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
+                "Restored runtime CONNECT must remain denied until privacy review")
+        require(self.report["restore"].get("readyForSmoke") is False
+                and self.report["restore"].get("runtimeAccessGranted") is False
+                and self.report["restore"].get("state") == "QUARANTINED"
+                and self.report["restore"].get("requiresPrivacyReview") is True,
+                "Restore must remain quarantined until an explicit operator review")
+        require(self.sql("SELECT 1;", target, role="hackatlas_runtime", allow_failure=True).returncode != 0,
+                "A real runtime connection must be refused while quarantined")
         require(self.report["restore"]["revokedSessions"] == backup_snapshot["auth_session"]["rows"], "Every backed-up session must be revoked")
         require(self.run("Refuse restore overwrite", restore, allow_failure=True).returncode != 0, "Existing restore target must be refused")
         restored = self.snapshot(target)
@@ -436,24 +452,124 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         require({key: value for key, value in restored.items() if key != "auth_session"}
                 == {key: value for key, value in backup_snapshot.items() if key != "auth_session"}, "Restored table hashes/counts must match the backup snapshot")
         require(self.snapshot("hackatlas") == post_delete_source, "Restore must leave source database unchanged")
-        self.report["dataFingerprints"] = restored
-        self.report["postBackupDeletion"] = {"sourceAccountRows": 1, "snapshotRestoredAccountRows": restored["user_account"]["rows"],
-                                            "laterDeletionReconciliationRequired": True}
-        self.report["limitations"].append("Observed: the old snapshot restores the synthetic account deleted after backup. Session purge prevents old-token access but does not reconcile later account deletions; reconcile before reopening a restored service.")
         self.env["HACKATLAS_DB_NAME"] = target
         self.dc("Validate restored migrations as migrator", "--profile", "ops", "run", "--rm", "migrate", timeout=self.timeout)
         require(self.snapshot(target)["flyway_schema_history"] == restored["flyway_schema_history"], "Restored Flyway history must validate without reapplying migrations")
+        require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
+                "Migration callbacks must not bypass quarantine")
+        review_path = self.temp / "privacy.restore-review.json"
+        approve = [sys.executable, str(RELEASE / "ops/approve_restore.py"), "--project", self.project,
+                   "--database", target, "--review", str(review_path)]
+        require(self.run("Refuse missing operator review", approve, allow_failure=True).returncode != 0,
+                "Missing review must not open the restore")
+        review = {"formatVersion": 1, "project": self.project, "database": target,
+                  "backupSha256": self.report["restore"]["sha256"], "restoreId": self.report["restore"]["restoreId"],
+                  "sourceWritesStopped": True, "deletionsReviewed": True,
+                  "reviewedThrough": datetime.now(timezone.utc).isoformat(), "deletedAccountIds": [self.users[1]]}
+        absent_id = str(uuid.uuid4())
+        while absent_id in self.users:
+            absent_id = str(uuid.uuid4())
+        review["deletedAccountIds"].append(absent_id)
+        self.redactions.extend(review["deletedAccountIds"])
+        review_path.write_text('{"invalid":', encoding="utf-8")
+        os.chmod(review_path, 0o600)
+        require(self.run("Refuse malformed operator review", approve, allow_failure=True).returncode != 0,
+                "Malformed review must not open the restore")
+        for field, value in (("backupSha256", "0" * 64), ("database", "hackatlas_restore_other"),
+                             ("project", "another-project"), ("restoreId", str(uuid.uuid4())),
+                             ("deletionsReviewed", False), ("sourceWritesStopped", False)):
+            invalid_review = {**review, field: value}
+            review_path.write_text(json.dumps(invalid_review), encoding="utf-8")
+            require(self.run("Refuse mismatched/incomplete review: " + field, approve, allow_failure=True).returncode != 0,
+                    "Review identity and explicit confirmations must be enforced")
+            require(self.snapshot(target) == restored, "Rejected reviews must not mutate restored data")
+            require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
+                    "Rejected reviews must keep runtime access denied")
+        review_path.write_text(json.dumps(review), encoding="utf-8")
+        metadata_sql = "SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname=current_database();"
+        expected_state = json.loads(self.sql(metadata_sql, target))
+        stale_approval = approval_sql(target, expected_state, review["deletedAccountIds"], review["reviewedThrough"])
+        changed_state = {**expected_state, "restoreId": str(uuid.uuid4())}
+        self.sql(f'COMMENT ON DATABASE "{target}" IS ' + sql_value(json.dumps(changed_state)) + ";", "postgres")
+        require(self.sql(stale_approval, target, role="hackatlas_migrator", allow_failure=True).returncode != 0,
+                "Atomic approval must recheck metadata changed after validation")
+        require(self.snapshot(target) == restored, "Stale metadata must not cause partial account deletion")
+        self.sql(f'COMMENT ON DATABASE "{target}" IS ' + sql_value(json.dumps(expected_state)) + ";", "postgres")
+        self.sql(f'GRANT CONNECT ON DATABASE "{target}" TO hackatlas_runtime;', "postgres")
+        require(self.run("Refuse pre-opened restore runtime ACL", approve, allow_failure=True).returncode != 0,
+                "Approval must not operate on a pre-opened database")
+        self.sql(f'REVOKE CONNECT ON DATABASE "{target}" FROM hackatlas_runtime;', "postgres")
+        # REVOKE alone does not disconnect an already connected client.
+        self.sql(f'GRANT CONNECT ON DATABASE "{target}" TO hackatlas_runtime;', "postgres")
+        probe = subprocess.Popen(self.compose + ["exec", "-T", "-e", "PGAPPNAME=b42-quarantine-probe", "postgres",
+                                  "psql", "-X", "-qAt", "-U", "hackatlas_runtime", "-d", target, "-c", "SELECT pg_sleep(30);"],
+                                 env=self.env, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        probe_sql = "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND application_name='b42-quarantine-probe';"
+        try:
+            deadline = time.monotonic() + 8
+            while self.sql(probe_sql, target) == "0" and time.monotonic() < deadline:
+                time.sleep(0.1)
+            require(self.sql(probe_sql, target) == "1", "Owned runtime probe must establish a real connection")
+            self.sql(f'REVOKE CONNECT ON DATABASE "{target}" FROM hackatlas_runtime;', "postgres")
+            require(self.run("Refuse a runtime session surviving CONNECT revocation", approve, allow_failure=True).returncode != 0,
+                    "An active runtime session must keep the restore unapproved")
+            require(self.snapshot(target) == restored, "Active-session refusal must not change restored data")
+        finally:
+            self.sql("SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE datname=current_database() AND application_name='b42-quarantine-probe';", target)
+            try:
+                probe.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                probe.kill()
+                probe.wait(timeout=10)
+        self.sql("ALTER TABLE hackatlas.admin_audit ADD CONSTRAINT b42_fault_audit CHECK (action <> 'ACCOUNT_DELETED') NOT VALID;", target)
+        require(self.run("Atomic approval must fail on injected audit constraint", approve, allow_failure=True).returncode != 0,
+                "Injected transactional failure must be reported")
+        require(self.snapshot(target) == restored, "Failed approval must roll back account deletion and audit")
+        require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
+                "Failed approval must not grant CONNECT")
+        require(json.loads(self.sql("SELECT shobj_description(oid, 'pg_database') FROM pg_database WHERE datname=current_database();", target))["state"] == "QUARANTINED",
+                "Failed approval must preserve quarantined metadata")
+        self.sql("ALTER TABLE hackatlas.admin_audit DROP CONSTRAINT b42_fault_audit;", target)
+        self.report["restoreApproval"] = json.loads(self.run("Apply complete private operator review atomically", approve).stdout)
+        require(self.report["restoreApproval"]["deletedAccounts"] == 1
+                and self.report["restoreApproval"]["reviewedAccountIds"] == 2
+                and self.report["restoreApproval"]["operatorReviewAccepted"] is True,
+                "The late-deleted account must be removed before opening runtime access")
+        require(self.run("Refuse repeated restore approval", approve, allow_failure=True).returncode != 0,
+                "An already approved restore must not accept a replay")
+        reconciled = self.snapshot(target)
+        require(reconciled["user_account"]["rows"] == 1 and reconciled["auth_session"]["rows"] == 0,
+                "Only the retained account may survive and all old sessions must remain revoked")
+        require(all(reconciled[table]["rows"] == 0 for table in ("user_interest", "application_mark", "moderation_submission")),
+                "Late-deletion reconciliation must remove profile relations and submitted private text")
+        require({k: v for k, v in reconciled.items() if k not in {"auth_session", "admin_audit"}}
+                == {k: v for k, v in post_delete_source.items() if k not in {"auth_session", "admin_audit"}},
+                "Reconciled target must match source post-deletion data")
+        require(self.sql("SELECT count(*) FROM hackatlas.admin_audit WHERE action='ACCOUNT_DELETED' AND actor_id IS NULL AND event_id IS NULL;", target) == "1",
+                "Reconciliation audit must not include deleted account identifiers")
+        require(self.snapshot("hackatlas") == post_delete_source, "Approval must not modify source database")
+        self.report["dataFingerprints"] = reconciled
+        self.report["postBackupDeletion"] = {"sourceAccountRows": 1, "snapshotRestoredAccountRows": 2,
+                                            "approvedAccountRows": 1, "lateDeletionAppliedBeforeRuntimeAccess": True,
+                                            "independentDeletionReviewIsManual": True}
+        self.report["limitations"].append("Independent deletion-list completeness and source write freeze are operator attestations; the synthetic review is not an automated deletion ledger or production privacy guarantee.")
         self.dc("Switch disposable runtime to restored database", "up", "-d", "--no-deps", "--force-recreate", "--wait",
                 "--wait-timeout", str(self.timeout), "app", timeout=self.timeout + 60)
         self.wait_https()
         for token in self.tokens:
             self.http.json("GET", "/api/v1/me", 401, token=token)
+        self.http.json("POST", "/api/v1/auth/login", 401,
+                       data={"email": "rehearsal1@example.com", "password": self.password})
+        _, retained = self.http.json("POST", "/api/v1/auth/login", 200,
+                                    data={"email": "rehearsal0@example.com", "password": self.password})
+        self.redactions.append(retained["accessToken"])
+        self.http.json("GET", "/api/v1/me", 200, token=retained["accessToken"])
         self.public_smoke()
         self.report["restore"]["localRecoveryThroughHttpsSeconds"] = round(time.monotonic() - started, 3)
         self.report["backup"].pop("output", None)
         self.report["backup"].pop("checksum", None)
         self.report["restore"].pop("sourceArchive", None)
-        self.passed("full dump/restore, matching data hashes, migration validation, source isolation and old-token rejection")
+        self.passed("quarantined restore, failed/replayed review refusal, atomic late deletion, source isolation and post-approval HTTPS/auth")
 
     def wait_https(self):
         deadline = time.monotonic() + self.timeout

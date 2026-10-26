@@ -1,5 +1,15 @@
 # Принятые решения
 
+## 26 октября 2026 — B4.2: карантин и операторское одобрение restore
+
+После merge B4.1 PR #11 пользователь выбрал небольшой операторский подход и явно утвердил [дизайн](superpowers/specs/2026-10-26-restore-quarantine-design.md). Основа `fd6a6a1`, successful main CI `40357289928`, ветка `fix/backend-restore-quarantine`. [План](superpowers/plans/2026-10-26-restore-quarantine.md) выполнен одним агентом; commit/push/PR остаются пользователю.
+
+Restore больше не выдаёт runtime CONNECT автоматически. Новая БД и её state закрыты до подтверждённой сверки удалений; мигратор может проверить схему без открытия приложения. Deployment-local comment БД хранит только project/database/hash/restoreId/time/state и затем количества; application schema/Flyway не меняются.
+
+Private review привязан к одной попытке, strict UUID/JSON/permissions/time validation защищают от ошибок файла и replay. Под advisory lock одна PostgreSQL транзакция повторно проверяет metadata и отсутствие runtime-доступа/сессий, применяет DELETE с существующими каскадами и минимальным audit, отзывает сессии и выдаёт CONNECT. SQL-ошибка откатывает изменения; при потере ответа после commit оператор проверяет state/ACL, не предполагая автоматический rollback. Реальные quarantine, stale metadata, active connection, FK/free-text erasure и fault rollback проверены на synthetic PostgreSQL.
+
+Это операторское подтверждение полноты и остановки writers, **не автоматический независимый журнал**. Без достоверного списка открывать копию нельзя. Старые backups физически не стираются. Schedule/offsite/retention/encryption, реальная инфраструктура и public deployment не разрешались и не развёрнуты. Container blockers B4.1 остаются отдельной задачей; HTTP API/auth/mobile не менялись.
+
 ## 26 октября 2026 — продолжение B4: проверяемая готовность контейнеров
 
 B4 объединён пользователем через PR #10, main `35614e30a5d27eb50c58a088eef12de313f3df8c`, Backend CI `40236439132` завершён успешно. Продолжение поручено в `fix/backend-release-security`; внешняя инфраструктура по-прежнему не разрешена. Это подготовка к staging, без изменения продукта, API, авторизации и мобильной части.

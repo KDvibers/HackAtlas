@@ -2,6 +2,64 @@
 
 Дата актуального дополнения: 26 октября 2026.
 
+## B4.2 — карантин восстановления и операторская проверка реализованы локально
+
+**Согласованный локальный результат B4.2 выполнен; публичный выпуск не разрешён.** Пользователь утвердил [дизайн](superpowers/specs/2026-10-26-restore-quarantine-design.md) и поручил продолжить реализацию по [плану](superpowers/plans/2026-10-26-restore-quarantine.md), одним агентом. [B4.1 PR #11](https://github.com/KDvibers/HackAtlas/pull/11) объединён; [main CI 40357289928](https://github.com/KDvibers/HackAtlas/actions/runs/40357289928) завершён успешно. Чистая ветка `fix/backend-restore-quarantine` создана от main `fd6a6a18fcd3d014474403fe5195f888b9b88e6a`; финальный fetch подтвердил ту же main.
+
+Commit, staging Git, push и PR не выполнялись. Git HTTPS account проверен через `/user`: **yergaliuly**; автор отдельно — **softache <itsyergaliuly@gmail.com>**. Изменения оставлены для пользовательского review/коммита.
+
+### Что изменено и почему
+
+- [restore.py](../infra/release/ops/restore.py): после успешного pg_restore/отзыва сессий БД остаётся `QUARANTINED`, runtime CONNECT запрещён, `readyForSmoke=false`. В comment новой БД записываются project/database/hash/restoreId/time; user UUID там нет. Мигратор может проверить схему, но не открывает runtime.
+- [restore_review.py](../infra/release/ops/restore_review.py), [approve_restore.py](../infra/release/ops/approve_restore.py): приватный review JSON связывается с конкретной попыткой восстановления. Проверяются подтверждения оператора, UTC-время, UUID/дубликаты, поля/версия, private regular file <=1 MiB. Symlink/FIFO и открытые для группы/остальных файлы отвергаются. Одна транзакция под advisory lock перепроверяет metadata, удаляет подтверждённые UUID через существующие каскады, добавляет минимальный audit, очищает sessions и выдаёт CONNECT. Открытый runtime, устаревшее состояние и повторное одобрение отвергаются.
+- [B4 runner](../scripts/b4/run_rehearsal.py), [review tests](../scripts/b4/test_restore_review.py): реальная PostgreSQL проверяет карантин, неправильные review, callback мигратора, stale metadata, surviving runtime connection после REVOKE, audit fault/rollback, отсутствующий UUID, удаление personal/free-text связей и вход после одобрения.
+- [.gitignore](../.gitignore), [runbook](../infra/release/README.md), [PRIVACY](PRIVACY.md): реальные `*.restore-review.json` не коммитятся, описаны остановка writers, независимая сверка, время начала backup, private review и требования к будущим регулярным backups. Обновлены проектные решения и краткие README.
+
+**HTTP API, opaque Bearer sessions, Java-логика и миграции не менялись.** `api/`, mobile/design и `STATUS_MOBILE.md` не затронуты. Изменился deployment-local JSON restore: до одобрения он больше не сообщает готовность runtime; отдельный approve возвращает `APPROVED_FOR_SMOKE` и `operatorReviewAccepted=true`. Это не новый публичный endpoint.
+
+### Выполненные команды и результаты
+
+| Проверка | Фактический результат |
+|---|---|
+| WSL root, из backend: `bash ./mvnw --batch-mode --no-transfer-progress verify` | **BUILD SUCCESS; 279 тестов (21 unit + 258 integration), 0 failures/errors/skipped** |
+| `python -m unittest discover -s scripts/b4 -p 'test_*.py'` в pinned Linux venv | **20 тестов**, PASS: 8 safety + 12 review/private-file |
+| Аналогично `scripts/security` | **22 теста**, PASS; всего Python **42**, 0 skips |
+| `validate_contract.py` и `validate_http_contract.py` по новым B1/B2/B3 exports | Канонический контракт/fixtures и **139 + 345 + 102 = 586 HTTP-ответов**, PASS |
+| `run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b42-final` | **PASS, 179.427 с**: TLS/admin/permissions, restore/quarantine, все отрицательные review/rollback проверки, source isolation и post-approval auth |
+| Gitleaks 8.30.1 по доступной истории и всем изменённым/новым файлам, scope/UTF-8/Markdown links, syntax и `git diff --check` | **No leaks found**, 15 файлов / 142 локальные ссылки, PASS; private review ignore rule проверен |
+
+До исправления реальный regression завершился RED: `Restored runtime CONNECT must remain denied until privacy review`. После исправления реальное runtime-подключение запрещено до/после мигратора. Дополнительно FIFO regression сначала подтвердил блокирующее открытие; `O_NONBLOCK` исправил отказ не-regular files, итоговый review suite GREEN. Негативные тесты и production guards не ослаблялись.
+
+Окончательный сценарий: backup 2 аккаунтов → удаление одного через API → остановка source app → restore 2 аккаунтов в закрытую БД → review из 2 UUID (1 отсутствует в snapshot) → фактически удалён 1 аккаунт и его личные связи/обращения → runtime открыт. Старые 2 токена дают 401; удалённый аккаунт не входит по паролю, сохранённый получает новую сессию. Source fingerprints неизменны. Audit fault откатывает удаление/открытие; stale metadata и уже подключённый runtime отвергаются. Повтор approve запрещён.
+
+Backup: **38 876 байт / 0.266 с**; restore: **1.247 с**. Полный блок восстановления до HTTPS занял **117.022 с**, включая намеренные отказы, fault injection и connection probe; это **не production RTO** и не время реального человека на сверку. Все данные синтетические; собственные containers/volumes/secrets/dump/review и probe очищены. Логи: игнорируемые `backend/target/b42-verify.log`, `b42-red/`, `b42-review-red.log`, `b42-green/`, `b42-final/`, `b42-progress.md`.
+
+### Ограничения и следующий шаг
+
+Полнота списка удалений и остановка всех writers — **ручные подтверждения оператора**. Независимый автоматический журнал не построен; `admin_audit` не хранит UUID удалённого аккаунта и таким журналом не является. Без достоверных идентификаторов копия остаётся закрытой. Approval применяется только к подтверждённому списку и не стирает старые backups.
+
+Не выполнены external deployment, реальная инфраструктура/ACME, mobile M4 и автоматические schedule/offsite/encryption/retention. Контейнерные blockers B4.1 этой работой не закрывались; Dockerfiles/pins/dependencies не менялись, повторный большой Trivy scan не выполнялся. Новая ветка на GitHub ещё не проверена до пользовательского push. Итоговая проверка прав/транзакций и diff выполнена автором; отдельный агент не подключался по предпочтению пользователя.
+
+Сообщение напарнику: «Публичный каталог и B2/B3 API прежние, интеграцию можно продолжать. B4.2 меняет только операторское восстановление: новая копия БД закрыта до подтверждённого review; общего staging URL пока нет». Сообщение подготовлено, не отправлялось.
+
+Следующий отдельный шаг: решить надёжный независимый источник истории удалений до реальных пользователей и затем автоматизацию backup на согласованной инфраструктуре. Ранее открытые security blockers проверять отдельно при новых upstream fixes. Полный B4/M4 и публичный запуск остаются открытыми.
+
+### Пользовательский commit / push / PR
+
+PR title: **Quarantine restored databases until deletion review**.
+
+Описание: «Раньше restore отзывал сессии, но сразу выдавал приложению CONNECT, позволяя вернуть аккаунты, удалённые после snapshot. Теперь новая БД остаётся в карантине. Отдельная операторская команда принимает приватный review, атомарно повторяет подтверждённые удаления, очищает сессии и открывает доступ. Добавлены привязка к project/database/hash/restoreId, защита private JSON и проверки replay/active session/rollback. Пройдены 279 Java-тестов, 586 HTTP-ответов, 42 Python-теста и полный PostgreSQL/HTTPS сценарий. Полноту истории подтверждает оператор; автоматического журнала и внешнего deployment нет. API, auth и миграции сохранены».
+
+```powershell
+git status --short --branch
+git add .gitignore README.md START_HERE.md infra/release/ops infra/release/README.md scripts/b4 docs/PRIVACY.md docs/DECISIONS.md docs/STATUS_BACKEND.md docs/superpowers/specs/2026-10-26-restore-quarantine-design.md docs/superpowers/plans/2026-10-26-restore-quarantine.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "fix(backend): quarantine restores until deletion review"
+git push -u origin fix/backend-restore-quarantine
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...fix/backend-restore-quarantine?expand=1'
+```
+
 ## B4.1 — исправление proxy и воспроизводимая проверка контейнеров
 
 Продолжение B4 выполнено в локальной границе: **внешний выпуск остаётся BLOCKED**. На GitHub объединён [B4 PR #10](https://github.com/KDvibers/HackAtlas/pull/10); [Backend CI main 40236439132](https://github.com/KDvibers/HackAtlas/actions/runs/40236439132) завершился успешно. Ветка `fix/backend-release-security` создана от `origin/main=35614e30a5d27eb50c58a088eef12de313f3df8c` при чистом checkout. Staging/публикация, commit, staging Git, push и PR этой доработки не выполнялись.

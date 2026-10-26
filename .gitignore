@@ -37,6 +37,7 @@ Thumbs.db
 **/release-secrets/
 *.dump
 *.dump.sha256
+*.restore-review.json
 .venv/
 __pycache__/
 /tools/bruno/node_modules/
