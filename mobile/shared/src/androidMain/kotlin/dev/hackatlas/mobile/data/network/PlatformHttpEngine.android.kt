@@ -7,6 +7,8 @@ internal actual fun createPlatformHttpEngine(): HttpClientEngine = OkHttp.create
     config {
         followRedirects(false)
         followSslRedirects(false)
-        retryOnConnectionFailure(false)
+        // This engine serves public catalogue GETs. Recover stale pooled sockets
+        // after network changes; user-visible HTTP errors still reach the stores.
+        retryOnConnectionFailure(true)
     }
 }

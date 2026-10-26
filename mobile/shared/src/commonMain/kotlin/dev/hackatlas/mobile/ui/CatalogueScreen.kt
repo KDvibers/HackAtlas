@@ -12,8 +12,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.maxLength
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,11 +39,32 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendingKeys: Set<SavedEventKey>,
-    format: DisplayFormat, onQuery: (CatalogQuery) -> Unit, scrollState: LazyListState,
+    format: DisplayFormat, submitQuery: (CatalogQuery) -> Unit, scrollState: LazyListState,
     onOpen: (Hackathon) -> Unit, onBookmark: (Hackathon) -> Unit, onDemo: () -> Unit,
     onRetry: () -> Unit, onRetryMetadata: () -> Unit, onNext: () -> Unit, bundled: Boolean) {
     var filtersOpen by remember { mutableStateOf(false) }
-    val query = state.query
+    // The editor owns text/selection synchronously; the store owns requests.
+    // Re-entering this screen takes its query from the process-owned store,
+    // rather than restoring text independently from the active filters/results.
+    val search = remember { TextFieldState(state.query.query) }
+    var filters by remember { mutableStateOf(state.query) }
+    val sendQuery by rememberUpdatedState(submitQuery)
+    val query = filters.copy(query = search.text.toString())
+    LaunchedEffect(search) {
+        snapshotFlow { search.text.toString() }.collect { text ->
+            // Initial collection/navigation must not resubmit an unchanged
+            // query: the host scrolls to the top only for a user's new query.
+            if (text != filters.query) {
+                filters = filters.copy(query = text)
+                sendQuery(filters)
+            }
+        }
+    }
+    val onQuery: (CatalogQuery) -> Unit = { next ->
+        filters = next
+        if (search.text.toString() != next.query) search.setTextAndPlaceCursorAtEnd(next.query)
+        submitQuery(next)
+    }
     LazyColumn(Modifier.fillMaxSize(), state = scrollState, contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item(key = "heading") {
             Box {
@@ -60,7 +85,7 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
                     Spacer(Modifier.height(8.dp))
                     Text(stringResource(Res.string.home_subtitle), color = AtlasColors.TextSecondary, fontSize = 12.sp)
                     Spacer(Modifier.height(18.dp))
-                    SearchField(query.query) { onQuery(query.copy(query = it.take(120))) }
+                    SearchField(search)
                     Spacer(Modifier.height(7.dp))
                     val labels = listOf(Res.string.all, Res.string.online, Res.string.offline, Res.string.open_registration, Res.string.kazakhstan)
                     val active = listOf(query == CatalogQuery(query = query.query, sort = query.sort, size = query.size),
@@ -96,7 +121,7 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
             NeonButton(stringResource(Res.string.load_more), onNext, Modifier.fillMaxWidth())
         }
     }
-    if (filtersOpen) CatalogFiltersSheet(state, onQuery, onRetryMetadata) { filtersOpen = false }
+    if (filtersOpen) CatalogFiltersSheet(state.copy(query = query), onQuery, onRetryMetadata) { filtersOpen = false }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -158,16 +183,16 @@ private fun CatalogFiltersSheet(state: CatalogUiState, onQuery: (CatalogQuery) -
     }
 }
 @Composable
-private fun SearchField(value: String, onValue: (String) -> Unit) {
+private fun SearchField(state: TextFieldState) {
     val keyboard = LocalSoftwareKeyboardController.current
     val label = stringResource(Res.string.search_label)
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(13.dp)).background(AtlasColors.SurfaceRaised).border(1.dp, AtlasColors.Border.copy(alpha = .7f), RoundedCornerShape(13.dp)).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         OutlineIcon(AtlasIcon.Search, Modifier.size(19.dp), AtlasColors.TextSecondary)
         Spacer(Modifier.width(9.dp))
-        BasicTextField(value, onValue, Modifier.weight(1f).padding(vertical = 13.dp).semantics { contentDescription = label }, textStyle = MaterialTheme.typography.bodyMedium.copy(color = AtlasColors.TextPrimary, fontSize = 12.sp), singleLine = true, cursorBrush = SolidColor(AtlasColors.Primary), keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }), decorationBox = { inner ->
-            Box { if (value.isEmpty()) Text(stringResource(Res.string.search_hint), fontSize = 11.sp, color = AtlasColors.TextMuted, maxLines = 1); inner() }
+        BasicTextField(state, Modifier.weight(1f).padding(vertical = 13.dp).semantics { contentDescription = label }, textStyle = MaterialTheme.typography.bodyMedium.copy(color = AtlasColors.TextPrimary, fontSize = 12.sp), lineLimits = TextFieldLineLimits.SingleLine, inputTransformation = InputTransformation.maxLength(120), cursorBrush = SolidColor(AtlasColors.Primary), keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), onKeyboardAction = { keyboard?.hide() }, decorator = { inner ->
+            Box { if (state.text.isEmpty()) Text(stringResource(Res.string.search_hint), fontSize = 11.sp, color = AtlasColors.TextMuted, maxLines = 1); inner() }
         })
-        if (value.isNotEmpty()) IconAction(AtlasIcon.Close, stringResource(Res.string.close), { onValue("") }, modifier = Modifier.size(40.dp))
+        if (state.text.isNotEmpty()) IconAction(AtlasIcon.Close, stringResource(Res.string.close), { state.setTextAndPlaceCursorAtEnd("") }, modifier = Modifier.size(40.dp))
     }
 }
 

@@ -33,6 +33,7 @@ class AppState(
     private val remoteRepositoryFactory: (CatalogSource.Remote) -> CatalogRepository = { error("Remote factory required") },
     private val fixtureSource: FixtureSource = FixtureSource { name -> Res.readBytes("files/demo/$name").decodeToString() },
     private val catalogEnabled: Boolean = true,
+    private val remotePageSize: Int = 20,
 ) {
     private val mutableState = MutableStateFlow<BootstrapState>(BootstrapState.Loading)
     val state = mutableState.asStateFlow()
@@ -64,7 +65,9 @@ class AppState(
                 else -> UnavailableCatalog
             }
             mutableState.value = BootstrapState.Ready(demo, saved,
-                CatalogStore(repository, ownerScope, initialSort = if (selected == CatalogSource.BundledDemo) CatalogSort.NEWEST else CatalogSort.DEADLINE_ASC), DetailStore(repository, ownerScope),
+                CatalogStore(repository, ownerScope,
+                    initialSort = if (selected == CatalogSource.BundledDemo) CatalogSort.NEWEST else CatalogSort.DEADLINE_ASC,
+                    initialPageSize = if (selected is CatalogSource.Remote) remotePageSize else 20), DetailStore(repository, ownerScope),
                 BookmarkStore(RemoteSaveCoordinator(repository, saved), ownerScope))
         } catch (cancelled: CancellationException) {
             throw cancelled

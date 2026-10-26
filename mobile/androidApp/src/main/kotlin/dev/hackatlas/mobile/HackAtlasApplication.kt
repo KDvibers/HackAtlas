@@ -13,7 +13,7 @@ class HackAtlasApplication : Application() {
     @Synchronized
     fun guestState(catalogEnabled: Boolean): AppState = (runtime ?: CatalogRuntime(
         selectCatalogSource(BuildConfig.DEBUG, BuildConfig.CATALOG_SOURCE, BuildConfig.API_BASE_URL, BuildConfig.ALLOW_DEBUG_HTTP),
-        { scope -> AndroidGuestSnapshotStorage(this, scope) }, catalogEnabled,
+        { scope -> AndroidGuestSnapshotStorage(this, scope) }, catalogEnabled, BuildConfig.CATALOG_PAGE_SIZE,
     ).also { runtime = it }).state
 
     override fun onTerminate() {

@@ -9,6 +9,22 @@ import kotlin.test.*
 class CatalogStoreTest {
     private val events = StoreTestFixtures.events
 
+    @Test fun initialPageSizeRejectsValuesOutsideContractBeforeStartingRequests() = runTest {
+        val repo = StoreTestRepository()
+        for (size in listOf(0, 51, 100)) {
+            assertFailsWith<IllegalArgumentException> {
+                CatalogStore(repo, backgroundScope, initialPageSize = size)
+            }
+        }
+        runCurrent()
+        assertTrue(repo.catalogCalls.isEmpty())
+        for (size in listOf(1, 50)) {
+            CatalogStore(repo, backgroundScope, initialPageSize = size)
+        }
+        runCurrent()
+        assertEquals(listOf(1, 50), repo.catalogCalls.map { it.size })
+    }
+
     @Test fun initialLoadingPreservesServerOrderAndClock() = runTest {
         val answer = CompletableDeferred<CatalogPage>()
         val repo = StoreTestRepository().apply { onCatalog = { answer.await() } }

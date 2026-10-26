@@ -1,5 +1,39 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2 Task 5: live-приёмка завершена — 26 октября 2026
+
+Ветка `feat/mobile-catalog-api`, база Task5 `4ca0044ed0e107bcf65daf27ade979694d4e2ee9`. Работа выполнена последовательно, одно независимое итоговое review. Изменения оставлены без staging/commit/push/PR; эти действия выполняет пользователь. Task5 завершена, весь M2 ещё не завершён.
+
+**Стенд.** После перезагрузки Windows работают WSL3.0.3, Docker Desktop4.96.3, Linux Engine/CLI29.9.2 и Compose5.6.1. Отдельный backend-клон `C:/Users/user/Desktop/HackAtlas-backend-integration` закреплён на `a745f4ade0cfacaa769fceaedf57a61baa397ee2`, tracked-файлы чистые. Compose project `hackatlas-task5`, PostgreSQL17.11 на `127.0.0.1:5433`, отдельный volume; пароль только в ignored `infra/.env`. Backend и БД оставлены запущенными для проверки пользователем. Существующие БД не менялись.
+
+Backend из `backend/`: `mvnw.cmd --batch-mode --no-transfer-progress verify` — BUILD SUCCESS, **9 unit +258 integration tests**, 0 failures/errors/skipped. `python -X utf8 src/test/resources/validate_http_contract.py --schema ../api/openapi.yaml --responses target/catalog-contract-responses.json` — **139 HTTP-ответов PASS**. JAR запущен с `--spring.profiles.active=dev --hackatlas.demo.enabled=true --hackatlas.demo.as-of=2026-10-12T10:00:00Z`; readiness UP. Host API `http://127.0.0.1:8080/api/v1`, Android API `http://10.0.2.2:8080/api/v1/`. Все5 seed-событий явно DEMO; ID AI Sprint `39287368-5259-5235-a1c4-25b4e1e8421e`.
+
+**Изменено.** `mobile/androidApp/build.gradle.kts`, `HackAtlasApplication.kt`, shared `ui/CatalogRuntime.kt`, `AppState.kt`, `CatalogStore.kt`: необязательный Android `hackatlas.debugPageSize` (1..50, default20); bundled/release сохраняют20. Граница50 проверена RED→GREEN, два OfflineBootstrap-теста проверяют size2 в запросах и bundled defaults. `data/network/PlatformHttpEngine.android.kt` включает стандартное восстановление OkHttp: после Wi-Fi off/on stale pooled socket не требует второго нажатия Retry. Два настоящих loopback TCP теста `PlatformHttpEngineTest.kt` покрывают обрыв соединения (RED→GREEN) и явный HTTP503; TLS/redirect-настройки не ослаблены.
+
+`ui/CatalogueScreen.kt`: state-based `BasicTextField` с немедленным редактированием текста/курсора и отдельной отправкой запроса в CatalogStore. Live проверка воспроизвела потерю букв `AI Spit`/`AI Spint`; финальный smoke трижды быстро вводит `AI Sprint` с очисткой, без задержек между символами. Ревью выявило один P2: начальное событие `snapshotFlow` сбрасывало прокрутку при возврате из detail. Отдельный live RED подтвердил возврат к началу списка; неизменённый запрос больше не отправляется. Финальный полный smoke проверяет возврат с последней карточки и проходит GREEN. Неисправленных замечаний нет, второго ревью не было.
+
+Новые `mobile/scripts/android_remote_smoke.py` и `test_android_remote_smoke.py`: приёмка настоящего B1 с backup/restore target guest bytes и настроек эмулятора; 2 Python-регрессии запрещают ложный PASS при пустом AssertionError и KeyboardInterrupt. Недостоверный ранний отчёт исключён из приёмки и архивирован только в ignored scratch. Emergency backups — `mobile/build/task5/device-backup/`; сценарий не предназначен для параллельных запусков. Первоначальные2ГБ RAM приводили к Android LOW_MEMORY; финальная приёмка — Pixel8 Android17/API37, временные4ГБ, без изменения AVD config.
+
+**Финальные проверки**, JDK21.0.9 (`C:/Program Files/Android/Android Studio/jbr`) и SDK (`C:/Users/user/AppData/Local/Android/Sdk`), из `mobile/`:
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8080/api/v1/' '-Phackatlas.allowDebugHttp=true' '-Phackatlas.debugPageSize=2' --console=plain --offline
+```
+
+BUILD SUCCESSFUL; **131 тест, 0 failures/errors/skipped**, lint0, release fixture gate PASS. Release BuildConfig REMOTE/size20/HTTPfalse, merged manifest `usesCleartextTraffic=false`. После последнего исправления выполнены общая сборка/тесты/lint/release gate и полный live smoke.
+
+Из корня: `python -X utf8 -m unittest discover -s mobile/scripts -p test_android_remote_smoke.py` — **2 PASS**; `python -X utf8 scripts/validate_contract.py` — Starter +6 fixtures PASS; `git diff --check` — PASS. Python использовался из `C:/Users/user/Desktop/HackAtlas/mobile/build/pr4-contract-venv/Scripts/python.exe`.
+
+`python -X utf8 mobile/scripts/android_remote_smoke.py --adb C:/Users/user/AppData/Local/Android/Sdk/platform-tools/adb.exe --serial emulator-5554 --api-base-url http://127.0.0.1:8080/api/v1 --event-id 39287368-5259-5235-a1c4-25b4e1e8421e` — **9/9 групп PASS**, exit0, restoreErrors=[]: три GET, страницы2/2/1, поиск/AND/metadata, ошибки первого/следующего/detail запросов и Retry, сохранение полного server detail, cold offline saved/detail/calendar, удаление после перезапуска, detail A→B сверху, сохранение прокрутки каталога и выбора даты календаря. Снимки также выполнены при360dp/font130%. Guest-файлы восстановлены побайтово, display/network settings возвращены.
+
+**Артефакты.** [Галерея17 снимков](../mobile/artifacts/m2-remote/review.html), [проверки и SHA](../mobile/artifacts/m2-remote/verification.json), [smoke-отчёт](../mobile/artifacts/m2-remote/remote-smoke.json), [текст PR](../mobile/artifacts/m2-remote/PR_DESCRIPTION.md), [команды commit/push/PR](../mobile/artifacts/m2-remote/COMMIT_PR.md). Финальный APK — `mobile/build/task5/HackAtlas-local-backend-debug.apk`, SHA256 `BFBB98AB029A91A201B2EE7D3E3133B1AE78F944670B783C4255DD82A313E7F8`. Это debug для эмулятора с локальным API8080, не автономный release. Прежние M1/M2 галереи не перезаписаны. Снимки визуально проверены: утверждённые ресурсы, шрифты, палитра и структура сохранены; новых assets/fonts нет.
+
+**Контракт и ограничения.** OpenAPI/README blobs `0ee6220f1a4c6d1cdcdf7ceae3a14a477aff3caa` / `a4490fcf240fe4d1fe75d49bac0e27cad533682b` совпадают с backend pin и не менялись. Backend source/зависимости не менялись. Mac/Xcode/iOS, физический Android, production HTTPS и CI не проверены. Авторизация, server saved/import, browser/share, reminders и remote images исключены. Более широкие URL-алиасы, полная валидация всех ограничений схемы и автообновление копий не обещаются. Политику повторов будущих изменяющих/auth операций нужно выбрать отдельно. `.agents/` и `.interface-design/` пользователя не менялись.
+
+Сообщение напарнику: «Проверили мобильный REMOTE с твоим B1 `a745f4a`: три GET, поиск/AND, пагинация и detail работают; сохранённые копии/календарь доступны после перезапуска без сети. API не меняли, DEMO явно помечен. Можно совместно проверить PR мобильной интеграции; авторизацию пока не подключаем».
+
+Следующий отдельный этап M2 — переход на сайт регистрации и системный share. M3 не начинать до принятого M2 и проверенного B2. Логи и review ledger сохранены в ignored `.superpowers/sdd/2026-10-25-mobile-catalog-api/` для пользовательского commit/handoff.
+
 ## M2 Task 4: stores и источники в Android/iOS — 26 октября 2026
 
 Пользователь поручил Task 4 после своего commit `0a8ee69f75fe9a5f3087917f529a09e47a8e89de` (Task 3). Реализация последовательная в прежней ветке `feat/mobile-catalog-api`; commit, push и PR остаются пользователю. Task 5 с живым B1 этим поручением не запущена.

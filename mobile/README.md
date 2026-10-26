@@ -131,3 +131,31 @@ python -X utf8 mobile/scripts/android_catalog_smoke.py --adb "$env:LOCALAPPDATA/
 ```
 
 Скрипт поднимает временный synthetic HTTP fixture server на **127.0.0.1:8768**, проверяет реальные запросы OkHttp и UI, копии `isDemo=true/false`, 404, фильтры AND, metadata retry, пагинацию и холодный offline запуск. Тестовые названия начинаются с MOCK; `isDemo=false` здесь — тест классификации, не реальные события. Существующий файл именно этого test origin восстанавливается в `finally`; встроенный DEMO-файл не меняется. Нужен запущенный эмулятор; физические устройства скрипт отвергает. Результаты и снимки — `artifacts/m2-catalog/`. Это не приёмка настоящего B1: она остаётся Task 5 и требует адрес/запуск/ID от backend-разработчика.
+
+## Task 5: приёмка с локальным B1
+
+Для пяти событий backend seed Android debug можно собрать с двумя событиями на страницу. Параметр `hackatlas.debugPageSize` принимает целое 1..50 по Starter; без него используется 20. Bundled DEMO и Android release всегда начинают с 20; iOS host сохраняет прежний default.
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8080/api/v1/' '-Phackatlas.allowDebugHttp=true' '-Phackatlas.debugPageSize=2'
+```
+
+Backend для Task 5 запускается отдельным клоном на commit `a745f4ade0cfacaa769fceaedf57a61baa397ee2`, JDK 21 и Docker Linux. Следовать `backend/README.md` этого commit: PostgreSQL, полный `mvnw.cmd --batch-mode --no-transfer-progress verify`, затем из `backend/`:
+
+```powershell
+java -jar target/hackatlas-backend-0.1.0-SNAPSHOT.jar --spring.profiles.active=dev --hackatlas.demo.enabled=true --hackatlas.demo.as-of=2026-10-12T10:00:00Z
+```
+
+В локальном стенде используется отдельный compose project `hackatlas-task5` с PostgreSQL на `127.0.0.1:5433`; JDBC URL в игнорируемом `infra/.env` должен соответствовать порту. Пароли и содержимое `.env` не добавлять в PR. Хост обращается к `http://127.0.0.1:8080/api/v1`, Android Emulator — к `http://10.0.2.2:8080/api/v1/`. Все пять событий seed вымышленные и имеют `isDemo=true`.
+
+После установки APK (`adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk`) выполнить из корня репозитория:
+
+```powershell
+python mobile/scripts/android_remote_smoke.py --adb adb --serial emulator-5554 --api-base-url http://127.0.0.1:8080/api/v1 --event-id 39287368-5259-5235-a1c4-25b4e1e8421e
+```
+
+Smoke использует настоящий API, временно отключает сеть **эмулятора**, сохраняет исходные guest-файлы и настройки дисплея/сети, восстанавливает их в `finally`. Резервные копии на случай обрыва процесса находятся в игнорируемом `mobile/build/task5/device-backup/`. Использовать тестовый эмулятор; для Pixel 8 с Google Play потребовалось 4 ГБ RAM, поскольку при 2 ГБ Android завершал процессы из-за LOW_MEMORY.
+
+Результат и реальные screenshots сохраняются в `mobile/artifacts/m2-remote/`; проверять поле `status` в `remote-smoke.json`, наличие картинок само по себе не означает PASS. Состояние Task 5 и ограничения — в `docs/STATUS_MOBILE.md`; прежние M1/M2 галереи остаются историческими результатами.
+
+Проверки самого отчёта (без adb/backend): `python -m unittest discover -s mobile/scripts -p test_android_remote_smoke.py`. Пустой `AssertionError` и прерывание сценария обязаны дать FAIL и выполнить восстановление. Принудительное завершение Python или компьютера не позволяет исполнить `finally`: для этого остаются emergency backups. Сценарий не рассчитан на параллельные запуски на одном эмуляторе.

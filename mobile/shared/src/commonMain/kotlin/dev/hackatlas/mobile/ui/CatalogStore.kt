@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
  * on a multi-threaded dispatcher. Public commands enqueue work and never block the caller.
  */
 class CatalogStore(private val repository: CatalogRepository, private val scope: CoroutineScope,
-    initialSort: CatalogSort = CatalogSort.DEADLINE_ASC) {
-    private val mutableState = MutableStateFlow(CatalogUiState(query = CatalogQuery(sort = initialSort)))
+    initialSort: CatalogSort = CatalogSort.DEADLINE_ASC, initialPageSize: Int = 20) {
+    private val mutableState = MutableStateFlow(CatalogUiState(query = CatalogQuery(sort = initialSort, size = initialPageSize)))
     val state = mutableState.asStateFlow()
     private val actions = Channel<Action>(Channel.UNLIMITED)
     private var generation = 0L
@@ -25,6 +25,7 @@ class CatalogStore(private val repository: CatalogRepository, private val scope:
     private var pendingPage: Int? = null
 
     init {
+        require(initialPageSize in 1..50) { "Page size must be between 1 and 50" }
         scope.launch {
             firstPage(mutableState.value.query)
             metadata()
