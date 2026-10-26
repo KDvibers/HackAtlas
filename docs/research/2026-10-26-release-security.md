@@ -2,6 +2,28 @@
 
 Дата: 26 октября 2026. Scope пользователя — подготовка и локальные проверки; внешнего deployment нет. Проверка версий не является доказательством достижимости каждой уязвимости через HackAtlas или полным security audit.
 
+## Продолжение B4.1 — окончательный результат 26 октября
+
+В `fix/backend-release-security` закреплены signed Alpine packages `brotli-libs=1.2.1-r0`, `curl=8.23.0-r0` и `libcurl=8.23.0-r0` поверх прежнего официального Caddy image. Источники: [Brotli package](https://pkgs.alpinelinux.org/package/v3.23/main/x86_64/brotli-libs), [curl package](https://pkgs.alpinelinux.org/package/v3.23/main/x86_64/curl), [Alpine security DB](https://secdb.alpinelinux.org/v3.23/main.json). Исправлены Brotli CVE-2026-111497 и curl advisories, включая CVE-2026-92392. Caddy binary/Go, PostgreSQL и Temurin base pins прежние: исправленных совместимых official images при повторной проверке не появилось.
+
+Новая Trivy DB: **26.10.2026 14:38 UTC**; Java index: **26.10.2026 00:59 UTC**. Просканированы exact images из успешного окончательного HTTPS/restore rehearsal. Scanner **0.76.1** закреплён прежним digest. В сканер не передавался Docker socket; image archives read-only, scan с `network none`, без suppressions, фильтра severity и `ignore-unfixed`.
+
+| Окончательный image | Scope | Package/advisory matches |
+|---|---|---|
+| App | 136 Ubuntu packages + 94 JAR packages | **32: 28 MEDIUM, 4 LOW**; JAR findings 0 |
+| Proxy | 32 Alpine packages + 149 Go packages | **21: 5 HIGH, 14 MEDIUM, 1 LOW, 1 UNKNOWN**; Alpine findings **0** |
+| PostgreSQL | 144 Debian packages + 4 Go packages в gosu | **474: 4 CRITICAL, 96 HIGH, 195 MEDIUM, 173 LOW, 6 UNKNOWN** |
+
+Свежая DB сначала обнаружила дополнительные curl advisories, отсутствовавшие в исходном B4 snapshot ниже. После signed package updates эти совпадения отсутствуют. Сравнивать общие числа разных версий DB как прямое улучшение/ухудшение нельзя; package versions и остаточные findings сохранены полностью. Совпадения PostgreSQL по-прежнему требуют описанного ниже контекстного triage; ни одно не скрыто новым gate.
+
+Trivy перечисляет build wrapper `caddy` без версии, **но canonical `github.com/caddyserver/caddy/v2` присутствует с `v2.11.7`**. Это подтверждённое покрытие опубликованного модуля, а не неизвестная версия самого Caddy. Политика сопоставляет только точные имя/PURL wrapper и версионированный canonical module; запись и объяснение остаются в результате. Другие непроверенные версии блокируют gate. Это правило не исключает vulnerability findings.
+
+`run_container_audit.py` завершил все три сканирования; `container_policy.py` повторно проверил сохранённые immutable reports с уточнённым сопоставлением wrapper. **Exit 1, `evidenceComplete=true`, `containerGatePassed=false`**: остаются proxy HIGH/UNKNOWN, PostgreSQL findings и старый Temurin 21.0.12.1+1 вместо минимального 21.0.13+9. Неполные evidence дают exit 2. Даже нулевой container gate не заменяет privacy recovery/M4/разрешение deployment.
+
+Evidence: `backend/target/b41-security-release/{audit-manifest.json,app-trivy.json,proxy-trivy.json,postgres-trivy.json,release-readiness.json}`. Manifest связывает реальные container/image IDs репетиции, SHA-256 архивов, config digest и SHA-256 raw reports. Docker index ID может отличаться от config digest; проверяются оба уровня. Код/команды/лимиты — [security tools](../../scripts/security/README.md), [ручной release workflow](../../.github/workflows/release-readiness.yml). Этот workflow на GitHub ещё не запускался, локальный результат не является CI-run.
+
+Ниже сохранён исходный аудит B4 до этих изменений и более свежей DB; это историческая база, не текущий итог proxy.
+
 ## Maven runtime graph
 
 `mvnw dependency:list -DincludeScope=runtime` разрешил 106 JAR dependencies. [OSV querybatch](https://google.github.io/osv.dev/post-v1-querybatch/) для исходного Boot 4.1.1 вернул 10 advisory в трёх packages:

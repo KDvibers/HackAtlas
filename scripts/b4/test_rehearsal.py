@@ -1,11 +1,24 @@
 """Safety-boundary tests; these tests never start Docker or touch an existing stack."""
 
 import unittest
+from pathlib import Path
+import tempfile
 
 from run_rehearsal import Rehearsal, RehearsalFailure, fingerprint, sql_value, validate_bindings, validate_owned
 
 
 class RehearsalSafetyTests(unittest.TestCase):
+    def test_previous_evidence_is_never_overwritten_or_appended(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            for name in ("report.json", "commands.log"):
+                path = output / name
+                path.write_text("previous evidence", encoding="utf-8")
+                with self.assertRaises(RehearsalFailure):
+                    Rehearsal(Path("unused.jar"), output, 240)
+                self.assertEqual("previous evidence", path.read_text(encoding="utf-8"))
+                path.unlink()
+
     def test_effective_compose_accepts_only_two_loopback_proxy_ports(self):
         valid = {"services": {"app": {}, "postgres": {}, "proxy": {"ports": [
             {"host_ip": "127.0.0.1", "published": "34001"}, {"host_ip": "127.0.0.1", "published": "34002"}]}}}
