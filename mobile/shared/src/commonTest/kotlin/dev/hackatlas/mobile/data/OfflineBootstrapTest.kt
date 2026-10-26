@@ -15,6 +15,40 @@ import kotlin.test.*
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class OfflineBootstrapTest {
+    @Test fun remotePageSizeReachesInitialRequestPaginationAndFilterReset() = runTest {
+        val events = StoreTestFixtures.events
+        val remote = StoreTestRepository().apply {
+            onCatalog = { query -> StoreTestFixtures.page(query,
+                events.drop(query.page * query.size).take(query.size),
+                hasNext = (query.page + 1) * query.size < events.size) }
+        }
+        val state = AppState(CatalogSource.Remote("https://api.example.test/api/v1/"), backgroundScope,
+            { TestGuestStorage() }, { remote }, remotePageSize = 2)
+        state.load()
+        runCurrent()
+        val catalog = assertIs<BootstrapState.Ready>(state.state.value).catalog
+        assertEquals(2, catalog.state.value.items.size)
+        catalog.loadNext()
+        runCurrent()
+        assertEquals(listOf(0, 1), remote.catalogCalls.map { it.page })
+        assertEquals(events.take(4), catalog.state.value.items)
+        catalog.setQuery(catalog.state.value.query.copy(countryCode = "KZ"))
+        runCurrent()
+        assertEquals(listOf(0, 1, 0), remote.catalogCalls.map { it.page })
+        assertTrue(remote.catalogCalls.all { it.size == 2 })
+    }
+
+    @Test fun remotePageSizeDoesNotChangeBundledDefaults() = runTest {
+        val state = AppState(CatalogSource.BundledDemo, backgroundScope, { TestGuestStorage() },
+            fixtureSource = FixtureSource { CanonicalFixtures.files.getValue(it) }, remotePageSize = 2)
+        state.load()
+        runCurrent()
+        val catalog = assertIs<BootstrapState.Ready>(state.state.value).catalog.state.value
+        assertEquals(20, catalog.query.size)
+        assertEquals(CatalogSort.NEWEST, catalog.query.sort)
+        assertTrue(catalog.items.size > 2)
+    }
+
     @Test fun savedDetailsRemainAvailableWhenCatalogCannotLoad() = runTest {
         val source = FixtureSource { CanonicalFixtures.files.getValue(it) }
         val disk = TestGuestStorage()

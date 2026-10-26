@@ -1,0 +1,90 @@
+{
+  "date": "2026-10-26",
+  "task": "M2 Task 5",
+  "changes": "uncommitted; user commits/pushes",
+  "task5_base": "4ca0044ed0e107bcf65daf27ade979694d4e2ee9",
+  "backend_commit": "a745f4ade0cfacaa769fceaedf57a61baa397ee2",
+  "environment": {
+    "android": "Pixel 8 emulator, Android 17/API37, 4 GiB RAM",
+    "normal_display": "1080x2400, density420, font1.0",
+    "large_text_display": "1080x2400, density480 (360dp), font1.3",
+    "backend": "local dev, PostgreSQL17.11 port5433, DEMO seed, fixed clock2026-10-12T10:00:00Z"
+  },
+  "android": {
+    "assemble_debug": "PASS",
+    "tests": {
+      "tests": 131,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "lint_issues": 0,
+    "release_no_demo_fixtures": "PASS",
+    "apk_sha256": "BFBB98AB029A91A201B2EE7D3E3133B1AE78F944670B783C4255DD82A313E7F8",
+    "apk": "../../build/task5/HackAtlas-local-backend-debug.apk",
+    "source": "REMOTE",
+    "api_base_url": "http://10.0.2.2:8080/api/v1/",
+    "debug_page_size": 2
+  },
+  "backend": {
+    "verify": "PASS",
+    "unit_tests": 9,
+    "integration_tests": 258,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "validated_http_responses": 139,
+    "tracked_source_changes": false
+  },
+  "smoke": {
+    "status": "PASS",
+    "groups": 9,
+    "all_screenshots_from_final_apk": true,
+    "guest_files_restored": true,
+    "settings_restore_errors": []
+  },
+  "smoke_reporting_tests": {
+    "count": 2,
+    "status": "PASS"
+  },
+  "contract": {
+    "validator": "PASS",
+    "fixtures": 6,
+    "openapi_blob": "0ee6220f1a4c6d1cdcdf7ceae3a14a477aff3caa",
+    "readme_blob": "a4490fcf240fe4d1fe75d49bac0e27cad533682b",
+    "changed": false
+  },
+  "review": {
+    "independent_reviews": 1,
+    "important_findings": 1,
+    "finding": "Unchanged initial query reset catalog scroll on return",
+    "resolution": "Live RED reproduced, guard fixed, final full live smoke and 131-test suite PASS; no second review",
+    "deferred_findings": []
+  },
+  "limitations": [
+    "No Mac/Xcode: iOS Native/Swift/Darwin build/runtime unverified",
+    "No physical Android, production HTTPS or CI run",
+    "Local debug APK requires this backend on host port8080; not a standalone release",
+    "All five server seed events are fictional DEMO",
+    "Auth, server saved/import, browser/share, reminders and remote images excluded"
+  ],
+  "screenshots_sha256": {
+    "screenshots\\remote-home.png": "09411fa949c69f83ff6b182eec881e4e1a1917747c7a0ca321efc8baad2b9d05",
+    "screenshots\\remote-detail.png": "680e7b4ac09fefe4305033cad834f71506c7df7fec1dd6bc2e39dce62475c229",
+    "screenshots\\remote-profile.png": "c6b99ad340179e6c0d19184fe80faa290871db44753f58ffe78b158c6767015f",
+    "screenshots\\saved-offline.png": "aeb279c522899d1888ae92ed89f4c580d55569425333968570ef123dfb94de28",
+    "screenshots\\detail-offline.png": "511171e093f9595f1ab244f5ec56c831dfd7deb157edd3cd7a10f969240b9e21",
+    "screenshots\\calendar-offline.png": "03fd4322a554f85e83e9b07925ddfacaf9d9e2bde4092848c77bbe66eba049bc",
+    "screenshots\\home-360-font130.png": "59ed23247caa1a3aec8356f9be173ea785a1b3139b12d96f151e2202312eef99",
+    "screenshots\\saved-360-font130.png": "140e432b3503f19c10e075c0de91beb0503497c5ae9ad83f4256420d3c9b9a69",
+    "screenshots\\detail-360-font130.png": "6b944a85b15a8d061927b332e006a436b8b487c0d097827f5917a2a0f8deed64",
+    "screenshots\\calendar-360-font130.png": "7bd1320e7f3c87fec4ee59fe6d7aab87bbb7f27e97ef16938a076ce870853301",
+    "screenshots\\remote-first-error.png": "f49c6530b3eeab5f171ec57973aec34509487b0f08a9efd474dadb1c6ef08c41",
+    "screenshots\\remote-append-error.png": "1a2abf45cc0f7c5b9cbac810929184a84822f358218df0ab8b0fd8dba7eb4979",
+    "screenshots\\remote-detail-error.png": "21343f9a44a37df8d4339d27a9f8a69608ec66c665fbad78689aceec5470c619",
+    "screenshots\\remote-search-and.png": "406151196284a5b357ce75b161ad5128c32c6593ec0116dd78147e5ad0ef1ad9",
+    "screenshots\\remote-filters.png": "55d0ee8ecfd26bf8b00838f65a67b9fc12d608117123ab2887bb43ec175cc57f",
+    "screenshots\\remote-last-page.png": "149f9b5e42133b31c2a3d70e549d48d0ed0c2ecbe4b76f3612ec18c385303df1",
+    "screenshots\\remote-detail-b-top.png": "43a1bbe86dbb44a7f87f0cedbdc2b658f089428b4b4efd80d6cd1a5aadf1fbab"
+  }
+}

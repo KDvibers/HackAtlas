@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "apiBaseUrl": "http://127.0.0.1:8080/api/v1",
+  "deviceApiBaseUrl": "http://10.0.2.2:8080/api/v1/",
+  "eventId": "39287368-5259-5235-a1c4-25b4e1e8421e",
+  "results": [
+    {
+      "name": "live B1: three public GETs, five DEMO rows, pages 2/2/1 and AND search",
+      "status": "PASS"
+    },
+    {
+      "name": "initial network error is explicit; Retry restores the live catalog",
+      "status": "PASS"
+    },
+    {
+      "name": "append error/retry, last page and catalog scroll on return from detail",
+      "status": "PASS"
+    },
+    {
+      "name": "detail failure/retry; scrolled detail A does not move detail B from its top",
+      "status": "PASS"
+    },
+    {
+      "name": "search/AND filters and metadata work; full server detail is saved to disk",
+      "status": "PASS"
+    },
+    {
+      "name": "cold offline saved/detail/calendar; snapshot dates and calendar selection survive navigation",
+      "status": "PASS"
+    },
+    {
+      "name": "real screenshots at 360dp with font scale 130%, including offline detail/calendar",
+      "status": "PASS"
+    },
+    {
+      "name": "offline removal persists across restart and updates calendar without losing open detail",
+      "status": "PASS"
+    },
+    {
+      "name": "bundled guest file unchanged; no backend data writes or auth requests",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "restoreErrors": []
+}

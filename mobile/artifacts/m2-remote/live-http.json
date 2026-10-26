@@ -1,0 +1,671 @@
+[
+  {
+    "path": "hackathons",
+    "query": {
+      "size": 2,
+      "page": 0
+    },
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": "ff4ed922-d2c6-5e7e-b7f3-c532efe4b34d",
+          "slug": "registration-closed-demo",
+          "title": "Registration Closed Demo",
+          "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+          "organizer": {
+            "name": "Demo Community",
+            "websiteUrl": "https://example.com"
+          },
+          "format": "ONLINE",
+          "location": {
+            "countryCode": null,
+            "city": null,
+            "venue": null
+          },
+          "starts": {
+            "precision": "DATE",
+            "date": "2026-11-15",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "ends": {
+            "precision": "DATE",
+            "date": "2026-11-15",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationDeadline": {
+            "precision": "DATE",
+            "date": "2026-10-01",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationStatus": "CLOSED",
+          "eventStatus": "SCHEDULED",
+          "topics": [
+            {
+              "id": "web",
+              "label": "Web"
+            }
+          ],
+          "prize": {
+            "status": "ANNOUNCED",
+            "totalAmount": "10000.00",
+            "currency": "USD",
+            "kind": "CASH",
+            "summary": "Демо: общий фонд нескольких призовых мест."
+          },
+          "team": {
+            "minSize": 1,
+            "maxSize": 5,
+            "individualApplicationAllowed": true,
+            "soloParticipationAllowed": true,
+            "teamFormationAvailable": null
+          },
+          "imageUrl": null,
+          "artworkKey": "WIREFRAME",
+          "lastVerifiedAt": null,
+          "updatedAt": "2026-10-12T10:00:00Z",
+          "isDemo": true
+        },
+        {
+          "id": "9756e7f3-5796-5d69-93cf-a6a6cb8ebd33",
+          "slug": "gamedev-jam-2026-demo",
+          "title": "GameDev Jam",
+          "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+          "organizer": {
+            "name": "Demo Community",
+            "websiteUrl": "https://example.com"
+          },
+          "format": "ONLINE",
+          "location": {
+            "countryCode": null,
+            "city": null,
+            "venue": null
+          },
+          "starts": {
+            "precision": "DATE",
+            "date": "2026-12-05",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "ends": {
+            "precision": "DATE",
+            "date": "2026-12-05",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationDeadline": {
+            "precision": "DATE",
+            "date": "2026-10-30",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationStatus": "OPEN",
+          "eventStatus": "SCHEDULED",
+          "topics": [
+            {
+              "id": "gamedev",
+              "label": "GameDev"
+            }
+          ],
+          "prize": {
+            "status": "ANNOUNCED",
+            "totalAmount": "5000.00",
+            "currency": "USD",
+            "kind": "CASH",
+            "summary": "Демо: общий фонд нескольких призовых мест."
+          },
+          "team": {
+            "minSize": 1,
+            "maxSize": 5,
+            "individualApplicationAllowed": true,
+            "soloParticipationAllowed": true,
+            "teamFormationAvailable": null
+          },
+          "imageUrl": null,
+          "artworkKey": "GAMEPAD",
+          "lastVerifiedAt": null,
+          "updatedAt": "2026-10-12T10:00:00Z",
+          "isDemo": true
+        }
+      ],
+      "page": 0,
+      "size": 2,
+      "totalElements": 5,
+      "totalPages": 3,
+      "hasNext": true,
+      "asOf": "2026-10-12T10:00:00Z"
+    }
+  },
+  {
+    "path": "hackathons",
+    "query": {
+      "size": 2,
+      "page": 1
+    },
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": "9ee483ad-ff37-5dae-8da1-ae901ea7d27f",
+          "slug": "fintech-hack-2026-demo",
+          "title": "Fintech Hack",
+          "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+          "organizer": {
+            "name": "Demo Community",
+            "websiteUrl": "https://example.com"
+          },
+          "format": "OFFLINE",
+          "location": {
+            "countryCode": "KZ",
+            "city": "Астана",
+            "venue": null
+          },
+          "starts": {
+            "precision": "DATE",
+            "date": "2026-11-20",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "ends": {
+            "precision": "DATE",
+            "date": "2026-11-20",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationDeadline": {
+            "precision": "DATE",
+            "date": "2026-10-30",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationStatus": "OPEN",
+          "eventStatus": "SCHEDULED",
+          "topics": [
+            {
+              "id": "fintech",
+              "label": "Fintech"
+            }
+          ],
+          "prize": {
+            "status": "ANNOUNCED",
+            "totalAmount": "3500000.00",
+            "currency": "KZT",
+            "kind": "CASH",
+            "summary": "Демо: общий фонд нескольких призовых мест."
+          },
+          "team": {
+            "minSize": 1,
+            "maxSize": 5,
+            "individualApplicationAllowed": true,
+            "soloParticipationAllowed": true,
+            "teamFormationAvailable": null
+          },
+          "imageUrl": null,
+          "artworkKey": "FINTECH_CITY",
+          "lastVerifiedAt": null,
+          "updatedAt": "2026-10-12T10:00:00Z",
+          "isDemo": true
+        },
+        {
+          "id": "39287368-5259-5235-a1c4-25b4e1e8421e",
+          "slug": "ai-sprint-2026-demo",
+          "title": "AI Sprint 2026",
+          "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+          "organizer": {
+            "name": "Demo Community",
+            "websiteUrl": "https://example.com"
+          },
+          "format": "ONLINE",
+          "location": {
+            "countryCode": null,
+            "city": null,
+            "venue": null
+          },
+          "starts": {
+            "precision": "MINUTE",
+            "date": "2026-11-12",
+            "time": "10:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-12T05:00:00Z"
+          },
+          "ends": {
+            "precision": "MINUTE",
+            "date": "2026-11-14",
+            "time": "18:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-14T13:00:00Z"
+          },
+          "registrationDeadline": {
+            "precision": "MINUTE",
+            "date": "2026-11-01",
+            "time": "18:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-01T13:00:00Z"
+          },
+          "registrationStatus": "OPEN",
+          "eventStatus": "SCHEDULED",
+          "topics": [
+            {
+              "id": "ai-ml",
+              "label": "AI / ML"
+            }
+          ],
+          "prize": {
+            "status": "ANNOUNCED",
+            "totalAmount": "10000.00",
+            "currency": "USD",
+            "kind": "CASH",
+            "summary": "Демо: общий фонд нескольких призовых мест."
+          },
+          "team": {
+            "minSize": 1,
+            "maxSize": 5,
+            "individualApplicationAllowed": true,
+            "soloParticipationAllowed": true,
+            "teamFormationAvailable": null
+          },
+          "imageUrl": null,
+          "artworkKey": "AI_BUST",
+          "lastVerifiedAt": null,
+          "updatedAt": "2026-10-12T10:00:00Z",
+          "isDemo": true
+        }
+      ],
+      "page": 1,
+      "size": 2,
+      "totalElements": 5,
+      "totalPages": 3,
+      "hasNext": true,
+      "asOf": "2026-10-12T10:00:00Z"
+    }
+  },
+  {
+    "path": "hackathons",
+    "query": {
+      "size": 2,
+      "page": 2
+    },
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": "fc6f0e31-af57-52ac-a736-3d0cce49b3fa",
+          "slug": "greentech-challenge-2026-demo",
+          "title": "GreenTech Challenge",
+          "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+          "organizer": {
+            "name": "Demo Community",
+            "websiteUrl": "https://example.com"
+          },
+          "format": "ONLINE",
+          "location": {
+            "countryCode": null,
+            "city": null,
+            "venue": null
+          },
+          "starts": {
+            "precision": "DATE",
+            "date": "2026-12-10",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "ends": {
+            "precision": "DATE",
+            "date": "2026-12-10",
+            "time": null,
+            "timeZone": "Asia/Almaty",
+            "instant": null
+          },
+          "registrationDeadline": null,
+          "registrationStatus": "UNKNOWN",
+          "eventStatus": "SCHEDULED",
+          "topics": [
+            {
+              "id": "greentech",
+              "label": "GreenTech"
+            }
+          ],
+          "prize": {
+            "status": "UNKNOWN",
+            "totalAmount": null,
+            "currency": null,
+            "kind": "UNSPECIFIED",
+            "summary": null
+          },
+          "team": {
+            "minSize": null,
+            "maxSize": null,
+            "individualApplicationAllowed": null,
+            "soloParticipationAllowed": null,
+            "teamFormationAvailable": null
+          },
+          "imageUrl": null,
+          "artworkKey": "GREENTECH",
+          "lastVerifiedAt": null,
+          "updatedAt": "2026-10-12T10:00:00Z",
+          "isDemo": true
+        }
+      ],
+      "page": 2,
+      "size": 2,
+      "totalElements": 5,
+      "totalPages": 3,
+      "hasNext": false,
+      "asOf": "2026-10-12T10:00:00Z"
+    }
+  },
+  {
+    "path": "hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+    "query": {},
+    "status": 200,
+    "body": {
+      "id": "39287368-5259-5235-a1c4-25b4e1e8421e",
+      "slug": "ai-sprint-2026-demo",
+      "title": "AI Sprint 2026",
+      "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+      "organizer": {
+        "name": "Demo Community",
+        "websiteUrl": "https://example.com"
+      },
+      "format": "ONLINE",
+      "location": {
+        "countryCode": null,
+        "city": null,
+        "venue": null
+      },
+      "starts": {
+        "precision": "MINUTE",
+        "date": "2026-11-12",
+        "time": "10:00",
+        "timeZone": "Asia/Almaty",
+        "instant": "2026-11-12T05:00:00Z"
+      },
+      "ends": {
+        "precision": "MINUTE",
+        "date": "2026-11-14",
+        "time": "18:00",
+        "timeZone": "Asia/Almaty",
+        "instant": "2026-11-14T13:00:00Z"
+      },
+      "registrationDeadline": {
+        "precision": "MINUTE",
+        "date": "2026-11-01",
+        "time": "18:00",
+        "timeZone": "Asia/Almaty",
+        "instant": "2026-11-01T13:00:00Z"
+      },
+      "registrationStatus": "OPEN",
+      "eventStatus": "SCHEDULED",
+      "topics": [
+        {
+          "id": "ai-ml",
+          "label": "AI / ML"
+        }
+      ],
+      "prize": {
+        "status": "ANNOUNCED",
+        "totalAmount": "10000.00",
+        "currency": "USD",
+        "kind": "CASH",
+        "summary": "Демо: общий фонд нескольких призовых мест."
+      },
+      "team": {
+        "minSize": 1,
+        "maxSize": 5,
+        "individualApplicationAllowed": true,
+        "soloParticipationAllowed": true,
+        "teamFormationAvailable": null
+      },
+      "imageUrl": null,
+      "artworkKey": "AI_BUST",
+      "lastVerifiedAt": null,
+      "updatedAt": "2026-10-12T10:00:00Z",
+      "isDemo": true,
+      "description": "AI Sprint 2026 — вымышленное событие для разработки HackAtlas. Этот пример проверяет компоновку карточек, описание, сроки и действие регистрации. Ссылка example.com не является реальной регистрацией.",
+      "eligibility": {
+        "summary": "Демонстрационные условия. Перед участием в настоящем событии нужно прочитать официальный регламент.",
+        "allowedCountryCodes": [],
+        "minAge": 18,
+        "maxAge": null,
+        "studentsOnly": false,
+        "languages": [
+          "Русский",
+          "English"
+        ]
+      },
+      "stages": [
+        {
+          "title": "Дедлайн заявки",
+          "when": {
+            "precision": "MINUTE",
+            "date": "2026-11-01",
+            "time": "18:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-01T13:00:00Z"
+          },
+          "description": null
+        },
+        {
+          "title": "Начало хакатона",
+          "when": {
+            "precision": "MINUTE",
+            "date": "2026-11-12",
+            "time": "10:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-12T05:00:00Z"
+          },
+          "description": "Демо-этап."
+        }
+      ],
+      "prizeDetails": "Демонстрационный общий фонд; не подтверждён реальным организатором.",
+      "submissionRequirements": "В демо: прототип и презентация.",
+      "judgingCriteria": null,
+      "officialUrl": "https://example.com/hackatlas-demo",
+      "registrationUrl": "https://example.com/hackatlas-demo/register",
+      "rulesUrl": "https://example.com/hackatlas-demo/rules",
+      "sourceUrl": "https://example.com/hackatlas-demo"
+    }
+  },
+  {
+    "path": "metadata/filters",
+    "query": {},
+    "status": 200,
+    "body": {
+      "topics": [
+        {
+          "id": "ai-ml",
+          "label": "AI / ML"
+        },
+        {
+          "id": "fintech",
+          "label": "Fintech"
+        },
+        {
+          "id": "gamedev",
+          "label": "GameDev"
+        },
+        {
+          "id": "greentech",
+          "label": "GreenTech"
+        },
+        {
+          "id": "web",
+          "label": "Web"
+        }
+      ],
+      "formats": [
+        {
+          "id": "OFFLINE",
+          "label": "Очно"
+        },
+        {
+          "id": "ONLINE",
+          "label": "Онлайн"
+        }
+      ],
+      "countries": [
+        {
+          "code": "KZ",
+          "label": "Казахстан"
+        }
+      ],
+      "cities": [
+        {
+          "countryCode": "KZ",
+          "name": "Астана"
+        }
+      ],
+      "interests": [
+        {
+          "id": "ai-ml",
+          "label": "AI / ML"
+        },
+        {
+          "id": "backend",
+          "label": "Backend"
+        },
+        {
+          "id": "design",
+          "label": "Design"
+        },
+        {
+          "id": "fintech",
+          "label": "Fintech"
+        },
+        {
+          "id": "frontend",
+          "label": "Frontend"
+        },
+        {
+          "id": "gamedev",
+          "label": "GameDev"
+        },
+        {
+          "id": "greentech",
+          "label": "GreenTech"
+        },
+        {
+          "id": "java",
+          "label": "Java"
+        },
+        {
+          "id": "kotlin",
+          "label": "Kotlin"
+        },
+        {
+          "id": "mobile",
+          "label": "Mobile"
+        },
+        {
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "id": "python",
+          "label": "Python"
+        },
+        {
+          "id": "web",
+          "label": "Web"
+        }
+      ]
+    }
+  },
+  {
+    "path": "hackathons",
+    "query": {
+      "query": "AI Sprint",
+      "format": "ONLINE",
+      "registrationStatus": "OPEN",
+      "size": 2
+    },
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "id": "39287368-5259-5235-a1c4-25b4e1e8421e",
+          "slug": "ai-sprint-2026-demo",
+          "title": "AI Sprint 2026",
+          "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+          "organizer": {
+            "name": "Demo Community",
+            "websiteUrl": "https://example.com"
+          },
+          "format": "ONLINE",
+          "location": {
+            "countryCode": null,
+            "city": null,
+            "venue": null
+          },
+          "starts": {
+            "precision": "MINUTE",
+            "date": "2026-11-12",
+            "time": "10:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-12T05:00:00Z"
+          },
+          "ends": {
+            "precision": "MINUTE",
+            "date": "2026-11-14",
+            "time": "18:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-14T13:00:00Z"
+          },
+          "registrationDeadline": {
+            "precision": "MINUTE",
+            "date": "2026-11-01",
+            "time": "18:00",
+            "timeZone": "Asia/Almaty",
+            "instant": "2026-11-01T13:00:00Z"
+          },
+          "registrationStatus": "OPEN",
+          "eventStatus": "SCHEDULED",
+          "topics": [
+            {
+              "id": "ai-ml",
+              "label": "AI / ML"
+            }
+          ],
+          "prize": {
+            "status": "ANNOUNCED",
+            "totalAmount": "10000.00",
+            "currency": "USD",
+            "kind": "CASH",
+            "summary": "Демо: общий фонд нескольких призовых мест."
+          },
+          "team": {
+            "minSize": 1,
+            "maxSize": 5,
+            "individualApplicationAllowed": true,
+            "soloParticipationAllowed": true,
+            "teamFormationAvailable": null
+          },
+          "imageUrl": null,
+          "artworkKey": "AI_BUST",
+          "lastVerifiedAt": null,
+          "updatedAt": "2026-10-12T10:00:00Z",
+          "isDemo": true
+        }
+      ],
+      "page": 0,
+      "size": 2,
+      "totalElements": 1,
+      "totalPages": 1,
+      "hasNext": false,
+      "asOf": "2026-10-12T10:00:00Z"
+    }
+  }
+]

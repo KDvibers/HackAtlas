@@ -8,7 +8,8 @@ import io.ktor.client.engine.HttpClientEngine
 import kotlinx.coroutines.*
 
 /** Process owner: Activity/UIViewController recreation does not reopen files or create clients. */
-class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -> GuestSnapshotStorage, catalogEnabled: Boolean = true) {
+class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -> GuestSnapshotStorage,
+    catalogEnabled: Boolean = true, remotePageSize: Int = 20) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var engine: HttpClientEngine? = null
     private var client: HttpClient? = null
@@ -16,7 +17,7 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
         val transport = createPlatformHttpEngine().also { engine = it }
         val api = createApiClient(transport, remote).also { client = it }
         RemoteCatalogRepository(api, remote)
-    }, catalogEnabled = catalogEnabled)
+    }, catalogEnabled = catalogEnabled, remotePageSize = remotePageSize)
 
     fun close() {
         scope.cancel()

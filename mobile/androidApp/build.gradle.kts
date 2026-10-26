@@ -46,6 +46,8 @@ val debugSource = providers.gradleProperty("hackatlas.debugSource").getOrElse("D
 val debugApiUrl = providers.gradleProperty("hackatlas.debugApiBaseUrl").getOrElse("")
 val releaseApiUrl = providers.gradleProperty("hackatlas.releaseApiBaseUrl").getOrElse("")
 val allowDebugHttp = providers.gradleProperty("hackatlas.allowDebugHttp").getOrElse("false").toBooleanStrictOrNull() == true
+val debugPageSize = providers.gradleProperty("hackatlas.debugPageSize").getOrElse("20").toIntOrNull()
+    ?.takeIf { it in 1..50 } ?: error("hackatlas.debugPageSize must be an integer from 1 to 50")
 fun buildConfigString(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r") + "\""
 
 abstract class GenerateDebugNetworkSecurity : DefaultTask() {
@@ -88,6 +90,7 @@ android {
             buildConfigField("String", "CATALOG_SOURCE", buildConfigString(debugSource))
             buildConfigField("String", "API_BASE_URL", buildConfigString(debugApiUrl))
             buildConfigField("boolean", "ALLOW_DEBUG_HTTP", allowDebugHttp.toString())
+            buildConfigField("int", "CATALOG_PAGE_SIZE", debugPageSize.toString())
         }
         release {
             isMinifyEnabled = false
@@ -95,6 +98,7 @@ android {
             buildConfigField("String", "CATALOG_SOURCE", "\"REMOTE\"")
             buildConfigField("String", "API_BASE_URL", buildConfigString(releaseApiUrl))
             buildConfigField("boolean", "ALLOW_DEBUG_HTTP", "false")
+            buildConfigField("int", "CATALOG_PAGE_SIZE", "20")
         }
     }
     compileOptions {
