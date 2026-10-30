@@ -1,0 +1,13 @@
+# M3 block 1: auth core
+
+Поручение: проверить B2, добавить native SecureTokenStore, клиент register/login/logout/me и MockEngine-тесты. Без экранов, profile edit, saved sync/guest import, reminders, M3 следующих блоков. API Starter и opaque Bearer без refresh сохраняются. Commit/push пользовательские.
+
+Принятое направление уже задано ROADMAP/TECHNOLOGY_DECISIONS и запросом: Ktor + ручной DI, Android Keystore ciphertext, iOS Keychain. Новые библиотеки/стек и продуктовые решения не требуются. Альтернативы: plaintext settings запрещены; общий auth interceptor усложняет контроль утечки токена в публичный каталог; отдельный owned HTTP client с явными четырьмя относительными endpoint выбран исполнителем. Он не устанавливается в App/UI этого блока.
+
+AuthSessionClient владеет отдельным HttpClient/engine без redirects/cookies/logging и автоматических повторов POST. Store привязан к нормализованному API base URL. Authorization добавляется только к фиксированным me/logout, register/login всегда без него. Mutex сериализует операции и исключает stale 401 при смене сессии. StateFlow содержит только публичное состояние/профиль, не токен. Restore проверяет сохранённую сессию через me; expiresAt <= clock и protected 401 требуют повторного входа, refresh нет. Password не trim и не сохраняется. DTO/StoredSession toString не печатают credentials.
+
+Ошибки: typed storage/network/timeout/invalid response/HTTP, без raw body/exception causes. 429 содержит безопасный Retry-After. Ошибки login не удаляют существующую сессию. Новая сессия публикуется только после записи store. Локальная запись/очистка и публикация состояния завершаются вместе даже при cancellation. Logout всегда очищает локальную сессию, отдельно возвращает подтверждённый отзыв / уже недействительна / только локальный выход. Сетевая ошибка не выдаётся за серверный отзыв.
+
+Android: AES-256 GCM, provider IV, AAD=API scope, AndroidKeyStore key, AtomicFile в noBackupFilesDir; corruption/missing key => явная ошибка, без plaintext fallback. iOS: SecItem generic password, service+account(API scope), WhenUnlockedThisDeviceOnly, без synchronizable; чтение/обновление/удаление проверяют OSStatus. Только token/expiry/userId, без пароля и полного профиля. Ошибка чтения не считается отсутствием сессии.
+
+B2 проверяется текущим backend Maven verify/Testcontainers и JSON Schema exports: изолированная временная PostgreSQL, существующий dev backend/данные не трогать. Native Android дополнительно проверить instrumentation на тестовом эмуляторе (если доступен); native iOS на Windows не заявлять. После блока передать review/команды и остановиться.

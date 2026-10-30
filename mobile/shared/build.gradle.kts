@@ -87,7 +87,10 @@ kotlin {
 android {
     namespace = "dev.hackatlas.mobile.shared"
     compileSdk = 36
-    defaultConfig { minSdk = 26 }
+    defaultConfig {
+        minSdk = 26
+        testInstrumentationRunner = "dev.hackatlas.mobile.data.auth.SecureStoreInstrumentation"
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
