@@ -84,11 +84,11 @@ docker compose --env-file infra/.env -f infra/compose.yaml stop postgres
 
 ## Проверенные источники фиксации
 
-Исходные версии и SHA проверены 20 октября 2026 по первичным источникам; B4 обновил PostgreSQL digest и добавил upload-artifact 26 октября:
+Исходные версии и SHA проверены 20 октября 2026 по первичным источникам; B4 добавил upload-artifact 26 октября, B4.3 обновил PostgreSQL digest 30 октября:
 
 | Компонент | Фиксация | Источник |
 |---|---|---|
-| PostgreSQL | `17.11-bookworm`, multiarch digest `sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27` (пересборка 21.10, закреплена B4) | [Поддерживаемая линия](https://www.postgresql.org/support/versioning/), [Docker Official Image](https://hub.docker.com/_/postgres), [metadata тега](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm) |
+| PostgreSQL | `17.11-bookworm`, multiarch digest `sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5` (пересборка 28.10, закреплена B4.3) | [Поддерживаемая линия](https://www.postgresql.org/support/versioning/), [Docker Official Image](https://hub.docker.com/_/postgres), [metadata тега](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm) |
 | checkout | `v7.0.1` → `3d3c42e5aac5ba805825da76410c181273ba90b1` | [Официальный release](https://github.com/actions/checkout/releases/tag/v7.0.1) |
 | setup-java | `v6.1.0` → `b843ebf9b913146b38da2eaa7aeddf76074ae1ad` | [Официальный release](https://github.com/actions/setup-java/releases/tag/v6.1.0) |
 | setup-python | `v7.0.0` → `5fda3b95a4ea91299a34e894583c3862153e4b97` | [Официальный release](https://github.com/actions/setup-python/releases/tag/v7.0.0) |

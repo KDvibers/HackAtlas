@@ -6,18 +6,18 @@
 и совместная приёмка M4 остаются отдельными пунктами B4.
 
 **Security gate пока не пройден:** фактический Trivy scan обнаружил HIGH findings,
-в том числе в зависимостях Caddy base. На 26.10.2026 проверенный upstream latest —
+в том числе в зависимостях Caddy base. На 30.10.2026 проверенный official image —
 тот же v2.11.7; повторный build не обновляет встроенные Go/x/net. Этот stack разрешено
 использовать для текущей локальной репетиции, но нельзя считать готовым к внешнему
 выпуску. Находки, версии исправлений и область проверки записаны в
-[`docs/research/2026-10-26-release-security.md`](../../docs/research/2026-10-26-release-security.md).
+[`docs/research/2026-10-30-runtime-security.md`](../../docs/research/2026-10-30-runtime-security.md).
 
 ## Состав и закреплённые образы
 
 | Компонент | Источник образа | Назначение |
 |---|---|---|
-| Java runtime | `eclipse-temurin:21.0.12.1_1-jre-noble@sha256:35501d3f93173b420ac9001658eb68157e813316b865087e345c187fca422c4c` | Только JRE и уже проверенный JAR |
-| PostgreSQL | `postgres:17.11-bookworm@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27` | База, клиенты backup/restore и подготовка собственных volumes |
+| Java runtime | `eclipse-temurin:21.0.13_9-jre-noble@sha256:03fedab2c0d7355868b5ba5330d64088b956a0bfac48f904e5c57207e261e2c9` | Только JRE и уже проверенный JAR |
+| PostgreSQL | `postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5` | База, клиенты backup/restore и подготовка собственных volumes |
 | Caddy base | `caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f` | HTTPS и reverse proxy |
 
 Digest фиксирует содержимое, tag показывает версию. Caddy собирается из этого
@@ -31,18 +31,20 @@ file capability официального бинарника мешает зап�
 
 Источники проверки версий:
 [официальный Caddy tag](https://hub.docker.com/v2/repositories/library/caddy/tags/2.11.7-alpine),
-[официальный Temurin tag](https://hub.docker.com/v2/repositories/library/eclipse-temurin/tags/21.0.12.1_1-jre-noble),
+[официальный Temurin tag](https://hub.docker.com/v2/repositories/library/eclipse-temurin/tags/21.0.13_9-jre-noble),
 [официальный PostgreSQL tag](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm),
 [Temurin Dockerfile](https://github.com/adoptium/containers/blob/main/21/jre/ubuntu/noble/Dockerfile).
 
-На 26.10.2026 опубликован [Temurin 21.0.13+9](https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.13%2B9),
-но официальный Docker tag `21.0.13_9-jre-noble` ещё отсутствует (404; поиск tags
-по `21.0.13` пуст). `21-jre-noble` и upstream Dockerfile пока содержат 21.0.12.1+1.
-Следовательно, закреплённый JRE отстаёт от свежего security release; это отдельный
-blocker внешнего выпуска. Trivy не распознал установленный из tar JRE как отдельный
-проверенный компонент: отсутствие Java-строки в CVE report не означает отсутствие
-уязвимостей JRE. После появления проверенного image требуется обновить digest и
-повторить rehearsal и проверку зависимостей.
+На 30.10.2026 официальный Docker tag для [Temurin 21.0.13+9](https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.13%2B9)
+доступен: закреплена публикация от 29 октября. Прямое `java -version` подтвердило
+`Temurin-21.0.13+9`; host SDK не менялся. Trivy не распознаёт установленный из tar
+JRE как отдельный пакет, поэтому реальная версия runtime по-прежнему проверяется
+отдельно. PostgreSQL 17.11 закреплён на пересборке от 28 октября.
+
+У Caddy общий index digest изменился после добавления riscv64; Linux amd64 manifest
+остался `sha256:04913b1da43339a40ad1ea87827d70a576ac5aa6cf674c6e24fdca675887533a`.
+Для проверяемой платформы это не исправление Go/x/net, поэтому прежний Caddy pin сохранён.
+Новые проверки и оставшиеся ограничения — [B4.3 security report](../../docs/research/2026-10-30-runtime-security.md).
 
 PostgreSQL 17.11 остаётся [актуальным minor в ветке 17](https://www.postgresql.org/support/versioning/).
 Закреплён свежий официальный build образа от 21.10.2026; index digest сверён с

@@ -1,10 +1,10 @@
 # Backend toolchain — B0/B1/B2/B3 и подготовка B4
 
-Первичная фиксация — 20 октября 2026; обновление безопасности B4 — 26 октября. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
+Первичная фиксация — 20 октября 2026; обновление контейнеров B4.3 — 30 октября. Версии зависимостей определяются [pom.xml](pom.xml) и Spring Boot BOM; документация объясняет выбор и не заменяет manifests.
 
 | Компонент | Зафиксировано |
 |---|---|
-| Java | Language / bytecode target 21; локально проверен JDK 21.0.12.1 |
+| Java | Language / bytecode target 21; host JDK 21.0.12.1; release JRE Temurin 21.0.13+9 |
 | Spring Boot parent / BOM | 4.1.2; patch-обновление безопасности B4 |
 | Spring Security | 7.1.2 через Boot BOM, подключён B2 |
 | Embedded Tomcat | 11.0.27 через Boot BOM |
@@ -26,7 +26,7 @@
 
 Mockito из `spring-boot-starter-test` запускается явным Java agent в Surefire/Failsafe по [официальной инструкции для Java 21+](https://javadoc.io/static/org.mockito/mockito-core/5.24.0/org.mockito/org/mockito/Mockito.html#0.3). Maven dependency plugin разрешает путь к JAR; late `argLine` сохраняет совместимость с будущими test agents. Это устраняет динамическое self-attach при старте Spring test context; тесты и listeners не отключаются.
 
-PostgreSQL digest: `sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27`. В B4 закреплена свежая официальная пересборка 17.11 от 21 октября; версия PostgreSQL не меняется. Один digest используется в dev/release Compose, Testcontainers и B1–B3 CLI runners; тесты не зависят от состояния dev volume. Exact versions и hashes CI Actions / Gitleaks собраны в [infra/README](../infra/README.md).
+PostgreSQL digest: `sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5`. В B4.3 закреплена официальная пересборка 17.11 от 28 октября; версия PostgreSQL не меняется. Один digest используется в dev/release Compose, Testcontainers и B1–B3 CLI runners; тесты не зависят от состояния dev volume. Exact versions и hashes CI Actions / Gitleaks собраны в [infra/README](../infra/README.md).
 
 B3 добавляет только `spring-boot-starter-thymeleaf` из существующего Boot BOM. HTML формируется на сервере, дополнительный JavaScript runtime или сборщик UI не нужен. Spring Security сохраняет opaque Bearer API и отдельно защищает admin browser session/CSRF. Для модерации переиспользуется проверенный алгоритм ограниченных окон B2 с отдельными счётчиками: Bucket4j и Redis не добавлялись. PostgreSQL row locks, FK и транзакции обеспечивают атомарное удаление аккаунта и аудит. Подробности — [MODERATION](MODERATION.md).
 
