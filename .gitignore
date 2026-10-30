@@ -38,6 +38,7 @@ Thumbs.db
 *.dump
 *.dump.sha256
 *.restore-review.json
+*.deletion-export.json
 .venv/
 __pycache__/
 /tools/bruno/node_modules/

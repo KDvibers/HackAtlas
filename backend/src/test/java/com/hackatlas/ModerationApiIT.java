@@ -55,7 +55,7 @@ class ModerationApiIT extends B2HttpSupport {
 
     @BeforeEach
     void freshAccountsAndCatalogue() throws Exception {
-        jdbc.execute("truncate table hackatlas.user_account, hackatlas.catalog_hackathon, hackatlas.catalog_tag cascade");
+        jdbc.execute("truncate table hackatlas.user_account, hackatlas.catalog_hackathon, hackatlas.catalog_tag, hackatlas.account_deletion_receipt cascade");
         seeder.seed();
         email = "moderation-" + UUID.randomUUID() + "@example.com";
         var auth = register(email, PASSWORD, "Тест модерации");
@@ -195,6 +195,7 @@ class ModerationApiIT extends B2HttpSupport {
     @Test
     void wrongOrTrimmedPasswordCannotDeleteAndTheErrorIsGeneric() throws Exception {
         var wrong = call("POST", "/me/delete-account", token, deletePayload(PASSWORD.strip()), 401);
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.account_deletion_receipt where account_id=?", Integer.class, userId)).isZero();
         assertThat(wrong.path("code").stringValue()).isEqualTo("INVALID_CREDENTIALS");
         assertThat(wrong.toString().contains(email)).isFalse();
         assertThat(wrong.toString().contains(PASSWORD)).isFalse();
@@ -235,6 +236,16 @@ class ModerationApiIT extends B2HttpSupport {
         var audit = String.join("", jdbc.queryForList("select row_to_json(a)::text from hackatlas.admin_audit a", String.class));
         assertThat(audit).contains("ACCOUNT_DELETED");
         for (var privateValue : List.of(email, token, PASSWORD)) assertThat(audit.contains(privateValue)).isFalse();
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.account_deletion_receipt where account_id=?", Integer.class, userId)).isEqualTo(1);
+        var receipt = jdbc.queryForMap("select * from hackatlas.account_deletion_receipt where account_id=?", userId);
+        assertThat(receipt.keySet()).containsExactlyInAnyOrder("id", "account_id", "recorded_at");
+        assertThat(receipt.get("recorded_at")).isNotNull();
+        assertThat(audit).doesNotContain(userId.toString());
+        for (var privateValue : List.of(email, token, PASSWORD)) assertThat(receipt.toString()).doesNotContain(privateValue);
+        var replacement = register(email, PASSWORD, "Новая регистрация");
+        var replacementId = UUID.fromString(replacement.path("user").path("id").stringValue());
+        assertThat(replacementId).isNotEqualTo(userId);
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.account_deletion_receipt where account_id=?", Integer.class, replacementId)).isZero();
     }
 
     @Test
@@ -318,8 +329,53 @@ class ModerationApiIT extends B2HttpSupport {
         call("GET", "/me", token, null, 200);
         call("GET", "/me", secondToken, null, 200);
         assertThat(jdbc.queryForObject("select count(*) from hackatlas.admin_audit where action='ACCOUNT_DELETED'", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.account_deletion_receipt where account_id=?", Integer.class, userId)).isZero();
         call("POST", "/me/delete-account", token, deletePayload(PASSWORD), 204);
         call("GET", "/me", secondToken, null, 401);
+    }
+
+    @ParameterizedTest
+    @MethodSource("databaseFaults")
+    @ExtendWith(OutputCaptureExtension.class)
+    void receiptFailureRollsBackDeletionAndAudit(int status, String sqlState, CapturedOutput output) throws Exception {
+        call("PUT", "/me/saved/" + AI, token, null, 204);
+        installFault("account_deletion_receipt", sqlState);
+        try {
+            assertSafeFailure(call("POST", "/me/delete-account", token, deletePayload(PASSWORD), status), status, output);
+        } finally {
+            removeFault("account_deletion_receipt");
+        }
+        for (var table : List.of("user_account", "auth_session", "saved_hackathon")) {
+            String column = table.equals("user_account") ? "id" : "user_id";
+            assertThat(jdbc.queryForObject("select count(*) from hackatlas." + table + " where " + column + "=?", Integer.class, userId)).isEqualTo(1);
+        }
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.account_deletion_receipt where account_id=?", Integer.class, userId)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.admin_audit where action='ACCOUNT_DELETED'", Integer.class)).isZero();
+        call("GET", "/me", token, null, 200);
+        call("POST", "/me/delete-account", token, deletePayload(PASSWORD), 204);
+        assertThat(output.getAll()).doesNotContain(userId.toString(), email, token, PASSWORD);
+    }
+
+    @Test
+    void concurrentDeletionRecordsOnlyOneReceipt() throws Exception {
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor(); var http = HttpClient.newHttpClient()) {
+            var attempts = new ArrayList<java.util.concurrent.Future<HttpResponse<String>>>();
+            for (int index = 0; index < 2; index++) {
+                attempts.add(executor.submit(() -> {
+                    start.await();
+                    return http.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + httpPort() + "/api/v1/me/delete-account"))
+                            .timeout(Duration.ofSeconds(20)).header("Content-Type", "application/json")
+                            .header("Authorization", "Bearer " + token)
+                            .POST(HttpRequest.BodyPublishers.ofString(deletePayload(PASSWORD))).build(), HttpResponse.BodyHandlers.ofString());
+                }));
+            }
+            start.countDown();
+            var statuses = new ArrayList<Integer>();
+            for (var attempt : attempts) statuses.add(attempt.get().statusCode());
+            assertThat(statuses).containsExactlyInAnyOrder(204, 401);
+        }
+        assertThat(jdbc.queryForObject("select count(*) from hackatlas.account_deletion_receipt where account_id=?", Integer.class, userId)).isEqualTo(1);
     }
 
     private void installFault(String table, String sqlState) {

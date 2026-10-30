@@ -37,6 +37,9 @@ public class AccountDeletionService {
         jdbc.sql("DELETE FROM hackatlas.user_account WHERE id = :user").param("user", principal.userId()).update();
         jdbc.sql("INSERT INTO hackatlas.admin_audit (id, action, created_at) VALUES (:id, 'ACCOUNT_DELETED', :now)")
                 .param("id", UUID.randomUUID()).param("now", Timestamp.from(clock.instant())).update();
+        // Same transaction: a failed receipt cannot leave an erased account or a false deletion record.
+        jdbc.sql("INSERT INTO hackatlas.account_deletion_receipt (id, account_id, recorded_at) VALUES (:id, :user, clock_timestamp())")
+                .param("id", UUID.randomUUID()).param("user", principal.userId()).update();
     }
 
     private static final class Credentials {

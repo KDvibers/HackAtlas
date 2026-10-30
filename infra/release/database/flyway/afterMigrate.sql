@@ -13,5 +13,13 @@ GRANT SELECT, INSERT, UPDATE ON
 GRANT SELECT ON hackatlas.catalog_tag, hackatlas.catalog_hackathon_topic, hackatlas.admin_access
     TO hackatlas_runtime;
 GRANT INSERT ON hackatlas.admin_audit TO hackatlas_runtime;
+-- restore.py also applies this allowlist before upgrading a legacy V6 snapshot.
+DO $hackatlas_receipt_acl$
+BEGIN
+    IF to_regclass('hackatlas.account_deletion_receipt') IS NOT NULL THEN
+        GRANT INSERT ON hackatlas.account_deletion_receipt TO hackatlas_runtime;
+    END IF;
+END
+$hackatlas_receipt_acl$;
 REVOKE ALL ON TABLE public.flyway_schema_history FROM hackatlas_runtime;
 -- New tables remain inaccessible until the next release explicitly reviews this allowlist.

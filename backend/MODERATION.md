@@ -138,4 +138,11 @@ Admin login и повторная проверка пароля удаления
 
 `admin_audit` содержит только UUID записи, nullable actor ID, код действия, nullable event ID и время. Содержимое форм, URL обращений, пароли, токены и email туда не копируются. При удалении аккаунта прежние actor ID становятся `null`; новая запись `ACCOUNT_DELETED` не содержит actor/event ID. Операторские SQL-grants не создают запись прикладного аудита автоматически. Правила доступа, хранения, удаления и ограничения резервных копий описаны в [PRIVACY](../docs/PRIVACY.md); настройки production retention/backups не считаются выполненными этапом B3.
 
+B4.4 отдельно сохраняет `account_deletion_receipt` с UUID записи/удалённого аккаунта
+и recorded_at в той же транзакции. Эти псевдонимные данные нужны только для сверки
+backups; не копируются в admin_audit/логи/API. Runtime INSERT-only, export операторский.
+Автоочистка и независимая доставка не реализованы; таблица в той же БД сама по себе
+не гарантирует полноту истории после аварии. [Runbook](../infra/release/README.md)
+показывает private export и неодобренный draft review.
+
 Проверки выполняются командами из [backend README](README.md): Maven `verify` с настоящей PostgreSQL/Testcontainers, сверка реальных HTTP-ответов с общим OpenAPI и [B3 runner](../scripts/b3/README.md) с [Bruno-коллекцией](../tools/bruno-b3/README.md). HTTP-тесты покрывают API, изоляцию пользователей, CSRF, разграничение Bearer/browser session, отзыв admin-доступа, редактор/даты/источник и последствия удаления. Smoke удаления должен использовать только специально созданный одноразовый аккаунт и отдельную тестовую БД. Итог конкретного прогона фиксируется в [STATUS_BACKEND](../docs/STATUS_BACKEND.md), а не предполагается по наличию тестов.

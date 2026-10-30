@@ -1,6 +1,69 @@
 # BACKEND: статус
 
-Дата актуального дополнения: 30 октября 2026.
+Дата актуального дополнения: 31 октября 2026.
+
+## B4.4 — квитанции удалений и приватные review реализованы локально
+
+Пользователь утвердил локальный вариант B из [дизайна](superpowers/specs/2026-10-30-deletion-history-design.md) и поручил реализацию по [плану](superpowers/plans/2026-10-30-deletion-history.md). Работа выполнена одним агентом в `feat/backend-deletion-history`, база — пользовательский B4.3 commit `0e8d53653ac6b40e5474fa9ba590fe6c74c86345`. В начале [PR #14](https://github.com/KDvibers/HackAtlas/pull/14) был открыт, оба его Backend CI прошли. Финальная проверка подтвердила merge PR #14, успешный [main CI 41109653984](https://github.com/KDvibers/HackAtlas/actions/runs/41109653984) на `24a36cf` и последующий merge mobile PR #15: свежая main `58d29d8a3d779333e68699c97d603b3294db1fdc`. Её [CI 41111335734](https://github.com/KDvibers/HackAtlas/actions/runs/41111335734) на момент проверки queued; успех не заявляется.
+
+`git merge-base --is-ancestor HEAD origin/main` успешен; между базой ветки и свежей main различается только mobile-область, server/API/собственные docs идентичны. Локальные merge/rebase не выполнялись, работа напарника не менялась. Git HTTPS account **yergaliuly** проверен отдельно от author identity. Commit, staging Git, push и PR B4.4 не выполнялись; изменения оставлены пользователю.
+
+### Что изменено
+
+- [V7 migration](../backend/src/main/resources/db/migration/V7__account_deletion_receipts.sql), [AccountDeletionService](../backend/src/main/java/com/hackatlas/auth/AccountDeletionService.java): минимальная `account_deletion_receipt` (record UUID/account UUID/recorded_at), без FK/email/credentials/контента, в той же транзакции с удалением и audit. Неверный пароль/rollback не оставляют ложной квитанции; повторная регистрация имеет новый UUID.
+- [Permissions callback](../infra/release/database/flyway/afterMigrate.sql): runtime INSERT-only, без SELECT/UPDATE/DELETE. Новый GRANT условен на существование таблицы: restore V6 выполняет текущий callback до upgrade; настоящий старый backup теперь восстанавливается и мигрирует в карантине.
+- [Export helper](../infra/release/ops/export_deletions.py), [draft helper](../infra/release/ops/prepare_restore_review.py), [validation/private writer](../infra/release/ops/deletion_history.py): READ ONLY REPEATABLE READ, все committed receipts без time/sequence cutoff; строгие format/identity/limits, source marker refusal, <=10 000 UUID / 1 MiB без усечения. Новые файлы 0600/private parent0700, O_EXCL/fsync, без overwrite. CLI не печатает account UUID.
+- Draft имеет ровно девять полей B4.2, target hash/restoreId и false/false/null; он не выдаёт CONNECT и не вызывает approve. Отдельный export содержит `historyComplete=false`; source identity не добавляется в strict review.
+- [Java IT](../backend/src/test/java/com/hackatlas/ModerationApiIT.java), [Python tests](../scripts/b4/test_deletion_history.py), [Docker/HTTPS runner](../scripts/b4/run_rehearsal.py): атомарность/ошибки 500/503/конкурентное удаление, isolation/private files, реальные ACL/snapshot/late commit, draft refusal и V6→V7. [Runbook](../infra/release/README.md), [PRIVACY](PRIVACY.md), backend docs, решения/технологии и ignore rules обновлены.
+
+**Starter/API, opaque Bearer auth, public endpoints, Docker pins/dependencies, mobile/design и STATUS_MOBILE не менялись.** Новая migration V7 входит в этап; старые migration-файлы не изменены. Реальные dev/production volumes не запускались и не мигрировались; все изменяемые данные synthetic в owned disposable resources.
+
+### Фактические проверки
+
+| Команда / область | Результат |
+|---|---|
+| WSL root, backend: `bash ./mvnw --batch-mode --no-transfer-progress verify` | **BUILD SUCCESS, 282 теста: 21 unit + 261 integration; 0 failures/errors/skipped**, 1:37 |
+| `python -m unittest discover -s scripts/b4 -p 'test_*.py'`; аналогично scripts/security | **32 + 22 = 54 PASS**, 0 skips; новый module 12 тестов |
+| `scripts/validate_contract.py` и три `validate_http_contract.py` по fresh Maven exports | Starter/fixtures PASS; **139 + 345 + 106 = 590 HTTP-ответов PASS** |
+| `run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b44-final` | **PASS, 226.123 с**: HTTPS/admin/least privilege, source export/draft/rollback/replay, V6→V7 и cleanup |
+| Gitleaks 8.30.1 history + all changed/new files; UTF-8/links/scope/Python syntax/XML/ignore/`git diff --check` | **PASS, no leaks**; 20 changed/new files, staged/API/mobile/design изменений нет |
+
+RED→GREEN: отсутствие receipt schema подтверждено до migration; 68 ModerationApiIT затем прошли. Новый Python module сначала отсутствовал, после реализации 10 tests прошли; окончательный module расширен до 12. Настоящий V6 archive отдельно подтвердил отказ restore на новом безусловном GRANT; после условного grant финальная репетиция прошла. Старые проверки и security gates не ослаблялись.
+
+Project `hackatlas-b4-71bbd8ff3459`: backup **40 535 bytes / 0.275 с**, restore **1.290 с**, блок до HTTPS **132.710 с**, включая deliberate negative tests, не production RTO. Управляемая открытая транзакция доказала отсутствие uncommitted receipt в export и появление позднего commit с recorded_at 2000 года в следующем полном export. Source receipt rows 2, старый snapshot/restore rows 1; поздняя история не подменяется. Review из 2 UUID фактически удалил 1 аккаунт. Draft false/null и неправильный source отвергнуты; overwrite запрещён, private export не изменён, исходная БД нетронута. V6 schema действительно не содержала receipt table; upgrade добавил пустую V7 таблицу, CONNECT сохранился запрещённым.
+
+Логи/отчёты — ignored `backend/target/b44-task1-{red,green}.log`, `b44-task2-{red,green}.log`, `b44-verify.log`, `b44-python.log`, `b44-contract.log`, `b44-rehearsal/`, `b44-legacy-red/`, `b44-final/`, `b44-final-checks.log`, `b44-progress.md`. Собственные containers/volumes/secrets/dumps/exports/reviews удалены; built images оставлены. Иные контейнеры не были целями cleanup.
+
+### Ограничения и следующий отдельный шаг
+
+История в той же БД **не независима от restore**; независим только уже выгруженный private file. Потеря источника после последней выгрузки оставляет неизвестный интервал: без достоверной дополнительной истории — карантин. Старые удаления и старые writers/ручной SQL не покрываются задним числом; retained UUID псевдонимны. Нет автоматической доставки, offsite/encryption, retention/очистки receipts и exports или доказательства глобальной полноты. Эти решения нужны до реальных пользователей.
+
+Следующий отдельный шаг — согласовать независимое хранение/доставку exports, доступы и сроки вместе с backup policy на выбранной инфраструктуре. Внешний deployment/M4 и публичный выпуск не разрешены. Контейнерные blockers B4.3 остаются; Docker/dependency pins неизменны, новый Trivy/OSV/Bruno/Schemathesis scan не выполнялся и не выдаётся за выполненный. Права/SQL/API проверены fresh suites и real HTTPS/restore.
+
+Итоговый self-review выполнен автором; независимый reviewer/agent не подключался по предпочтению пользователя. Обнаруженная V6-несовместимость исправлена и доказана RED→GREEN. Неисправленных существенных замечаний или отложенных minor findings нет; пользователь/напарник выполняет PR review.
+
+Сообщение напарнику для ручной передачи: «B4.4 не меняет API/auth. Добавлены только внутренние recovery receipts и операторские private export/draft. Каталог и B2/B3 можно подключать как прежде. PR #15 browser/share уже в main; оставшиеся mobile/iOS пункты — по твоему STATUS. Общего staging URL пока нет». Сообщение не отправлялось.
+
+### Пользовательский commit / push / PR
+
+PR title: **Record account deletions and prepare private restore reviews**.
+
+Описание: «Добавлены атомарные recovery-квитанции, приватная полная выгрузка UUID и подготовка неодобренного restore review. Runtime имеет только INSERT; откат, конкурентное удаление, private files и совместимость V6→V7 проверены. Пройдены 282 Java-теста, 54 Python-теста, 590 HTTP-ответов и полная HTTPS/restore репетиция. Карантин сохраняется; независимая доставка и доказательство полноты истории не реализованы. API и opaque auth прежние».
+
+```powershell
+git status --short --branch
+git add .gitignore backend/src/main/java/com/hackatlas/auth/AccountDeletionService.java backend/src/main/resources/db/migration/V7__account_deletion_receipts.sql backend/src/test/java/com/hackatlas/ModerationApiIT.java
+git add infra/release/database/flyway/afterMigrate.sql infra/release/ops/deletion_history.py infra/release/ops/export_deletions.py infra/release/ops/prepare_restore_review.py
+git add scripts/b4/run_rehearsal.py scripts/b4/test_deletion_history.py scripts/b4/README.md infra/release/README.md backend/README.md backend/MODERATION.md
+git add docs/DECISIONS.md docs/PRIVACY.md docs/TECHNOLOGY_DECISIONS.md docs/STATUS_BACKEND.md docs/superpowers/specs/2026-10-30-deletion-history-design.md docs/superpowers/plans/2026-10-30-deletion-history.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "feat(backend): record deletions and prepare private restore reviews"
+git push -u origin feat/backend-deletion-history
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...feat/backend-deletion-history?expand=1'
+```
+
+Ниже сохранены исторические статусы; их прежние ограничения относятся к соответствующему этапу.
 
 ## B4.3 — обновление официальных Java/PostgreSQL images
 
