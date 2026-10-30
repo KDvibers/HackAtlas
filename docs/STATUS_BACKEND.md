@@ -2,6 +2,135 @@
 
 Дата актуального дополнения: 31 октября 2026.
 
+## B4.5 — локальный шифрованный архив реализован; эксплуатация заблокирована
+
+[PR #17](https://github.com/KDvibers/HackAtlas/pull/17) слит в main
+`52d265e3f57c10a7c9e9b4ac5898edc01389a95c`, её
+[Backend CI 41113186062](https://github.com/KDvibers/HackAtlas/actions/runs/41113186062)
+прошёл. После проверки main пользователь утвердил вариант B из
+[дизайна](superpowers/specs/2026-10-31-recovery-storage-design.md) и поручил реализацию.
+Выполнен [план B4.5](superpowers/plans/2026-10-31-recovery-storage.md), одним агентом.
+Ветка **`feat/backend-recovery-archive`**, база `52d265e`; исходный checkout переиспользован.
+Существующие изменения были только собственным предложением B4.5, чужих не было.
+
+Git HTTPS account проверен отдельно: **yergaliuly**; author config —
+`softache <itsyergaliuly@gmail.com>`. Staging Git, commit, push, PR и deployment
+не выполнялись. Изменения оставлены пользователю. GitHub Actions для этих
+незакоммиченных правок не запускались; успешный CI выше относится к main B4.4.
+
+### Что изменено и зачем
+
+- [Recovery bundle](../infra/release/ops/recovery_bundle.py): private staging,
+  строгие manifest/source identity/allowlist/size/SHA256. Только dump+checksum+export
+  либо отдельный export; неизвестные файлы, symlink/FIFO/hardlink и overwrite отвергаются.
+- [Archive CLI](../infra/release/ops/recovery_archive.py): init/store/check/extract
+  через закреплённый restic, local paths, отдельный private key, очищенное окружение.
+  Store читает snapshot обратно; extract использует полный ID и новый каталог,
+  проверяет содержимое и сохраняет historyComplete=false. Автоматического approve нет.
+- [Installer](../scripts/b4/install_restic.py) и [pin](../infra/release/ops/restic_tool.py):
+  официальный restic 0.19.1 Linux amd64, SHA256 compressed/binary, без global install.
+- [17 новых recovery tests](../scripts/b4/test_recovery_archive.py),
+  [archive integration](../scripts/b4/recovery_archive_checks.py) в существующем
+  [runner](../scripts/b4/run_rehearsal.py): настоящий старый dump и более поздний
+  export сохранены в отдельных snapshots, извлечены и использованы PostgreSQL
+  restore/review. Старые проверки карантина, rollback/replay, HTTPS и V6→V7 сохранены.
+- [Tool audit](../scripts/security/audit_recovery_tool.py) и
+  [5 policy tests](../scripts/security/test_recovery_tool_audit.py): pinned Trivy rootfs
+  scan без Docker socket, свежая advisory DB, отказ на inventory gaps и
+  HIGH/CRITICAL/UNKNOWN. Manual release readiness проверяет новый tool даже при
+  провале container gate; обычный Backend CI ставит pin перед recovery suites.
+- [Runbook](../infra/release/RECOVERY_ARCHIVE.md), release/scripts/security docs,
+  PRIVACY, DECISIONS, TECHNOLOGY_DECISIONS и ignore rules обновлены.
+
+Starter/API, opaque Bearer auth, Java/SQL/migrations, Docker images и Java dependencies,
+mobile/design/STATUS_MOBILE не изменялись. Restic — операторский CLI, не сервис или
+новая зависимость приложения. Нет cloud resources, расписания и auto retention.
+
+### Фактические проверки
+
+| Команда / область | Результат |
+|---|---|
+| WSL root, backend: `bash ./mvnw --batch-mode --no-transfer-progress verify` | **BUILD SUCCESS, 282 = 21 unit + 261 integration**, failures/errors/skipped 0; 1:35 |
+| `python -m unittest discover -s scripts/b4 -p 'test_*.py'` | **49 PASS**, 63.588 с, no skips |
+| `python -m unittest discover -s scripts/security -p 'test_*.py'` | **27 PASS**, no skips |
+| `python scripts/validate_contract.py` + `backend/src/test/resources/validate_http_contract.py --schema api/openapi.yaml --responses <fresh Maven export>` | Starter PASS; **139 + 345 + 106 = 590 HTTP-ответов PASS** |
+| `run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b45-rehearsal` | **PASS, 249.163 с**, encrypted snapshots/read-all/extract, quarantine/review/HTTPS, genuine V6→V7, owned cleanup |
+| `audit_recovery_tool.py --restic backend/target/restic-0.19.1 --output-dir backend/target/b45-restic-final-audit` | **BLOCKED, exit 1**: 81 packages; **22 HIGH / 17 MEDIUM / 2 LOW / 3 UNKNOWN**, unversioned main module; это не PASS |
+| Gitleaks всех 23 changed/new files; UTF-8/links/Python syntax/YAML/scope/XML/ignore/`git diff --check` | **PASS**, утечек нет; пользовательские git add команды покрывают ровно эти файлы |
+
+RED→GREEN наблюдался для bundle/Archive/audit modules: отсутствующий module →
+реальные проверки реализации. Wrong password, corrupt repository, foreign snapshot
+с лишним файлом, identity mismatch, missing/duplicate/oversize JSON и коллизии output
+отвергаются. Специального mock-теста ради runner wiring не добавлялось: интеграция
+доказана настоящей PostgreSQL/HTTPS репетицией. Авторский review; независимого
+reviewer/агента не было. Существенных неисправленных функциональных замечаний нет;
+security blockers явно оставлены открытыми, не скрыты исключениями.
+
+Rehearsal project `hackatlas-b4-a4e6d654a1e9`: backup **40 539 bytes / 0.278 с**,
+restore **1.231 с**, восстановление до HTTPS **132.446 с** с negative cases.
+Это не production RPO/RTO. Все owned containers/volumes/private files/keys/archives
+очищены; built images оставлены. Существующие dev/production базы не мигрировались.
+Финальные QA-логи: `backend/target/b45-final-qa.log`, `b45-final-gitleaks.log`.
+
+Логи: ignored `backend/target/b45-final-{verify,python,contract,http}.log`,
+`b45-{bundle,archive,audit}-{red,green}.log`, `b45-rehearsal/`,
+`b45-restic-final-audit/`, `b45-progress.md`. WSL Java 21.0.12.1, Docker 29.1.3;
+restic 0.19.1 / Go 1.26.4. Отдельные Bruno/Schemathesis/OSV и новый scan app/proxy/PG
+не повторялись, старые результаты не выдаются за новые. Mobile/iOS не проверялись.
+
+### Ограничения и следующий отдельный шаг
+
+Restic binary имеет реальные dependency findings и inventory gap:
+[security report](research/2026-10-31-recovery-tool-security.md). Он **не принят
+для реальных данных**; локальная функциональная готовность не закрывает этот gate.
+Первый scan без Go inventory отвергнут как неполный, исправлен режим сканера на
+rootfs; подавления findings нет. Блокеры контейнеров B4.3 тоже остаются открытыми.
+
+Snapshot на той же машине не является offsite; после последней выгрузки может
+остаться потерянный интервал истории. Нет расписания, независимой доставки,
+production retention/очистки или автоматического снятия карантина. До реальных
+данных нужны исправленный/проверенный инструмент, отдельное хранилище, ключи,
+права и согласованная backup policy. Самостоятельная пересборка Go, замена restic,
+новый сервис доставки или deployment не входят в этот этап.
+Проверка manifest/export identity не удостоверяет происхождение произвольного
+dump; его выбор и соответствие source project остаются ответственностью оператора.
+
+Следующий шаг — отдельно решить инфраструктуру и способ безопасного хранения либо
+проверить исправленный официальный инструмент при его появлении. В ROADMAP нет
+автоматического B5; B4 staging/M4 и публичный выпуск ещё не закрыты. Продолжать
+неограниченную серию локальных сервисов без эксплуатационного решения не требуется.
+
+Сообщение напарнику для ручной передачи: «B4.5 добавляет только локальные recovery
+инструменты, API/auth и подключение клиента прежние. Сборка и backend-тесты прошли.
+Общего staging URL пока нет; security и offsite recovery ещё не готовы к эксплуатации».
+Сообщение не отправлялось.
+
+### Пользовательский commit / push / PR
+
+PR title: **Add encrypted recovery archives and operator tool security checks**.
+
+Описание: «Добавлены закреплённый restic, локальное шифрованное сохранение backup/export,
+строгий manifest и извлечение по snapshot ID. Старый backup и поздняя история удалений
+проверены через настоящий PostgreSQL restore с сохранением карантина. Пройдены
+282 Java-теста, 76 Python-тестов, 590 HTTP-ответов и HTTPS/restore репетиция.
+Новый аудит restic подключён к manual readiness и блокирует эксплуатацию из-за
+HIGH/UNKNOWN и неполной версии main module. Только synthetic/local подготовка;
+API/auth, cloud и production retention не меняются».
+
+```powershell
+git status --short --branch
+git add .github/workflows/backend-ci.yml .github/workflows/release-readiness.yml .gitignore
+git add infra/release/README.md infra/release/RECOVERY_ARCHIVE.md infra/release/ops/recovery_archive.py infra/release/ops/recovery_bundle.py infra/release/ops/restic_tool.py
+git add scripts/b4/README.md scripts/b4/run_rehearsal.py scripts/b4/install_restic.py scripts/b4/recovery_archive_checks.py scripts/b4/test_recovery_archive.py
+git add scripts/security/README.md scripts/security/audit_recovery_tool.py scripts/security/test_recovery_tool_audit.py
+git add docs/DECISIONS.md docs/PRIVACY.md docs/STATUS_BACKEND.md docs/TECHNOLOGY_DECISIONS.md docs/research/2026-10-31-recovery-tool-security.md docs/superpowers/specs/2026-10-31-recovery-storage-design.md docs/superpowers/plans/2026-10-31-recovery-storage.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "feat(backend): add encrypted recovery archives and tool security gate"
+git push -u origin feat/backend-recovery-archive
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...feat/backend-recovery-archive?expand=1'
+```
+
 ## B4.4 — квитанции удалений и приватные review реализованы локально
 
 Пользователь утвердил локальный вариант B из [дизайна](superpowers/specs/2026-10-30-deletion-history-design.md) и поручил реализацию по [плану](superpowers/plans/2026-10-30-deletion-history.md). Работа выполнена одним агентом в `feat/backend-deletion-history`, база — пользовательский B4.3 commit `0e8d53653ac6b40e5474fa9ba590fe6c74c86345`. В начале [PR #14](https://github.com/KDvibers/HackAtlas/pull/14) был открыт, оба его Backend CI прошли. Финальная проверка подтвердила merge PR #14, успешный [main CI 41109653984](https://github.com/KDvibers/HackAtlas/actions/runs/41109653984) на `24a36cf` и последующий merge mobile PR #15: свежая main `58d29d8a3d779333e68699c97d603b3294db1fdc`. Её [CI 41111335734](https://github.com/KDvibers/HackAtlas/actions/runs/41111335734) на момент проверки queued; успех не заявляется.

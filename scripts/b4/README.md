@@ -7,6 +7,7 @@
 Из корня репозитория:
 
 ```bash
+python scripts/b4/install_restic.py --output backend/target/restic-0.19.1
 python -m unittest discover -s scripts/b4 -p 'test_*.py' -v
 python scripts/b4/run_rehearsal.py \
   --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar \
@@ -17,6 +18,7 @@ python scripts/b4/run_rehearsal.py \
 
 ## Что проверяется
 
+- B4.5: закреплённый restic Linux amd64, локальные encrypted snapshots с полным dump и отдельным более поздним export; `check --read-data`, exact-ID extraction и равенство bytes. Существующий PostgreSQL restore получает именно извлечённые файлы; ложное утверждение полноты и автоматический approve не добавляются. Тесты также отклоняют wrong password, повреждённый архив, extra files, неверное окружение и overwrite. [Операторские команды](../../infra/release/RECOVERY_ARCHIVE.md); binary пока имеет [security blockers](../../docs/research/2026-10-31-recovery-tool-security.md).
 - Случайное уникальное имя Compose project, отдельные volumes и временные file secrets. `.env` не читается; унаследованные переменные приложения/Compose не используются. Проверка эффективного Compose запрещает публикацию портов app/PostgreSQL и любых адресов, кроме двух proxy ports на `127.0.0.1`.
 - Отдельный migrator process, runtime без Flyway, минимальные права PostgreSQL и реальное редактирование каталога через admin под runtime-ролью. Проверяются запреты DDL, изменения admin grants и удаления/редактирования audit.
 - Реальные non-root users, read-only root filesystems, dropped capabilities и `no-new-privileges` у app/proxy/PostgreSQL.

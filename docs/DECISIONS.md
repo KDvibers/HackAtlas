@@ -1,5 +1,29 @@
 # Принятые решения
 
+## 31 октября 2026 — B4.5: локальный шифрованный архив
+
+После merge B4.4 PR #17 пользователь утвердил вариант B из
+[дизайна](superpowers/specs/2026-10-31-recovery-storage-design.md) и поручил
+реализацию. Принят restic 0.19.1 только как операторский инструмент локальной
+проверки на синтетических данных. Официальный Linux amd64 binary закреплён двумя
+SHA256; установка в ignored target, без global install и изменений Java/API.
+
+Набор имеет строгий manifest и allowlist: dump/checksum/export либо отдельный
+export. Файлы копируются в private staging, проверяются и сохраняются в local
+repository. Извлечение только по полному snapshot ID, в новый каталог; bytes,
+hashes и source identity проверяются до передачи существующим restore/review.
+Все операции сохраняют `historyComplete=false`; автоматического approve нет.
+
+Новый факт проверки: Trivy обнаружил блокирующие зависимости official binary
+и незаданную версию main module в inventory. Поэтому B4.5 не утверждает restic
+для реальных данных/эксплуатации. Добавлен отдельный fail-closed аудит в manual
+release readiness, без suppression и изменения контейнерного gate. Подробности —
+[отчёт](research/2026-10-31-recovery-tool-security.md).
+
+Нет удалённого storage, расписания, retention/prune и гарантии доставки всех
+удалений. Эти решения требуют выбранной инфраструктуры. Ключ вне архива, данные
+на одной машине не переживают её потерю. Commit/push/PR выполняет пользователь.
+
 ## 30 октября 2026 — B4.4: квитанции удалений и приватная выгрузка
 
 После push B4.3 PR #14 пользователь явно утвердил локальный вариант B из [дизайна](superpowers/specs/2026-10-30-deletion-history-design.md) и реализацию по [плану](superpowers/plans/2026-10-30-deletion-history.md). Ветка `feat/backend-deletion-history` основана на пользовательском `0e8d536`; commit/push/PR по-прежнему выполняет пользователь. Работа одним агентом, только synthetic/local проверки.

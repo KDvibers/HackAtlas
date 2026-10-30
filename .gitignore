@@ -39,6 +39,9 @@ Thumbs.db
 *.dump.sha256
 *.restore-review.json
 *.deletion-export.json
+**/archive-password
+**/restic-repository/
+**/recovery-private/
 .venv/
 __pycache__/
 /tools/bruno/node_modules/
