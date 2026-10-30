@@ -1,5 +1,13 @@
 # Принятые решения
 
+## 30 октября 2026 — B4.3: официальные обновления runtime
+
+После поручения продолжить проверены GitHub и открытые ограничения. B4.2 PR #13 и mobile Task 5 PR #12 объединены; основа новой ветки `fix/backend-runtime-security` — main `a4394f5`, Backend CI `40370128829` успешен. Действует прежняя граница: только локальная подготовка и проверки, одним агентом; commit/push/PR выполняет пользователь.
+
+Появился ранее отсутствовавший официальный Temurin 21.0.13+9 JRE image от 29 октября. Закреплён его index digest; PostgreSQL 17.11 обновлён на официальную пересборку от 28 октября одинаково в dev/release Compose, Testcontainers и CLI runners. Старый и новый Caddy index имеют один Linux amd64 manifest: новый index с riscv64 не исправляет используемый бинарник, прежний pin сохранён. Источники, hashes и фактические проверки — в [B4.3 security report](research/2026-10-30-runtime-security.md).
+
+Не меняются API, opaque sessions, migrations и mobile. Независимый журнал удалений и автоматизация backup не добавляются без выбора хранилища, защиты и правил хранения; обновление контейнеров не закрывает эти требования и не разрешает deployment/M4/публичный выпуск.
+
 ## 26 октября 2026 — B4.2: карантин и операторское одобрение restore
 
 После merge B4.1 PR #11 пользователь выбрал небольшой операторский подход и явно утвердил [дизайн](superpowers/specs/2026-10-26-restore-quarantine-design.md). Основа `fd6a6a1`, successful main CI `40357289928`, ветка `fix/backend-restore-quarantine`. [План](superpowers/plans/2026-10-26-restore-quarantine.md) выполнен одним агентом; commit/push/PR остаются пользователю.

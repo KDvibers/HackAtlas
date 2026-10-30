@@ -1,6 +1,67 @@
 # BACKEND: статус
 
-Дата актуального дополнения: 26 октября 2026.
+Дата актуального дополнения: 30 октября 2026.
+
+## B4.3 — обновление официальных Java/PostgreSQL images
+
+Пользователь поручил продолжить работу. Проверены GitHub и чистый checkout: [B4.2 PR #13](https://github.com/KDvibers/HackAtlas/pull/13) объединён в main `a4394f50aba09936df5e49234f276976d98e5ff4`, [Backend CI 40370128829](https://github.com/KDvibers/HackAtlas/actions/runs/40370128829) успешен. [Mobile PR #12](https://github.com/KDvibers/HackAtlas/pull/12) также объединён; по статусу напарника live Task 5 прошла на Android-эмуляторе, весь M2 ещё не завершён. Это результат напарника, а не новая device-проверка этой сессии.
+
+Выбрана ограниченная следующая работа: проверить ранее открытые security blockers при появившихся upstream updates. Новая ветка `fix/backend-runtime-security` создана от `origin/main`, одним агентом в текущем checkout. Независимый журнал удалений требует отдельного выбора хранилища и правил, поэтому не реализуется молча. Прежнее разрешение — только подготовка и локальные проверки, без внешней инфраструктуры.
+
+Git HTTPS account через `/user`: **yergaliuly**; автор отдельно **softache <itsyergaliuly@gmail.com>**. Commit, Git staging, push и PR не выполнялись.
+
+### Изменения
+
+- [backend/Dockerfile](../backend/Dockerfile): официальный Temurin JRE **21.0.13+9**, опубликованный 29 октября; закреплён index digest. Прямой запуск подтвердил реальную версию, host JDK 21.0.12.1 не обновлялся.
+- [dev Compose](../infra/compose.yaml), [release Compose](../infra/release/compose.yaml), [Testcontainers configuration](../backend/src/test/java/com/hackatlas/IntegrationTestConfiguration.java), [CLI runner](../scripts/b1/run_contract_checks.py): единый новый PostgreSQL 17.11 Bookworm digest официальной пересборки от 28 октября. Major/version/schema не менялись, существующий dev volume не запускался.
+- Caddy pin сохранён: сравнение официальных registry manifests с SHA-256 показало одинаковый Linux amd64 образ у прежнего и нового index. Добавление riscv64 не исправляет Go/x/net на проверяемой платформе.
+- [Security report](research/2026-10-30-runtime-security.md), toolchain/runbook/решения/README обновлены; исторический security report сохранён с указателем на новый. START_HERE учитывает завершённую Task 5 напарника и оставшиеся browser/share в M2.
+
+**API, opaque Bearer sessions, Java production code, Flyway migrations, mobile/design и STATUS_MOBILE не изменены.** Новых библиотек/сервисов/HTTP endpoints нет.
+
+### Проверки
+
+| Команда / область | Фактический результат |
+|---|---|
+| WSL root, backend: `bash ./mvnw --batch-mode --no-transfer-progress verify dependency:list -DincludeScope=runtime -DoutputFile=target/b43-runtime-dependencies.txt` | **BUILD SUCCESS, 279 тестов (21 unit + 258 integration), 0 failures/errors/skipped**, 1:37; новая PostgreSQL |
+| `python -m unittest discover -s scripts/b4 -p 'test_*.py'`; аналогично scripts/security | **20 + 22 = 42 PASS**, 0 skips |
+| `scripts/validate_contract.py`; `validate_http_contract.py` по свежим B1/B2/B3 exports | Starter/fixtures и **139 + 345 + 102 = 586 HTTP-ответов PASS** |
+| `check_maven_dependencies.py --dependencies backend/target/b43-runtime-dependencies.txt --output backend/target/b43-dependency-audit.json` | **106 runtime packages, 0 OSV matches** на дату проверки |
+| `run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b43-rehearsal` | **PASS, 184.533 с**: HTTPS/admin/least privilege, quarantine, invalid/replay/active-session/rollback checks, deletion, source isolation и post-approval auth |
+| `run_container_audit.py --rehearsal-report backend/target/b43-rehearsal/report.json --output-dir backend/target/b43-container-audit` | **Exit 1, аудит завершён полностью**: JRE blocker снят, остаются proxy/PostgreSQL HIGH/CRITICAL/UNKNOWN; policy не ослаблялась |
+| Gitleaks 8.30.1 по истории и изменённым/новым файлам; pins/scope/links/XML/`git diff --check` | **PASS, no leaks**, 14 изменённых/новых файлов; staged/API/mobile/design изменений нет |
+
+Rehearsal project `hackatlas-b4-a345d660ca56`: backup 38 879 bytes / 0.275 с, restore 1.270 с. Блок восстановления до HTTPS — 118.353 с, включая намеренные отказы; это не production RTO. Review: 2 UUID, фактически удалён 1 аккаунт; source/snapshot/approved account rows = 1/2/1. Собственные containers/volumes/secrets/backup удалены, images оставлены для связанного аудита. Все данные synthetic.
+
+Trivy 0.76.1 с DB/Java index от **30 октября** проверил точные app/proxy/PostgreSQL images из репетиции. App: **0 CRITICAL/HIGH, 27 MEDIUM, 4 LOW**, JAR findings 0. Proxy: **7 HIGH, 16 MEDIUM, 1 LOW, 3 UNKNOWN**, Alpine findings 0. PostgreSQL: **4 CRITICAL, 94 HIGH, 187 MEDIUM, 171 LOW, 6 UNKNOWN**. Это package/advisory matches, не уникальные CVE и не reachability. **evidenceComplete=true, containerGatePassed=false, publicReleaseReady=false**. Новый JRE проходит прежний минимальный порог; его blocker отсутствует. Собственный scanner cache и архивы удалены, JSON/log оставлены локально.
+
+Новые proxy advisories появились в свежей DB при прежнем бинарнике; разницу с B4.1 нельзя целиком считать эффектом обновления images. Полные counts, hashes/источники, ограничения и команды — [security report](research/2026-10-30-runtime-security.md) и ignored `backend/target/b43-*`. Bruno/Schemathesis и отдельный container scan старых images на той же новой DB не повторялись; сравнение counts не выдаётся за контролируемый before/after эксперимент. Итоговый diff проверен автором, отдельный агент не использовался.
+
+### Ограничения и следующий отдельный шаг
+
+Независимый источник истории удалений, backup schedule/offsite/encryption/retention, согласованная внешняя инфраструктура и M4 остаются открытыми. Нельзя объявлять полный B4 или публичный выпуск завершёнными. Отдельный manual GitHub workflow не запускался, Linux amd64 проверки не подтверждают другие архитектуры; новый iOS/device/live mobile прогон не выполнялся.
+
+После пользовательского review/merge этой небольшой доработки следующий отдельный шаг — согласовать дизайн независимой истории удалений: где хранится приватный список, как подтверждается доставка и полнота, кто имеет доступ и когда записи удаляются. До такого решения остаётся операторская процедура B4.2 и закрытый restore при недостоверной истории. Проверять upstream security fixes повторно имеет смысл при новых публикациях, а не просто повторять тот же scan.
+
+Сообщение напарнику для ручной передачи: «B4.2 уже в main. В B4.3 обновлены только runtime images; Starter, каталог, B2/B3 API и auth прежние. По твоему статусу дальше остаются browser/share в M2; server auth для будущего M3 уже реализована, но M3 требует завершённого M2 и отдельного задания. Общего staging URL пока нет».
+
+### Пользовательский commit / push / PR
+
+PR title: **Update backend runtime images and recheck release security**.
+
+```powershell
+git status --short --branch
+git add backend/Dockerfile backend/TOOLCHAIN.md backend/src/test/java/com/hackatlas/IntegrationTestConfiguration.java
+git add infra/compose.yaml infra/release/compose.yaml infra/README.md infra/release/README.md scripts/b1/run_contract_checks.py
+git add README.md START_HERE.md docs/DECISIONS.md docs/STATUS_BACKEND.md docs/research/2026-10-26-release-security.md docs/research/2026-10-30-runtime-security.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "fix(backend): update Java and PostgreSQL runtime images"
+git push -u origin fix/backend-runtime-security
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...fix/backend-runtime-security?expand=1'
+```
+
+Ниже сохранены исторические отчёты. Их сведения об отсутствии B4.2 в main и старом JRE относятся к прежней дате.
 
 ## B4.2 — карантин восстановления и операторская проверка реализованы локально
 

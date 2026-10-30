@@ -28,7 +28,7 @@ class IntegrationTestConfiguration {
     PostgreSQLContainer postgresDatabase() {
         // Same 17.11-bookworm digest as Compose; Testcontainers expects name@digest without a tag.
         return new PostgreSQLContainer(DockerImageName.parse(
-                "postgres@sha256:858bb5e98eed02eb8cafbcdc007f9a65d1b613972028944a8ec2133ccaf80d27"
+                "postgres@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5"
         ))
                 .withDatabaseName("hackatlas_integration_test")
                 .withUsername("hackatlas_test")
