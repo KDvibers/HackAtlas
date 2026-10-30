@@ -4,11 +4,15 @@ M2: кнопка регистрации на экране подробносте
 
 Закрытая, отменённая, завершённая или неизвестная регистрация и отсутствие безопасного URL отключают CTA. Официальный сайт доступен отдельно. Bundled/server DEMO вместо перехода показывает предупреждение и ссылку; текст share явно отмечает вымышленное событие. Нажатия не отмечают участие и не отправляют заявку.
 
+Исправлено замечание по IPv6: неверная структура адреса теперь отключает действия, корректные полные/сокращённые адреса и IPv4-хвосты поддерживаются. Добавлены 5 регрессионных тестов, включая влияние ошибочного URL на регистрацию и share.
+
 ## Проверка
 
-`assembleDebug`, `:shared:testDebugUnitTest --rerun`, `lintDebug`, `verifyReleaseNoDemoFixtures` — PASS; 141 тест, 0 failures/errors/skipped, lint0. Starter validator и 6 fixtures — PASS. Точные команды и результаты: `docs/STATUS_MOBILE.md`, `mobile/artifacts/m2-external-actions/verification.json`.
+После исправления IPv6: `assembleDebug`, `:shared:testDebugUnitTest --rerun`, `lintDebug`, `verifyReleaseNoDemoFixtures` — PASS; 146 тестов, 0 failures/errors/skipped, lint0. Целевые IPv6-регрессии проверены RED→GREEN (3 падения до исправления, 15/15 целевых тестов после). Starter validator и 6 fixtures прошли в исходном этапе; контракт не менялся. Точные команды и результаты: `docs/STATUS_MOBILE.md`, `mobile/artifacts/m2-external-actions/verification.json`.
 
 Android smoke проверяет реальные системные окна, возврат/отмену и scroll, cold offline snapshot, server DEMO и disabled states; никаких отправок получателям. Полный итог — `mobile/artifacts/m2-external-actions/smoke.json` (`status=PASS`, `fullAcceptance=true` обязательны). Тестовые guest bytes/settings восстанавливаются.
+
+Smoke и screenshots относятся к исходной реализации до исправления IPv6; при правке чистой проверки URL эмулятор повторно не запускался, UI и native adapters не менялись.
 
 ## Интерфейс
 
@@ -22,7 +26,7 @@ OpenAPI, backend и формат гостевого хранения не изм
 
 iOS compile/link и работа на iPhone/iPad ещё не проверены: нужен Mac/Xcode по checklist в `mobile/README.md`. На Android подтверждена передача HTTPS-ссылки в Chrome; его первый запуск показывает onboarding, загрузка сайта и реальная регистрация не заявляются. Отдельно остаются проверки отказа native handler на целевых устройствах. Доставка сообщения и загрузка сайта без сети не гарантируются.
 
-Одно независимое review: 0 Critical / 0 Important / 1 Minor. Отложено усиление структуры IPv6 в URL: отдельные некорректные IP-literal адреса могут включать CTA и открывать неработающую ссылку; обход HTTPS не установлен. Подробности: `mobile/artifacts/m2-external-actions/REVIEW.md`.
+Одно независимое review: 0 Critical / 0 Important / 1 Minor. Найденный Minor по IPv6 исправлен и закрыт регрессионными тестами; повторного независимого review не было. Подробности: `mobile/artifacts/m2-external-actions/REVIEW.md`.
 
 ## Сообщение напарнику
 

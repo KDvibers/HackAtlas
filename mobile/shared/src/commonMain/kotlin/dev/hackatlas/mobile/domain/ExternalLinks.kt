@@ -22,12 +22,44 @@ class SafeHttpsUrl private constructor(val value: String) {
             if (url.protocol.name != "https" || url.port !in 1..65535 || url.host.isBlank()) return null
             val host = url.host.removeSuffix(".")
             val validHost = if (':' in host) {
-                host.startsWith('[') && host.endsWith(']') && Regex("[0-9a-f:.]+", RegexOption.IGNORE_CASE).matches(host.drop(1).dropLast(1))
+                isIpv6Literal(host)
             } else host.split('.').all {
                 it.length in 1..63 && Regex("[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", RegexOption.IGNORE_CASE).matches(it)
             }
             return if (validHost) SafeHttpsUrl(url.toString()) else null
         }
+    }
+}
+
+/** RFC 3986 section 3.2.2: eight 16-bit groups; one :: may omit at least one group. */
+private fun isIpv6Literal(host: String): Boolean {
+    if (!host.startsWith('[') || !host.endsWith(']')) return false
+    val address = host.drop(1).dropLast(1)
+    val compression = address.indexOf("::")
+    val groups = if (compression < 0) address.split(':') else {
+        if (address.indexOf("::", compression + 2) >= 0) return false
+        listOf(address.take(compression), address.drop(compression + 2))
+            .filter { it.isNotEmpty() }.flatMap { it.split(':') }
+    }
+    var groupCount = 0
+    for ((index, group) in groups.withIndex()) {
+        if ('.' in group) {
+            // An IPv4 tail occupies the final two groups, never precedes ::.
+            if (index != groups.lastIndex || !address.endsWith(group) || !isIpv4Tail(group)) return false
+            groupCount += 2
+        } else {
+            if (group.length !in 1..4 || group.any { it !in '0'..'9' && it !in 'a'..'f' && it !in 'A'..'F' }) return false
+            groupCount++
+        }
+    }
+    return if (compression < 0) groupCount == 8 else groupCount < 8
+}
+
+private fun isIpv4Tail(value: String): Boolean {
+    val octets = value.split('.')
+    return octets.size == 4 && octets.all { octet ->
+        octet.length in 1..3 && octet.all { it in '0'..'9' } &&
+            (octet.length == 1 || octet.first() != '0') && octet.toInt() <= 255
     }
 }
 

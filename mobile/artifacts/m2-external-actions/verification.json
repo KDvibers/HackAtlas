@@ -2,7 +2,7 @@
   "date": "2026-10-30",
   "branch": "feat/mobile-external-actions",
   "base": "a4394f50aba09936df5e49234f276976d98e5ff4",
-  "changes": "uncommitted; user commits/pushes",
+  "changes": "Initial implementation committed by user as 65b8683; IPv6 follow-up uncommitted, user commits/pushes",
   "android": {
     "assembleDebug": "PASS",
     "tests": 141,
@@ -43,11 +43,51 @@
     "critical": 0,
     "important": 0,
     "minor": 1,
-    "deferred": "Malformed IPv6 literals can pass host shape validation; see REVIEW.md",
-    "iosAcceptance": "OPEN"
+    "deferred": null,
+    "iosAcceptance": "OPEN",
+    "resolvedMinor": 1
   },
   "limitations": [
     "Native handler failures not forced on device",
     "Earlier smoke hit a transient fixture network error; isolated status check and subsequent full smoke passed without product change"
-  ]
+  ],
+  "ipv6Fix": {
+    "date": "2026-10-30",
+    "base": "65b868314b85a0869d0a4430560a71812c75b431",
+    "pr": 15,
+    "red": {
+      "tests": 15,
+      "failures": 3,
+      "log": "../../build/ipv6-review/red.log"
+    },
+    "green": {
+      "tests": 15,
+      "failures": 0,
+      "log": "../../build/ipv6-review/green.log"
+    },
+    "fullSuite": {
+      "tests": 146,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "log": "../../build/ipv6-review/verification.log"
+    },
+    "assembleDebug": "PASS",
+    "lintIssues": 0,
+    "releaseNoDemoFixtures": "PASS",
+    "diffCheck": "PASS",
+    "apk": {
+      "path": "../../build/external-actions/HackAtlas-external-actions-ipv6-fixed-debug.apk",
+      "sha256": "9A458A97FA892D7383314B3238C284D0C1A187869DE02A20475629147FBF43EA",
+      "apiBaseUrl": "http://10.0.2.2:8080/api/v1/",
+      "pageSize": 2
+    },
+    "review": "Executor diff review + RED/GREEN regression; no second independent reviewer",
+    "notRerun": [
+      "Android emulator smoke and screenshots: original implementation above",
+      "Native iOS compilation/runtime: still requires Mac",
+      "External IPv6 website connectivity and backend tests",
+      "Starter contract validator: API unchanged"
+    ]
+  }
 }

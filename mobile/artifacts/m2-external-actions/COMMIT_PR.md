@@ -1,24 +1,24 @@
-# Commit и PR выполняет пользователь
+# Дополнительный commit в существующий PR #15
 
-Ветка `feat/mobile-external-actions`, база `a4394f50aba09936df5e49234f276976d98e5ff4`. Команды рассчитаны на текущее состояние после итогового ревью. Сначала убедиться, что нет новых чужих изменений. `.agents/` и `.interface-design/` не добавлять.
+Ветка `feat/mobile-external-actions`; первоначальная реализация уже закоммичена пользователем как `65b8683`, PR создан. Эти команды добавляют исправление IPv6 в ту же ветку. Перед staging проверить отсутствие новых чужих изменений. `.agents/` и `.interface-design/` не добавлять.
 
 ```powershell
 Set-Location 'C:/Users/user/.codex/worktrees/mobile-catalog-api/HackAtlas'
 git branch --show-current
 git status --short
-git add -- docs/STATUS_MOBILE.md docs/superpowers/plans/2026-10-30-mobile-external-actions.md docs/superpowers/specs/2026-10-30-mobile-external-actions-design.md mobile/README.md mobile/TOOLCHAIN.md mobile/shared/src mobile/scripts/android_external_actions_smoke.py mobile/artifacts/m2-external-actions
+git add -- docs/STATUS_MOBILE.md mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/ExternalLinks.kt mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/domain/ExternalLinksTest.kt mobile/artifacts/m2-external-actions
 git diff --cached --check
 git diff --cached --stat
-git commit -m "feat(mobile): open registration links and native share"
-git push -u origin feat/mobile-external-actions
+git commit -m "fix(mobile): validate IPv6 website addresses"
+git push origin feat/mobile-external-actions
 ```
 
-Заголовок PR: **feat(mobile): open registration links and native share**.
+Новый PR создавать не нужно: push дополнит [PR #15](https://github.com/KDvibers/HackAtlas/pull/15). Его заголовок остаётся **feat(mobile): open registration links and native share**.
 
-Описание готово в соседнем `PR_DESCRIPTION.md`. Создание PR после push (если настроен `gh`):
+Обновлённое описание с 146 тестами и закрытым IPv6-замечанием готово в соседнем `PR_DESCRIPTION.md`. Применить вручную через GitHub или командой (если настроен `gh`):
 
 ```powershell
-gh pr create --base main --head feat/mobile-external-actions --title 'feat(mobile): open registration links and native share' --body-file mobile/artifacts/m2-external-actions/PR_DESCRIPTION.md
+gh pr edit 15 --repo KDvibers/HackAtlas --body-file mobile/artifacts/m2-external-actions/PR_DESCRIPTION.md
 ```
 
-Либо открыть [сравнение веток](https://github.com/KDvibers/HackAtlas/compare/main...feat/mobile-external-actions), вставить заголовок и текст файла. Проверить правильный GitHub-аккаунт отдельно от автора коммита. APK находится в ignored `mobile/build/external-actions/` и в Git не добавляется.
+Проверить правильный GitHub-аккаунт отдельно от автора коммита. Свежий APK `mobile/build/external-actions/HackAtlas-external-actions-ipv6-fixed-debug.apk` находится в ignored build-каталоге и в Git не добавляется. Исполнитель не выполняет commit, push или редактирование PR за пользователя.
