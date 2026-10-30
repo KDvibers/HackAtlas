@@ -29,7 +29,15 @@
     <string name="source">Источник</string>
     <string name="demo_source">Демонстрационные данные Starter. Событие вымышлено, источник не проверен.</string>
     <string name="register_cta">Перейти к регистрации</string>
-    <string name="register_preview">Переход на сайт пока не подключён</string>
+    <string name="registration_external_hint">Заявка оформляется на сайте организатора</string>
+    <string name="open_official_site">Открыть официальный сайт</string>
+    <string name="demo_link_cta">Посмотреть DEMO-ссылку</string>
+    <string name="demo_link_hint">DEMO · просмотр ссылки без перехода</string>
+    <string name="demo_link_title">DEMO: просмотр ссылки</string>
+    <string name="demo_link_body">Это вымышленное событие. Ссылка показана для примера; сайт не открывается и заявка не отправляется.</string>
+    <string name="demo_share_notice">DEMO — вымышленное событие</string>
+    <string name="external_action_error">Не удалось открыть</string>
+    <string name="external_action_error_body">Системное действие сейчас недоступно. Проверьте наличие браузера или приложения для обмена ссылками и попробуйте ещё раз.</string>
     <string name="registration_unavailable">Регистрация недоступна</string>
     <string name="registration_closed">Регистрация закрыта</string>
     <string name="event_cancelled">Событие отменено</string>
@@ -57,7 +65,6 @@
     <string name="demo_profile_label">Демонстрационный профиль</string>
     <string name="demo_dialog_title">Это демонстрация</string>
     <string name="demo_dialog_body">События и профиль вымышлены. Гостевые закладки и копии подробностей сохраняются на этом устройстве и доступны без сети. Три исходные демо-закладки добавляются один раз. Сервер и вход ещё не подключены.</string>
-    <string name="demo_register_body">Это вымышленный хакатон. Адрес example.com из Starter не является регистрацией. Заявка не отправляется; настоящий переход появится после подключения каталога.</string>
     <string name="demo_feature_body">В этом этапе можно проверить внешний вид и навигацию. Эта функция будет подключена на следующем согласованном этапе.</string>
     <string name="understood">Понятно</string>
     <string name="close">Закрыть</string>
@@ -86,8 +93,6 @@
     <string name="release_title">Источник не настроен</string>
     <string name="release_body">В этой сборке не задан доступный источник каталога. Попросите разработчика проверить настройки подключения.</string>
     <string name="feature_pending_title">Функция пока недоступна</string>
-    <string name="registration_pending">Переход на сайт организатора будет подключён отдельно. Нажатие не отправляет заявку и не отмечает участие.</string>
-    <string name="share_pending">Отправка ссылки будет подключена на следующем согласованном этапе.</string>
     <string name="server_demo_title">Демонстрационные события</string>
     <string name="server_demo_body">Сервер пометил это событие как DEMO. Это тестовые данные, а не подтверждение реального мероприятия.</string>
     <string name="source_verified">Источник проверен: %1$s</string>

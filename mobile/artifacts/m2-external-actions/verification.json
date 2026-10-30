@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-30",
+  "branch": "feat/mobile-external-actions",
+  "base": "a4394f50aba09936df5e49234f276976d98e5ff4",
+  "changes": "uncommitted; user commits/pushes",
+  "android": {
+    "assembleDebug": "PASS",
+    "tests": 141,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "lintIssues": 0,
+    "releaseNoDemoFixtures": "PASS",
+    "emulator": "Pixel 8 Android17/API37, 4 GiB RAM, 1080x2400 density420 font1.0",
+    "smoke": {
+      "status": "PASS",
+      "groups": 6,
+      "fullAcceptance": true,
+      "synthetic": true,
+      "guestBytesAndSettingsRestored": true,
+      "browser": "HTTPS intent and native Chrome launch verified; onboarding shown; page loading not verified",
+      "sending": "Chooser canceled; no recipient selected"
+    },
+    "fixtureApk": {
+      "path": "../../build/external-actions/HackAtlas-external-actions-fixture-debug.apk",
+      "sha256": "6591BD2938F29C1089CE54F42B74A524BB619E0DE90A338BE509BA8A870937B4",
+      "apiBaseUrl": "http://10.0.2.2:8769/api/v1/",
+      "pageSize": 20
+    },
+    "backendApk": {
+      "path": "../../build/external-actions/HackAtlas-external-actions-backend-debug.apk",
+      "sha256": "02CBF20276CBF71E244895D9BDF321720FF1900D7D9A1B92AB51727DA203714B",
+      "apiBaseUrl": "http://10.0.2.2:8080/api/v1/",
+      "pageSize": 2,
+      "validation": "assembleDebug PASS; same shared/adapter code as smoke APK; live B1 not rerun in this stage"
+    }
+  },
+  "contract": "PASS Starter and 6 fixtures; API unchanged",
+  "ios": "NOT RUN: no Mac/Xcode; UIKit implementation and source review only, README checklist required",
+  "finalReview": {
+    "status": "COMPLETE",
+    "reviewers": 1,
+    "critical": 0,
+    "important": 0,
+    "minor": 1,
+    "deferred": "Malformed IPv6 literals can pass host shape validation; see REVIEW.md",
+    "iosAcceptance": "OPEN"
+  },
+  "limitations": [
+    "Native handler failures not forced on device",
+    "Earlier smoke hit a transient fixture network error; isolated status check and subsequent full smoke passed without product change"
+  ]
+}

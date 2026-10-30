@@ -9,7 +9,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,12 +25,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.domain.*
+import dev.hackatlas.mobile.platform.ExternalActions
 import dev.hackatlas.mobile.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat, onBack: () -> Unit, onBookmark: () -> Unit, onShare: () -> Unit, onRegister: () -> Unit, capturedAt: String? = null, bundled: Boolean = true, saving: Boolean = false) {
+fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat, onBack: () -> Unit, onBookmark: () -> Unit, externalActions: ExternalActions, capturedAt: String? = null, bundled: Boolean = true, saving: Boolean = false) {
     val event = detail.hackathon
+    val links = remember(detail, bundled) { eventLinkPolicy(detail, bundled) }
+    val demoNotice = stringResource(Res.string.demo_share_notice)
+    var preview by remember(detail) { mutableStateOf<String?>(null) }
+    var actionFailed by remember(detail) { mutableStateOf(false) }
+    val onResult: (Boolean) -> Unit = { opened -> if (!opened) actionFailed = true }
+    fun openWebsite(url: SafeHttpsUrl) {
+        if (links.isDemo) preview = url.value else externalActions.openWebsite(url, onResult)
+    }
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -36,7 +47,9 @@ fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat,
                 Spacer(Modifier.weight(1f))
                 if (event.isDemo) Text(stringResource(Res.string.demo_label), color = AtlasColors.Primary, fontSize = 9.sp, letterSpacing = 1.sp)
                 IconAction(AtlasIcon.Bookmark, stringResource(if (saving) Res.string.saving else if (saved) Res.string.unsave_event else Res.string.save_event), onBookmark, if (saved) AtlasColors.Primary else AtlasColors.TextPrimary, enabled = !saving)
-                IconAction(AtlasIcon.Share, stringResource(Res.string.share), onShare, AtlasColors.TextPrimary)
+                IconAction(AtlasIcon.Share, stringResource(Res.string.share), {
+                    links.shareEvent(event.title, demoNotice)?.let { externalActions.shareEvent(it, onResult) }
+                }, AtlasColors.TextPrimary, enabled = links.shareUrl != null)
             }
             if (capturedAt != null) {
                 Text(stringResource(Res.string.snapshot_captured, format.snapshotTimestamp(capturedAt)), color = AtlasColors.Cyan, fontSize = 11.sp)
@@ -92,13 +105,38 @@ fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat,
                 Text(detail.sourceUrl, color = AtlasColors.Cyan, fontSize = 12.sp, lineHeight = 18.sp)
             }
             Text(stringResource(Res.string.source_verified, event.lastVerifiedAt?.let(format::snapshotTimestamp) ?: stringResource(Res.string.not_verified)), color = AtlasColors.TextMuted, fontSize = 12.sp, lineHeight = 18.sp)
+            links.officialUrl?.let { url ->
+                TextButton(onClick = { openWebsite(url) }) {
+                    Text(stringResource(Res.string.open_official_site), color = AtlasColors.Cyan)
+                }
+            }
             Spacer(Modifier.height(24.dp))
         }
         Column(Modifier.fillMaxWidth().background(AtlasColors.Background).padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            val available = event.registrationStatus == RegistrationStatus.OPEN && event.eventStatus != EventStatus.CANCELLED && detail.registrationUrl != null
-            NeonButton(stringResource(when { event.eventStatus == EventStatus.CANCELLED -> Res.string.event_cancelled; event.registrationStatus == RegistrationStatus.CLOSED -> Res.string.registration_closed; !available -> Res.string.registration_unavailable; else -> Res.string.register_cta }), onRegister, Modifier.fillMaxWidth(), enabled = available)
-            Text(stringResource(Res.string.register_preview), fontSize = 10.sp, color = AtlasColors.TextMuted)
+            val label = when (links.registrationState) {
+                RegistrationActionState.AVAILABLE -> Res.string.register_cta
+                RegistrationActionState.DEMO_PREVIEW -> Res.string.demo_link_cta
+                RegistrationActionState.CLOSED -> Res.string.registration_closed
+                RegistrationActionState.CANCELLED -> Res.string.event_cancelled
+                RegistrationActionState.ENDED -> Res.string.event_ended
+                RegistrationActionState.UNAVAILABLE -> Res.string.registration_unavailable
+            }
+            NeonButton(stringResource(label), { links.registrationUrl?.let(::openWebsite) }, Modifier.fillMaxWidth(), enabled = links.registrationUrl != null)
+            Text(stringResource(if (links.isDemo) Res.string.demo_link_hint else Res.string.registration_external_hint), fontSize = 10.sp, color = AtlasColors.TextMuted)
         }
+    }
+    if (preview != null || actionFailed) {
+        val close = { preview = null; actionFailed = false }
+        AlertDialog(onDismissRequest = close,
+            title = { Text(stringResource(if (preview != null) Res.string.demo_link_title else Res.string.external_action_error)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(if (preview != null) Res.string.demo_link_body else Res.string.external_action_error_body), color = AtlasColors.TextSecondary)
+                    preview?.let { Text(it, color = AtlasColors.Cyan) }
+                }
+            },
+            containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
+            confirmButton = { TextButton(onClick = close) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
     }
 }
 

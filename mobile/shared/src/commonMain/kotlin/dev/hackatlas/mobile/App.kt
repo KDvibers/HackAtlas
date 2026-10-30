@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.data.SavedGuestEvent
 import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.domain.*
+import dev.hackatlas.mobile.platform.rememberExternalActions
 import dev.hackatlas.mobile.resources.*
 import dev.hackatlas.mobile.ui.*
 import kotlinx.coroutines.launch
@@ -62,6 +63,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val saveableStates = rememberSaveableStateHolder()
     val catalogueScroll = rememberLazyListState()
     val format = displayFormat()
+    val externalActions = rememberExternalActions()
     val bundled = app.source == CatalogSource.BundledDemo
     val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
@@ -113,7 +115,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                             val event = content.detail.hackathon
                             DetailScreen(content.detail, event.savedKey() in savedKeys, format, back,
                                 { changeBookmark(event, event.savedKey() in savedKeys, content.snapshot) },
-                                { dialog = "share" }, { dialog = if (bundled) "demo-register" else "register" },
+                                externalActions,
                                 content.snapshot?.savedAt, bundled, event.savedKey() in pendingKeys)
                         } else Column {
                             IconAction(AtlasIcon.Back, stringResource(Res.string.back), back)
@@ -161,9 +163,6 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             else -> Res.string.feature_pending_title
         })
         val body = stringResource(when (dialog) {
-                "demo-register" -> Res.string.demo_register_body
-                "register" -> Res.string.registration_pending
-                "share" -> Res.string.share_pending
                 "about" -> if (bundled) Res.string.demo_dialog_body else Res.string.server_demo_body
                 else -> Res.string.demo_feature_body
             })

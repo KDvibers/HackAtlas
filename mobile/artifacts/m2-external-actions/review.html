@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HackAtlas · M2 внешние действия</title>
+<style>
+body{margin:0;background:#08060c;color:#f5f1fa;font:16px/1.55 system-ui,sans-serif}main{max-width:1240px;margin:auto;padding:32px 24px}h1{font-size:30px;margin:0 0 16px}h2{font-size:19px}a{color:#69d7f4}p{max-width:980px;color:#c9c0d5}.tag{color:#f42cfa;font-size:13px;letter-spacing:2px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}figure{margin:0;background:#120e1a;border:1px solid #382044;border-radius:14px;padding:14px}img{width:100%;height:auto;border-radius:8px}figcaption{color:#b9afc4;font-size:14px;margin:10px 0}nav{display:flex;gap:20px;flex-wrap:wrap;margin:24px 0}.note{border-left:3px solid #ea16e5;padding-left:16px}
+</style>
+<main><div class="tag">HACKATLAS / M2</div><h1>Регистрация и системное «Поделиться»</h1>
+<p>Скриншоты настоящего Android-приложения на Pixel 8. Иллюстрации, цвета и шрифты сохранены. Меню «Поделиться» оформляет сама ОС.</p>
+<p class="note">Все события на этих снимках — synthetic MOCK-данные отдельного тестового сервера, не реальные хакатоны B1. Получатель не выбирался, сообщения и заявки не отправлялись. На первом запуске Chrome показал onboarding: подтверждена передача HTTPS-ссылки, а не загрузка страницы регистрации. iOS требует отдельной проверки на Mac.</p>
+<nav><a href="verification.json">Результаты проверок</a><a href="smoke.json">Android smoke</a><a href="REVIEW.md">Итоговое review и ограничения</a><a href="PR_DESCRIPTION.md">Описание PR</a><a href="COMMIT_PR.md">Команды commit / push</a></nav>
+<p><a href="../../build/external-actions/HackAtlas-external-actions-backend-debug.apk">APK для эмулятора и локального backend :8080</a> · debug, не production; backend должен быть запущен. <a href="../../build/external-actions/HackAtlas-external-actions-fixture-debug.apk">APK для smoke :8769</a> требует запуска fixture-сценария.</p>
+<div class="grid">
+<figure><a href="screenshots/detail-active.png"><img src="screenshots/detail-active.png" alt="Подробности с активной регистрацией"></a><h2>Активная регистрация</h2><figcaption>HTTPS-ссылка передаётся ОС. Заявка оформляется на сайте организатора.</figcaption></figure>
+<figure><a href="screenshots/share-real.png"><img src="screenshots/share-real.png" alt="Системное меню Android с названием и публичной ссылкой"></a><h2>Системное меню</h2><figcaption>Название и публичный URL. Отмена сохраняет подробности и прокрутку.</figcaption></figure>
+<figure><a href="screenshots/detail-offline.png"><img src="screenshots/detail-offline.png" alt="Сохранённая копия без сети"></a><h2>Из сохранённой копии</h2><figcaption>Действия берут данные из snapshot, новый запрос к API не нужен. Загрузка сайта и доставка сообщения могут требовать сеть.</figcaption></figure>
+<figure><a href="screenshots/demo-preview.png"><img src="screenshots/demo-preview.png" alt="Предупреждение DEMO и просмотр ссылки"></a><h2>DEMO без регистрации</h2><figcaption>Только просмотр ссылки. Сайт не открывается.</figcaption></figure>
+<figure><a href="screenshots/share-demo.png"><img src="screenshots/share-demo.png" alt="Системный share с маркировкой DEMO"></a><h2>Честная пометка</h2><figcaption>В тексте указано, что событие вымышленное.</figcaption></figure>
+<figure><a href="screenshots/registration-closed.png"><img src="screenshots/registration-closed.png" alt="Закрытая регистрация"></a><h2>Закрытая регистрация</h2><figcaption>Кнопка неактивна; официальный сайт доступен отдельной ссылкой в блоке источника.</figcaption></figure>
+</div></main></html>

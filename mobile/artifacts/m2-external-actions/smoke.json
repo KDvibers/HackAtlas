@@ -1,0 +1,226 @@
+{
+  "status": "PASS",
+  "synthetic": true,
+  "fullAcceptance": true,
+  "results": [
+    {
+      "name": "registration/official browser intents and detail scroll on return",
+      "status": "PASS"
+    },
+    {
+      "name": "native text Sharesheet opens and cancels without changing detail",
+      "status": "PASS"
+    },
+    {
+      "name": "cold offline snapshot opens browser/share with unchanged stored detail",
+      "status": "PASS"
+    },
+    {
+      "name": "server DEMO previews instead of browsing and labels shared text",
+      "status": "PASS"
+    },
+    {
+      "name": "closed/cancelled/missing/unsafe registration stays disabled",
+      "status": "PASS"
+    },
+    {
+      "name": "only public fixture GETs, no auth, submissions or recipient sends",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "restoreErrors": [],
+  "apiBaseUrl": "http://10.0.2.2:8769/api/v1/",
+  "requests": [
+    {
+      "path": "/api/v1/hackathons",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": true,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": true,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": true,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "CLOSED",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "CLOSED",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "CLOSED",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "CANCELLED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "CANCELLED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "CANCELLED",
+        "registrationUrl": "https://example.org/?hackatlas_smoke=registration"
+      }
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": null
+      }
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": null
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": null
+      }
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "http://example.org/unsafe"
+      }
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "http://example.org/unsafe"
+      }
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "hasAuthorization": false,
+      "scenario": {
+        "demo": false,
+        "registrationStatus": "OPEN",
+        "eventStatus": "SCHEDULED",
+        "registrationUrl": "http://example.org/unsafe"
+      }
+    }
+  ]
+}
