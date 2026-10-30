@@ -1,5 +1,25 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M3 block 1: auth core — 31 октября 2026
+
+Поручение пользователя: проверка B2, native secure storage, клиент авторизации и MockEngine. **Без экранов, profile edit, saved sync/guest import, reminders**. Ветка `feat/mobile-auth-core` от `origin/main=92ca815d4c12249cbff829fc3f62b1280bde866d` (PR15/16 уже merged), прежний managed worktree. Commit/push/PR выполняет пользователь. `.agents/` и `.interface-design/` не менялись.
+
+Добавлены shared `data/auth/{AuthModels,SecureTokenStore,AuthSessionClient,AuthHttpEngine}.kt`, Android Keystore/engine и iOS Keychain/engine actuals, `commonTest/data/auth/AuthSessionClientTest.kt`, native `androidInstrumentedTest/.../SecureStoreInstrumentation.kt`. Shared Gradle задаёт только instrumentation runner; новых dependencies нет. Клиент не подключён к App/UI, public catalogue client не получает Bearer. DTO берутся из Starter, приватные raw response bodies/credentials не включаются в ошибки, сессия привязана к нормализованному API URL. Пароль не trim и не сохраняется. Expiry/protected401 очищают сессию, refresh нет. Local-only logout явно отличим от подтверждённого 204; операции/локальные commits сериализованы.
+
+**B2:** актуальный `backend/mvnw.cmd --batch-mode --no-transfer-progress verify` — BUILD SUCCESS, **279 тестов**, 0 failures/errors/skipped. Docker29.9.2/Testcontainers создал временные БД, существующий dev backend/БД не менялись. Validator `backend/src/test/resources/validate_http_contract.py --schema api/openapi.yaml --responses backend/target/b2-contract` — **345 реальных HTTP-ответов PASS**. Backend source/API не менялись. Это server integration, не live Ktor→B2 на устройстве.
+
+**Mobile:** `:shared:testDebugUnitTest --rerun :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures :shared:assembleDebugAndroidTest --offline --console=plain` (REMOTE debug `http://10.0.2.2:8080/api/v1/`, explicit debug HTTP, pageSize2) — BUILD SUCCESS, **173 теста** (27 новых auth), 0 failures/errors/skipped, lint0, release gate PASS. JDK21 Android Studio/SDK36 прежние. Initial client missing API RED → 20 GREEN; далее 25 tests GREEN; logout regression RED 2/27 → GREEN. Native test compile RED на отсутствующем store → GREEN; instrumentation на Pixel8 Android17/API37 дал `PASS native Keystore`: ciphertext, восстановление новым экземпляром, replace, source separation, tamper/corrupt rejection, clear/reuse. Это не reboot/lockscreen/Keystore-invalidation приёмка. Test APK отдельный, основное приложение/его guest bytes не трогались. После native проверки emulator больше не активен. Один последующий запуск JVM не смог выделить CodeHeap; свежий Gradle daemon выполнил проверки без ослаблений/изменения heap settings.
+
+`scripts/validate_contract.py` — Starter +6 fixtures PASS; `git diff --check` — PASS. Логи ignored `mobile/build/m3-auth/`, отчёт `mobile/artifacts/m3-auth-core/verification.json`, инструкции `mobile/AUTH_CORE.md`; spec/plan `docs/superpowers/{specs,plans}/2026-10-31-mobile-auth-core*.md`.
+
+**Итоговое review:** одно независимое read-only review, 0 Critical / 2 Important / 0 Minor. Оба Important исправлены в одном проходе: явные fd.sync + readback после AtomicFile commit; Os.lstat/errno вместо неоднозначного File.exists для read/clear. Native сценарии `commit`, `permissions-read`, `permissions-clear` каждый воспроизвели RED до исправлений и GREEN после; общий native `all` после изменений также PASS. Тестовая инъекция silent commit failure сохраняет старый credential и требует Storage; permissions тесты восстанавливают chmod в finally. Повторная полная сборка/173 теста/lint0/release gate PASS. Второе независимое review не запускалось. Подробности — `mobile/artifacts/m3-auth-core/REVIEW.md`; отложенных Minor нет. Финальный test APK удалён, принадлежащий этому этапу эмулятор штатно остановлен. Блок передан пользователю без staging/commit/push.
+
+**Открыто:** iOS compile/link и реальный Keychain/lockscreen не выполнены на Windows. Нужны Mac/iPhone и checklist AUTH_CORE. App/UI пока не использует auth core; нет проверки реального пользовательского входа с устройства и B2 deployment/Bruno runner здесь не повторялся. Первоначальные M1/M2 native iOS проверки по-прежнему открыты. Новых экранов/ассетов и UI screenshots нет.
+
+Напарнику: «Начали M3 core по прежнему Starter. Текущий B2 прошёл 279 Java tests и 345 HTTP schema checks. Клиент register/login/logout/me и source-scoped secure stores готовы к следующему host/UI блоку; контракт/эндпоинты не менялись. Для iOS live-приёмки нужен HTTPS endpoint; UI/saved sync ещё не подключены».
+
+Следующий отдельный этап после передачи этого блока — экраны/host integration и live Ktor→B2 проверка с очисткой account-private state; синхронизацию закладок согласовать отдельно. Автоматически не начинать.
+
 ## M2 / PR #15: замечание IPv6 исправлено — 30 октября 2026
 
 По отдельному поручению пользователя исправлен Minor первоначального review в той же ветке `feat/mobile-external-actions`, поверх пользовательского commit `65b8683`. Commit/push оставлены пользователю; M3 не начат.
