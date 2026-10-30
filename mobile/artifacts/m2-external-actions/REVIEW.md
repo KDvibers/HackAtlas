@@ -1,12 +1,16 @@
 # Итоговое независимое review — 30 октября 2026
 
-Одно read-only review всей текущей реализации относительно `a4394f50aba09936df5e49234f276976d98e5ff4`; без изменения файлов/индекса/ветки и без повторных сборок. **Critical: 0, Important: 0, Minor: 1.** Вердикт reviewer: Ready to merge, с Minor и открытой iOS-приёмкой. Второе review не запускалось.
+Первоначальное read-only review реализации относительно `a4394f50aba09936df5e49234f276976d98e5ff4`: **Critical: 0, Important: 0, Minor: 1**. Вердикт reviewer: Ready to merge, с Minor и открытой iOS-приёмкой. По следующему отдельному поручению пользователя Minor исправлен; проверка описана ниже. Второе независимое review не запускалось.
 
 Проверены единая политика доступности и URL, отсутствие registration fallback, server/bundled DEMO, payload share, отсутствие изменений navigation/storage, iPad anchor/presenter и соответствие отчётов фактически выполненным проверкам.
 
-## Оставшееся небольшое замечание
+## Первоначальное замечание — исправлено
 
-`mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/ExternalLinks.kt:25`: проверка IPv6 ограничивается набором символов и скобками. Например, `https://[::::]/` и `https://[1:2:3]/` могут пройти политику и включить CTA, хотя адрес некорректен. Пользователь получит неработающую ссылку вместо заранее отключённой кнопки. Признаков обхода HTTPS или установленной уязвимости нет; это Minor по фактическому эффекту. Отложено: валидировать структуру IPv6 с положительным/отрицательными тестами либо согласованно запретить IP-literal hosts. Не включено в проход исправлений Critical/Important; таких находок нет.
+`mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/ExternalLinks.kt:25`: прежняя проверка IPv6 ограничивалась набором символов и скобками. Например, `https://[::::]/` и `https://[1:2:3]/` проходили политику и включали CTA. Это приводило к неработающей ссылке вместо заранее отключённой кнопки; установленного обхода HTTPS не было.
+
+**Исправление поверх `65b8683`, PR #15:** проверяется структура IPv6 по [RFC 3986 §3.2.2](https://www.rfc-editor.org/rfc/rfc3986#section-3.2.2): восемь 16-битных групп, однократное `::` вместо как минимум одной группы, необязательный корректный IPv4-хвост вместо последних двух групп. Реализация — чистый common Kotlin, без DNS/новых зависимостей. Поддержка корректных IPv6 сохранена.
+
+Добавлено 5 тестов в `ExternalLinksTest`, включая положительные адреса, неверное число/длину групп, повторное сокращение, неверные IPv4-хвосты/порты и доступность registration/share при ошибке. RED воспроизвёл 3 падения, GREEN — 15/15 целевых тестов. Полный suite — 146 PASS, lint0, Android debug build и release gate PASS. Исполнитель проверил итоговый diff; замечание закрыто регрессиями, нового независимого review не заявляется. iOS native build, внешние IPv6-сайты и emulator smoke при этом исправлении не запускались.
 
 ## Принятые границы и их последствия
 
@@ -16,8 +20,8 @@
 - Загрузка чужого сайта и завершение регистрации/отправки: не заявляются как проверенные; подтверждены HTTPS intent/native launch и отмена. Chrome показал onboarding. Работоспособность стороннего сервиса и доставка требуют отдельной проверки и могут зависеть от сети.
 - Backend/B1 и M3: не изменены; B1 ранее принят в Task5, его тесты сейчас не повторялись. Для iOS end-to-end нужен HTTPS-стенд; новая серверная регрессия этой проверкой не исключается. M3 не начинался.
 
-## Выполненная проверка
+## Первоначальная проверка до исправления IPv6
 
-Android build + 141 unit tests, lint0 и release fixture gate PASS; Starter +6 fixtures PASS. Full smoke6groupsPASS, `failure=null`, `restoreErrors=[]`; скриншоты native share с title/official URL и DEMO, detail/offline/closed просмотрены. Ранний transient fixture-network сбой не воспроизвёлся отдельно и в последующем полном прогоне, исправление неизвестной причины не заявляется. Программный код после принятого Android APK не менялся; iOS source review не считается native build.
+Android build + 141 unit tests, lint0 и release fixture gate PASS; Starter +6 fixtures PASS. Full smoke6groupsPASS, `failure=null`, `restoreErrors=[]`; скриншоты native share с title/official URL и DEMO, detail/offline/closed просмотрены. Ранний transient fixture-network сбой не воспроизвёлся отдельно и в последующем полном прогоне, исправление неизвестной причины не заявляется. Эти APK/smoke/screenshots предшествуют исправлению IPv6; свежая сборка отмечена отдельно в verification.json. iOS source review не считается native build.
 
 Commit/push/PR выполняет пользователь. Команды — `COMMIT_PR.md`, PR-текст — `PR_DESCRIPTION.md`; новые ветки и черновики PR автоматически не публиковались.

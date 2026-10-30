@@ -1,5 +1,23 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2 / PR #15: замечание IPv6 исправлено — 30 октября 2026
+
+По отдельному поручению пользователя исправлен Minor первоначального review в той же ветке `feat/mobile-external-actions`, поверх пользовательского commit `65b8683`. Commit/push оставлены пользователю; M3 не начат.
+
+`mobile/shared/src/commonMain/kotlin/dev/hackatlas/mobile/domain/ExternalLinks.kt` теперь проверяет структуру IPv6: число и длину 16-битных групп, единственное сокращение `::`, допустимый IPv4-хвост. Корректные полные/сокращённые адреса и URL с портом/path/query/fragment сохранены. Некорректные `[::::]`, `[1:2:3]` и IPv4-хвосты отклоняются до передачи ОС. Новых зависимостей, DNS-запросов или платформенного кода нет.
+
+`mobile/shared/src/commonTest/kotlin/dev/hackatlas/mobile/domain/ExternalLinksTest.kt`: добавлено 5 тестов с положительными/отрицательными матрицами и проверкой регистрации/share/official/source fallback. RED: 3 теста упали на прежней реализации (включая AVAILABLE вместо UNAVAILABLE). GREEN: все 15 целевых тестов прошли. Затем из `mobile/`:
+
+```powershell
+.\gradlew.bat :shared:testDebugUnitTest --rerun :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8080/api/v1/' '-Phackatlas.allowDebugHttp=true' '-Phackatlas.debugPageSize=2'
+```
+
+BUILD SUCCESS; **146 тестов, 0 failures/errors/skipped**, lint0, release gate PASS. JDK21/SDK36 прежние. `git diff --check` — PASS. Логи RED/GREEN/full suite в ignored `mobile/build/ipv6-review/`. Итоговый diff проверен исполнителем; повторный независимый reviewer для одного исправления не запускался. Первоначальное замечание закрыто регрессиями.
+
+API/backend, UI, native adapters и формат сохранённых данных не менялись. Emulator smoke/screenshots, реальные IPv6-сайты, iOS native build и backend-тесты повторно не запускались: изменение ограничено чистой общей проверкой URL. Прежние Android screenshots/smoke относятся к исходному этапу, а не к новой сборке. Свежий APK `mobile/build/external-actions/HackAtlas-external-actions-ipv6-fixed-debug.apk` и результаты исправления отмечены отдельно в `mobile/artifacts/m2-external-actions/verification.json`.
+
+Напарнику: «IPv6-замечание в PR #15 исправлено на клиенте, контракт и endpoints не меняются. Полный mobile suite — 146 PASS; iOS-приёмка остаётся открытой». Следующий шаг — пользовательский commit/push в существующий PR, CI и ревью напарника; M3 отдельно не разрешён.
+
 ## M2: внешние действия — 30 октября 2026
 
 Task5 принят пользователем и слит через PR12 (`0012831`). Этот следующий этап выполняется последовательно в `feat/mobile-external-actions` от `origin/main` `a4394f50aba09936df5e49234f276976d98e5ff4`, в прежнем worktree. Commit/push/PR остаются пользователю. M3 не начат; весь M2/iOS ещё не объявляется завершённым.
