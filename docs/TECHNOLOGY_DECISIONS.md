@@ -65,6 +65,14 @@
 
 ## Эксплуатация и обновления
 
+В B4.5 отдельно утверждена локальная проверка restic 0.19.1 (BSD-2-Clause),
+операторского CLI для шифрованных backup/export snapshots. Java-зависимость,
+серверный сервис или выбранное облако не добавляются. Пин, установка и команды —
+[runbook архива](../infra/release/RECOVERY_ARCHIVE.md). Текущий официальный binary
+имеет unresolved HIGH/UNKNOWN и inventory gap; для реальных данных он **не принят**.
+Manual release readiness получает отдельную проверку нового инструмента;
+[security report](research/2026-10-31-recovery-tool-security.md) сохраняет ограничения.
+
 Для продолжения B4 выбран Trivy 0.76.1 с pinned official image и проверкой OS/Go/JAR inventories. Внешнюю готовность проверяет отдельный manual workflow `External release readiness`: он отказывает на HIGH/CRITICAL/UNKNOWN, неустановленных версиях пакетов, устаревшем JRE или неполных evidence. Docker socket сканеру не передаётся; отдельные архивы связываются с реально испытанными контейнерами. Maven OSV и обычный Backend CI сохраняются. Успех этих проверок не заменяет разрешение deployment/M4/privacy review. Подробности и ограничения — [security tools](../scripts/security/README.md).
 
 Для локальной подготовки B4 26 октября 2026 выбран один проверяемый кандидат: Docker Compose, Caddy, Spring Boot и PostgreSQL. Его конфигурация и команды находятся в [release runbook](../infra/release/README.md). Это не выбор или покупка VPS: пользователь явно ограничил этап подготовкой и локальными проверками. Провайдер, бюджет, регион, внешний домен и production-требования к восстановлению пока не выбраны; managed application + managed PostgreSQL остаётся альтернативой при дальнейшем выборе инфраструктуры.

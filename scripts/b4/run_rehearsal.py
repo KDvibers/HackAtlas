@@ -32,6 +32,8 @@ ROOT = Path(__file__).resolve().parents[2]
 RELEASE = ROOT / "infra/release"
 sys.path.insert(0, str(RELEASE / "ops"))
 from restore_review import approval_sql
+from restic_tool import verify_binary
+from recovery_archive_checks import RecoveryArchiveChecks
 SERVICES = {"init-volumes", "postgres", "migrate", "app", "proxy"}
 SECRET_FILES = ("postgres-admin-password", "migrator-password", "runtime-password")
 
@@ -517,6 +519,8 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         self.report["backup"] = json.loads(self.run("Create full custom-format backup", backup_command).stdout)
         require(backup_path.stat().st_mode & 0o077 == 0, "Backup must be private")
         require(self.run("Refuse backup overwrite", backup_command, allow_failure=True).returncode != 0, "Backup overwrite must be refused")
+        archive = RecoveryArchiveChecks(self, require)
+        archive.save_backup(backup_path)
         self.http.request("POST", "/api/v1/me/delete-account", 204, token=self.tokens[1], data={"password": self.password})
         post_delete_source = self.snapshot("hackatlas")
         require(post_delete_source["user_account"]["rows"] == 1, "Post-backup synthetic deletion must reach source database")
@@ -533,6 +537,7 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
                 "API deletion must atomically produce a source receipt")
         require(all(identifier not in exported.stdout + exported.stderr for identifier in payload["deletedAccountIds"]),
                 "Private UUIDs must not appear in export command output")
+        backup_path, export_path = archive.save_later_and_extract(backup_path, export_path)
         target = "hackatlas_restore_" + uuid.uuid4().hex[:12]
         restore = [sys.executable, str(RELEASE / "ops/restore.py"), "--project", self.project,
                    "--input", str(backup_path), "--database", target]
@@ -737,6 +742,7 @@ def main():
     require(args.timeout >= 30, "Readiness timeout must be at least 30 seconds")
     for executable in ("docker", "java", "javac"):
         require(shutil.which(executable), executable + " is required")
+    verify_binary(ROOT / 'backend/target/restic-0.19.1')
     rehearsal = Rehearsal(args.jar.resolve(strict=True), args.output_dir.resolve(), args.timeout)
     started = time.monotonic()
     try:
