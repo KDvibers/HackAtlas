@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import re
+import selectors
 import secrets
 import shutil
 import socket
@@ -395,6 +396,12 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         require(forbidden.returncode != 0 and "42501" in forbidden.stderr, "Runtime DDL must fail with insufficient privilege")
         forbidden_read = self.sql("SELECT * FROM public.flyway_schema_history;", role="hackatlas_runtime", allow_failure=True)
         require(forbidden_read.returncode != 0 and "42501" in forbidden_read.stderr, "Runtime must not read migration history")
+        for operation in ("SELECT * FROM", "DELETE FROM", "UPDATE"):
+            statement = operation + " hackatlas.account_deletion_receipt"
+            if operation == "UPDATE":
+                statement += " SET recorded_at=now()"
+            refused = self.sql(statement + ";", role="hackatlas_runtime", allow_failure=True)
+            require(refused.returncode != 0 and "42501" in refused.stderr, "Runtime must not read or modify existing deletion receipts")
         self.passed("real admin login/CSRF/catalogue mutations work with least-privilege runtime; spoofed forwarding and privilege escalation denied")
 
     def snapshot(self, database):
@@ -408,7 +415,96 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         result["flyway_schema_history"] = fingerprint(history.splitlines())
         return result
 
+    def check_deletion_export_snapshot(self):
+        self.absent_deletion = str(uuid.uuid4())
+        record_id = str(uuid.uuid4())
+        self.redactions.extend([self.absent_deletion, record_id])
+        export_path = self.temp / "snapshot.deletion-export.json"
+        export_command = [sys.executable, str(RELEASE / "ops/export_deletions.py"), "--project", self.project,
+                          "--output", str(export_path)]
+        # Keep a real transaction open after INSERT, without timing-based sleeps or timestamp watermarks.
+        probe = subprocess.Popen(self.compose + ["exec", "-T", "postgres", "psql", "-X", "-qAt",
+                                  "--set=ON_ERROR_STOP=1", "-U", "hackatlas_runtime", "-d", "hackatlas", "-f", "-"],
+                                 env=self.env, cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, text=True)
+        try:
+            probe.stdin.write("BEGIN; INSERT INTO hackatlas.account_deletion_receipt(id,account_id,recorded_at) VALUES ("
+                              + sql_value(record_id) + "," + sql_value(self.absent_deletion)
+                              + ",'2000-01-01T00:00:00Z'); SELECT 'B44_READY';\n")
+            probe.stdin.flush()
+            with selectors.DefaultSelector() as selector:
+                selector.register(probe.stdout, selectors.EVENT_READ)
+                require(bool(selector.select(timeout=15)), "Receipt probe must reach an uncommitted INSERT")
+                require(probe.stdout.readline().strip() == "B44_READY", "Runtime INSERT receipt must be allowed")
+            initial = json.loads(self.run("Export consistent source snapshot while receipt is uncommitted", export_command).stdout)
+            require(initial["accountCount"] == 0 and initial["historyComplete"] is False,
+                    "Uncommitted receipt must not appear or certify history completeness")
+            probe.communicate("COMMIT;\n", timeout=15)
+            require(probe.returncode == 0, "Controlled receipt transaction must commit")
+        finally:
+            if probe.poll() is None:
+                try:
+                    probe.communicate("ROLLBACK;\n", timeout=10)
+                except subprocess.TimeoutExpired:
+                    probe.kill()
+                    probe.wait(timeout=10)
+        late_path = self.temp / "late.deletion-export.json"
+        late_command = export_command[:-1] + [str(late_path)]
+        late = self.run("Full export includes late commit with old recorded_at", late_command)
+        payload = json.loads(late_path.read_text(encoding="utf-8"))
+        require(payload["deletedAccountIds"] == [self.absent_deletion] and json.loads(late.stdout)["accountCount"] == 1,
+                "Full export must not lose a late commit with an old timestamp")
+        require(self.absent_deletion not in late.stdout + late.stderr, "Export CLI must not log account UUIDs")
+        require(self.run("Refuse deletion export overwrite", late_command, allow_failure=True).returncode != 0,
+                "Export output must never be overwritten")
+        marked_path = self.temp / "marked.deletion-export.json"
+        self.sql("COMMENT ON DATABASE hackatlas IS '{\"kind\":\"hackatlas.restore\"}';", "postgres")
+        try:
+            require(self.run("Refuse marked/restored database as source", export_command[:-1] + [str(marked_path)],
+                             allow_failure=True).returncode != 0 and not marked_path.exists(),
+                    "Marked/restored database must not be accepted as an independent original source")
+        finally:
+            self.sql("COMMENT ON DATABASE hackatlas IS NULL;", "postgres")
+        self.report["deletionExport"] = {"uncommittedExcluded": True, "lateCommitWithOldTimestampIncluded": True,
+                                          "runtimeInsertOnly": True, "historyComplete": False}
+        self.passed("real deletion snapshot excludes uncommitted rows, includes late commits and keeps runtime INSERT-only")
+
+    def legacy_restore(self):
+        previous = self.env.get("HACKATLAS_DB_NAME", "hackatlas")
+        legacy = "hackatlas_legacy_" + uuid.uuid4().hex[:12]
+        target = "hackatlas_restore_legacy_" + uuid.uuid4().hex[:12]
+        try:
+            self.sql(f'CREATE DATABASE "{legacy}" OWNER hackatlas_migrator;\nREVOKE ALL ON DATABASE "{legacy}" FROM PUBLIC;', "postgres")
+            self.env["HACKATLAS_DB_NAME"] = legacy
+            self.dc("Create genuine V6 schema for legacy backup regression", "--profile", "ops", "run", "--rm",
+                    "-e", "SPRING_FLYWAY_TARGET=6", "-e", "SPRING_FLYWAY_LOCATIONS=classpath:db/migration", "migrate",
+                    timeout=self.timeout)
+            archive = self.temp / "legacy.dump"
+            self.run("Back up legacy V6 schema without receipt table", [sys.executable, str(RELEASE / "ops/backup.py"),
+                     "--project", self.project, "--database", legacy, "--output", str(archive)])
+            restored = json.loads(self.run("Restore genuine V6 backup into quarantine", [sys.executable,
+                str(RELEASE / "ops/restore.py"), "--project", self.project, "--input", str(archive), "--database", target]).stdout)
+            require(restored["state"] == "QUARANTINED" and restored["runtimeAccessGranted"] is False,
+                    "Legacy backup must restore without opening runtime access")
+            require(self.sql("SELECT to_regclass('hackatlas.account_deletion_receipt') IS NULL;", target) == "t",
+                    "Legacy backup must genuinely predate the receipt schema")
+            self.env["HACKATLAS_DB_NAME"] = target
+            self.dc("Migrate quarantined legacy restore from V6 to V7", "--profile", "ops", "run", "--rm", "migrate",
+                    timeout=self.timeout)
+            require(self.sql("SELECT count(*) FROM hackatlas.account_deletion_receipt;", target) == "0",
+                    "Migration must not fabricate historical deletion receipts")
+            require(self.sql("SELECT count(*) FROM public.flyway_schema_history WHERE version='7' AND success;", target) == "1",
+                    "V7 must apply to a V6 restored database")
+            require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
+                    "Legacy migration callback must preserve quarantine")
+            self.report["legacyRestore"] = {"backupSchemaVersion": 6, "migratedToVersion": 7,
+                                            "quarantinePreserved": True, "historicalReceiptsBackfilled": False}
+            self.passed("genuine V6 backup restores and migrates to V7 without opening quarantine or inventing history")
+        finally:
+            self.env["HACKATLAS_DB_NAME"] = previous
+
     def backup_restore(self):
+        self.check_deletion_export_snapshot()
         # Exercise cascade removal of every personal relation and submitted free text.
         self.sql("INSERT INTO hackatlas.user_interest(user_id,tag_id) VALUES(" + sql_value(self.users[1]) + ",'ai-ml');\n"
                  "INSERT INTO hackatlas.application_mark(user_id,hackathon_id,marked_at) VALUES(" + sql_value(self.users[1]) + "," + sql_value(self.event) + ",now());\n"
@@ -425,6 +521,18 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
         post_delete_source = self.snapshot("hackatlas")
         require(post_delete_source["user_account"]["rows"] == 1, "Post-backup synthetic deletion must reach source database")
         self.dc("Freeze owned source application writers for operator review", "stop", "--timeout", "30", "app")
+        export_path = self.temp / "source.deletion-export.json"
+        exported = self.run("Export all source receipts after actual API deletion and write freeze",
+                            [sys.executable, str(RELEASE / "ops/export_deletions.py"), "--project", self.project,
+                             "--output", str(export_path)])
+        exported_bytes = export_path.read_bytes()
+        payload = json.loads(exported_bytes)
+        require(payload["deletedAccountIds"] == sorted([self.absent_deletion, self.users[1]]),
+                "Source export must include API receipt and known absent UUID")
+        require(post_delete_source["account_deletion_receipt"]["rows"] == 2,
+                "API deletion must atomically produce a source receipt")
+        require(all(identifier not in exported.stdout + exported.stderr for identifier in payload["deletedAccountIds"]),
+                "Private UUIDs must not appear in export command output")
         target = "hackatlas_restore_" + uuid.uuid4().hex[:12]
         restore = [sys.executable, str(RELEASE / "ops/restore.py"), "--project", self.project,
                    "--input", str(backup_path), "--database", target]
@@ -462,14 +570,31 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
                    "--database", target, "--review", str(review_path)]
         require(self.run("Refuse missing operator review", approve, allow_failure=True).returncode != 0,
                 "Missing review must not open the restore")
+        prepare = [sys.executable, str(RELEASE / "ops/prepare_restore_review.py"), "--export", str(export_path),
+                   "--source-project", self.project, "--source-database", "hackatlas", "--project", self.project,
+                   "--database", target, "--output", str(review_path)]
+        wrong_source = list(prepare)
+        wrong_source[wrong_source.index("--source-project") + 1] = "another-project"
+        require(self.run("Refuse export source identity mismatch", wrong_source, allow_failure=True).returncode != 0
+                and not review_path.exists(), "Wrong source must not create review output")
+        prepared = self.run("Prepare private unapproved restore review from export", prepare)
+        draft = json.loads(review_path.read_text(encoding="utf-8"))
+        require(draft["sourceWritesStopped"] is False and draft["deletionsReviewed"] is False
+                and draft["reviewedThrough"] is None and draft["deletedAccountIds"] == payload["deletedAccountIds"],
+                "Prepared draft must not silently attest source freeze or complete review")
+        require(all(identifier not in prepared.stdout + prepared.stderr for identifier in payload["deletedAccountIds"]),
+                "Review preparation must not print private UUIDs")
+        require(self.run("Refuse unapproved generated draft", approve, allow_failure=True).returncode != 0,
+                "Generated draft must never open runtime access")
+        require(self.run("Refuse private draft overwrite", prepare, allow_failure=True).returncode != 0,
+                "Review preparation must never overwrite an existing private file")
+        require(self.snapshot(target) == restored, "Preparing or rejecting a draft must not mutate quarantined data")
+        require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
+                "Draft preparation/rejection must preserve quarantine")
         review = {"formatVersion": 1, "project": self.project, "database": target,
                   "backupSha256": self.report["restore"]["sha256"], "restoreId": self.report["restore"]["restoreId"],
                   "sourceWritesStopped": True, "deletionsReviewed": True,
-                  "reviewedThrough": datetime.now(timezone.utc).isoformat(), "deletedAccountIds": [self.users[1]]}
-        absent_id = str(uuid.uuid4())
-        while absent_id in self.users:
-            absent_id = str(uuid.uuid4())
-        review["deletedAccountIds"].append(absent_id)
+                  "reviewedThrough": datetime.now(timezone.utc).isoformat(), "deletedAccountIds": draft["deletedAccountIds"]}
         self.redactions.extend(review["deletedAccountIds"])
         review_path.write_text('{"invalid":', encoding="utf-8")
         os.chmod(review_path, 0o600)
@@ -542,8 +667,11 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
                 "Only the retained account may survive and all old sessions must remain revoked")
         require(all(reconciled[table]["rows"] == 0 for table in ("user_interest", "application_mark", "moderation_submission")),
                 "Late-deletion reconciliation must remove profile relations and submitted private text")
-        require({k: v for k, v in reconciled.items() if k not in {"auth_session", "admin_audit"}}
-                == {k: v for k, v in post_delete_source.items() if k not in {"auth_session", "admin_audit"}},
+        require(reconciled["account_deletion_receipt"] == backup_snapshot["account_deletion_receipt"],
+                "Restore must preserve snapshot receipts, not invent a complete independent history")
+        require(export_path.read_bytes() == exported_bytes, "Review/approval must not rewrite the private source export")
+        require({k: v for k, v in reconciled.items() if k not in {"auth_session", "admin_audit", "account_deletion_receipt"}}
+                == {k: v for k, v in post_delete_source.items() if k not in {"auth_session", "admin_audit", "account_deletion_receipt"}},
                 "Reconciled target must match source post-deletion data")
         require(self.sql("SELECT count(*) FROM hackatlas.admin_audit WHERE action='ACCOUNT_DELETED' AND actor_id IS NULL AND event_id IS NULL;", target) == "1",
                 "Reconciliation audit must not include deleted account identifiers")
@@ -619,6 +747,7 @@ def main():
         rehearsal.admin_and_privileges()
         rehearsal.public_smoke()
         rehearsal.backup_restore()
+        rehearsal.legacy_restore()
         rehearsal.report["result"] = "PASS"
     except Exception as error:
         rehearsal.report["result"] = "FAIL"

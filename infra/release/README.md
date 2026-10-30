@@ -172,6 +172,64 @@ HTTP перенаправляется на HTTPS с явным статусом 
 
 ## Backup и восстановление
 
+### Квитанции удалений B4.4 и приватная выгрузка
+
+V7 добавляет purpose-limited `account_deletion_receipt`. После проверки пароля
+квитанция, удаление аккаунта/связей и минимальный audit фиксируются одной транзакцией;
+при ошибке всё откатывается. Runtime имеет только INSERT на эту таблицу.
+Это источник для операторской выгрузки, **не независимое хранилище истории**.
+
+Остановите все source writers, включая другие экземпляры/задачи и прямые записи.
+Сохраните достоверную историю более ранних удалений: новая таблица её не восстанавливает.
+Ни одна команда ниже не подтверждает остановку writers или глобальную полноту.
+Пример для native Linux/WSL; `$release_project` — уже выбранный явный source project:
+
+```bash
+install -d -m 0700 "$HOME/hackatlas-private"
+python3 infra/release/ops/export_deletions.py --project "$release_project" \
+  --database hackatlas --output "$HOME/hackatlas-private/first.deletion-export.json"
+python3 infra/release/ops/prepare_restore_review.py \
+  --export "$HOME/hackatlas-private/first.deletion-export.json" \
+  --source-project "$release_project" --source-database hackatlas \
+  --project "$release_project" --database hackatlas_restore_example \
+  --output "$HOME/hackatlas-private/first.restore-review.json"
+```
+
+`hackatlas_restore_example` заменить фактическим quarantined target из restore.
+Source и target могут иметь разные project: явно укажите обе стороны. Экспорт
+принимает только оригинальную `hackatlas` без database comment; restored/marked
+БД не подходит. Автоматического promotion восстановленной БД в новый независимый
+источник здесь нет. Target hash/restoreId берутся из его metadata и проверяются.
+
+Export читает единый READ ONLY REPEATABLE READ snapshot **всех** committed receipts.
+Uncommitted строки не попадают; следующая полная выгрузка включает поздний commit
+даже при раннем recorded_at. Нет фильтра по дате или sequence watermark.
+Формат содержит версию, source identity, UTC exportedAt, count, sorted UUID и
+`historyComplete=false`. Этот флаг менять на true нельзя. До 10 000 UUID / 1 MiB;
+превышение даёт отказ без усечения. Пустой список не доказывает отсутствие удалений.
+
+Draft review имеет ровно девять полей B4.2: `sourceWritesStopped=false`,
+`deletionsReviewed=false`, `reviewedThrough=null`. Его approve отвергнет.
+Сверьте source/backup и дополнительные удаления, подтвердите фактическую остановку
+writers, дополните список при необходимости и укажите реальное UTC-время сверки.
+Только затем применяйте описанный ниже approve; источник/export не заменяет это review.
+Source identity остаётся в export и не добавляется в строгий формат review.
+
+Оба файла создаются с mode0600 в private parent0700, exclusive open/fsync;
+существующий путь, symlink/FIFO и небезопасные входные файлы отвергаются.
+На `/mnt/c` Linux-права могут не обеспечиваться: используйте native Linux каталог.
+При ошибке I/O/fsync оставшийся новый файл не считать успешно подготовленным;
+не перезаписывать его повторным запуском. CLI выводит только counters/status,
+без account UUID. Реальные файлы не загружать в Git, issue, CI artifacts или чат.
+
+При потере БД после последнего export остаётся неизвестный интервал: без отдельной
+достоверной истории копия остаётся в карантине. Автоматических доставки, шифрования,
+retention/очистки квитанций нет; сроки должны покрывать действующие backups и быть
+согласованы отдельно до реальных пользователей. [PRIVACY](../../docs/PRIVACY.md)
+описывает сохраняемые псевдонимные данные и пределы удаления.
+
+### Операторские backup/restore команды
+
 Операторские helpers используют только PostgreSQL текущего явного project:
 проверяют Compose labels `project`, `service=postgres`, `hackatlas.release=true`.
 Они не читают `.env` и не обращаются к другим контейнерам. Password читается из

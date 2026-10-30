@@ -35,6 +35,20 @@ python scripts/b4/run_rehearsal.py \
 
 Это проверка применения известного списка, а не автоматический независимый журнал удалений. Подтверждение полноты и остановки writers остаётся ручным. Review JSON mode 0600 хранится только во временном native Linux каталоге и очищается вместе с запуском; отчёты содержат количества, без списка UUID. `publicReleaseReady` остаётся `false` даже при техническом `PASS`.
 
+B4.4 добавляет реальный INSERT-only receipt и полный private export. Управляемая
+PostgreSQL транзакция проверяет, что uncommitted receipt отсутствует в snapshot,
+а поздний commit со старым recorded_at входит в следующую выгрузку. Источник с
+restore marker, неправильная source identity и overwrite отвергаются; source export
+не меняется при подготовке/применении review. Draft из новых CLI имеет false/false/null
+и не открывает CONNECT. API delete создаёт source receipt в одной транзакции;
+восстановленный snapshot сохраняет только свою прежнюю историю, без скрытой подмены.
+
+Дополнительно создаётся настоящая схема V6, делается её backup и restore, затем V7
+применяется отдельным migrator при сохранённом карантине. Исторические удаления не
+выдумываются. Это регрессия совместимости нового permission callback со старым dump.
+`test_deletion_history.py` проверяет strict format/identity/UUID/time/count, draft,
+private directory/file/no-overwrite и границу 10 000 IDs без усечения.
+
 Измеренные секунды относятся к маленькой локальной БД. Они не включают обнаружение аварии, действия оператора, передачу off-site backup, DNS или production-нагрузку. Регулярный backup и гарантированные RPO/RTO этим запуском не создаются.
 
 После выполнения удаляются только контейнеры/volumes с совпадающими project/service/release labels, временные secrets, CA и dump. Уникальные собранные app/proxy images сохраняются для последующего Trivy scan; их точные IDs есть в отчёте. Если очистка не удалась, отчёт показывает `FAIL` и путь принадлежащего этому запуску временного каталога; чужие ресурсы не удаляются.
