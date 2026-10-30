@@ -159,3 +159,20 @@ Smoke использует настоящий API, временно отключ
 Результат и реальные screenshots сохраняются в `mobile/artifacts/m2-remote/`; проверять поле `status` в `remote-smoke.json`, наличие картинок само по себе не означает PASS. Состояние Task 5 и ограничения — в `docs/STATUS_MOBILE.md`; прежние M1/M2 галереи остаются историческими результатами.
 
 Проверки самого отчёта (без adb/backend): `python -m unittest discover -s mobile/scripts -p test_android_remote_smoke.py`. Пустой `AssertionError` и прерывание сценария обязаны дать FAIL и выполнить восстановление. Принудительное завершение Python или компьютера не позволяет исполнить `finally`: для этого остаются emergency backups. Сценарий не рассчитан на параллельные запуски на одном эмуляторе.
+
+## M2: внешняя регистрация и системное «Поделиться»
+
+Подробности используют уже загруженные поля Starter, включая offline snapshot. `domain/ExternalLinks.kt` проверяет HTTPS и определяет доступность; `platform/ExternalActions` передаёт публичную ссылку Android Intents / UIKit. Нажатие не вызывает API и не отмечает участие. Открытый сайт может потребовать сеть; меню отправки доступно без сети, доставка зависит от выбранного приложения.
+
+Регистрация использует только `registrationUrl` при OPEN и допустимом статусе события. CLOSED/CANCELLED/ENDED/unknown/нет безопасной ссылки отключают CTA. Отдельная ссылка в блоке источника ведёт на `officialUrl`. В bundled и серверном DEMO переход заменён просмотром ссылки с предупреждением. Share передаёт название и `officialUrl` (запасной вариант — безопасный `sourceUrl`), DEMO-текст содержит явную пометку. Ссылки регистрации, токены и API origin в payload не подставляются. Без безопасного public URL share недоступен.
+
+Приёмка на отдельном synthetic fixture origin (это **не B1 и не реальные хакатоны**): из `mobile/` собрать и установить debug:
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8769/api/v1/' '-Phackatlas.allowDebugHttp=true' --offline --console=plain
+adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-debug.apk
+```
+
+Из корня выполнить `python -X utf8 mobile/scripts/android_external_actions_smoke.py --adb adb --serial emulator-5554`. Сценарий сам поднимает fixture HTTP-сервер на `127.0.0.1:8769`, использует зарезервированный `example.org`, открывает/отменяет native chooser **без выбора получателя**, проверяет offline/DEMO/disabled states и восстанавливает guest bytes/settings. Backup: `mobile/build/external-actions/device-backup/`. Не запускать параллельно с другими smoke на том же эмуляторе. Отчёт: `mobile/artifacts/m2-external-actions/smoke.json`; `--registration-only` не является полной приёмкой. Первый запуск браузера может показывать его onboarding; smoke проверяет передачу URL, а не доступность стороннего сайта. Backend APK для обычной проверки собирается с адресом `http://10.0.2.2:8080/api/v1/` по Task5, не с fixture-портом.
+
+**Проверка на Mac ещё обязательна:** собрать iOS через текущую Xcode-оболочку; на iPhone и iPad открыть реальное OPEN событие с HTTPS, проверить внешний браузер и возврат; открыть/отменить share несколько раз (на iPad также нажатием вне popover и после поворота); убедиться в неизменности прокрутки/закладки; повторить из сохранённой offline-копии. Проверить серверный и bundled DEMO, закрытую/отменённую регистрацию, отсутствующий URL. Для REMOTE нужен доступный HTTPS backend с подходящими тестовыми событиями; Windows Android smoke не доказывает работоспособность UIKit. Ошибку системного открытия и режим устройства без обработчика дополнительно проверить на целевых устройствах.

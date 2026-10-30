@@ -1,5 +1,31 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M2: внешние действия — 30 октября 2026
+
+Task5 принят пользователем и слит через PR12 (`0012831`). Этот следующий этап выполняется последовательно в `feat/mobile-external-actions` от `origin/main` `a4394f50aba09936df5e49234f276976d98e5ff4`, в прежнем worktree. Commit/push/PR остаются пользователю. M3 не начат; весь M2/iOS ещё не объявляется завершённым.
+
+**Код.** Новые shared `domain/ExternalLinks.kt`, `platform/ExternalActions.kt` и Android/iOS actual-адаптеры; изменены `App.kt`, `ui/DetailScreen.kt`, `strings.xml`. Безопасная HTTPS-регистрация открывается через ОС, share передаёт название + official/source URL. Действия используют загруженные подробности или сохранённую offline-копию. CLOSED/CANCELLED/ENDED/unknown/нет безопасного URL не дают активную регистрацию; официальный сайт — отдельное вторичное действие. Bundled и server DEMO показывают preview вместо browser, а share маркируется DEMO. Обработаны ошибки запуска, возврат/отмена не должны менять навигацию и закладки. API/backend/схема гостевого хранения, шрифты, иллюстрации и палитра не менялись.
+
+**Проверки.** `ExternalLinksTest`: 10 новых тестов, RED отсутствующих API → GREEN; проверка raw port запрещает `:0`, который Ktor нормализует в default. Из `mobile/`, JDK21 Android Studio / SDK36:
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug :shared:testDebugUnitTest --rerun :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8769/api/v1/' '-Phackatlas.allowDebugHttp=true'
+```
+
+BUILD SUCCESS, **141 тест, 0 failures/errors/skipped**, lint0, release gate PASS. `python -X utf8 scripts/validate_contract.py` — Starter +6 fixtures PASS. API-файлы не изменены. Полный Android smoke — **6 групп PASS**, `fullAcceptance=true`, restoreErrors пуст. Ранний прогон получил сетевую ошибку fixture-каталога; отдельная проверка статусов и следующий полный прогон прошли без изменения приложения. Одно независимое итоговое review: **0 Critical / 0 Important / 1 Minor**. Minor отложен: некоторые некорректные IPv6 URL проходят проверку структуры host и могут открыть неработающую ссылку; обход HTTPS не установлен. Подробности и границы — `mobile/artifacts/m2-external-actions/REVIEW.md`. Реализация этапа передана пользователю, iOS-приёмка остаётся открытой.
+
+Артефакты: `mobile/artifacts/m2-external-actions/{review.html,verification.json,smoke.json,PR_DESCRIPTION.md,COMMIT_PR.md}` и `screenshots/`. APK в ignored `mobile/build/external-actions/`: `HackAtlas-external-actions-fixture-debug.apk` (порт8769, full smoke) и `HackAtlas-external-actions-backend-debug.apk` (порт8080, size2, assembleDebug PASS, live B1 в этом этапе не повторялся). SHA256 обоих в verification.json. Старые галереи/отчёты не менялись.
+
+После smoke установлен backend8080 APK, fixture-сервер остановлен. Запущенный для этой проверки headless эмулятор штатно остановлен после восстановления данных/настроек; backend/Docker не менялись. Worktree и все изменения оставлены для пользовательского коммита.
+
+**Приёмка.** Новый `mobile/scripts/android_external_actions_smoke.py` использует отдельный synthetic origin `127.0.0.1:8769` и reserved `example.org`, а не B1. Данные `MOCK Link Event`/`MOCK Link Demo` — вымышленные проверки UI, не новые реальные события. Проверяет browser intent URL, системный share без отправки, возврат/отмену и scroll, cold offline snapshot, server DEMO, отключённые состояния; backup/restore guest bytes/settings. При первом запуске Chrome виден onboarding: передача URL проверяется, загрузка сайта и реальная регистрация не заявляются. В smoke исправлено ожидание видимого native окна перед Back; без него Back мог попадать в ещё активный экран приложения. Emergency backups — ignored `mobile/build/external-actions/device-backup/`.
+
+**Ограничения.** Windows: iOS native compile/link, iPhone и iPad browser/share/popover/cancel ещё не проверены; checklist и primary API references в `mobile/README.md` и `mobile/TOOLCHAIN.md`. iOS использует текущий Compose host, HTTPS `UIApplication.open` и `UIActivityViewController` с iPad anchor. Устройство без browser/share handler и ошибку UIApplication completion ещё нужно проверить на целевых устройствах. Сервер B1 повторно не собирался — этот этап не меняет его.
+
+**Напарнику:** «Добавили на клиенте внешнюю HTTPS-регистрацию и системный share из detail/offline snapshot. Контракт Starter без изменений, новых endpoints не требуется. DEMO не открывает регистрацию; для совместной проверки на Mac нужен HTTPS-стенд и согласованное тестовое OPEN-событие с настоящей публичной ссылкой».
+
+Следующий отдельный шаг: принять Android-результат, выполнить Mac/iOS checklist, затем согласовать следующий этап по ROADMAP. Авторизацию и синхронизацию не начинать автоматически.
+
 ## M2 Task 5: live-приёмка завершена — 26 октября 2026
 
 Ветка `feat/mobile-catalog-api`, база Task5 `4ca0044ed0e107bcf65daf27ade979694d4e2ee9`. Работа выполнена последовательно, одно независимое итоговое review. Изменения оставлены без staging/commit/push/PR; эти действия выполняет пользователь. Task5 завершена, весь M2 ещё не завершён.
