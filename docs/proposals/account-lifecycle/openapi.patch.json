@@ -1,0 +1,891 @@
+[
+  {
+    "op": "test",
+    "path": "/info/version",
+    "value": "0.1.0"
+  },
+  {
+    "op": "replace",
+    "path": "/info/version",
+    "value": "0.2.0-proposal.1"
+  },
+  {
+    "op": "add",
+    "path": "/x-hackatlas-proposal",
+    "value": {
+      "status": "DRAFT_NOT_APPROVED_NOT_IMPLEMENTED",
+      "baseCommit": "991be66123b5f791d0ee9a33302b9d681170e345",
+      "baseSemanticSha256": "f98f40105db4a1b701764b6735a2722c4b1080295e5388a8f7cc8862bd39e116"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/EmailActionChallenge",
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "challengeId",
+        "expiresAt",
+        "resendAfterSeconds"
+      ],
+      "properties": {
+        "challengeId": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 43,
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "description": "Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.",
+          "x-sensitive": true
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resendAfterSeconds": {
+          "type": "integer",
+          "const": 60
+        }
+      },
+      "description": "Принят к best-effort обработке; не подтверждает наличие аккаунта или доставку письма."
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/EmailCodeRequest",
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "challengeId",
+        "code"
+      ],
+      "properties": {
+        "challengeId": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 43,
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "description": "Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.",
+          "x-sensitive": true,
+          "writeOnly": true
+        },
+        "code": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 8,
+          "pattern": "^[0-9]{8}$",
+          "writeOnly": true,
+          "description": "Восемь ASCII цифр, включая ведущие нули. Не логировать."
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/PasswordResetRequest",
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "email"
+      ],
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/PasswordResetGrant",
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resetToken",
+        "expiresAt"
+      ],
+      "properties": {
+        "resetToken": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 43,
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "description": "Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.",
+          "x-sensitive": true
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "Один reset в течение пяти минут. Не Bearer, не refresh token, не авторизация."
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/PasswordResetConfirmRequest",
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resetToken",
+        "newPassword"
+      ],
+      "properties": {
+        "resetToken": {
+          "type": "string",
+          "minLength": 43,
+          "maxLength": 43,
+          "pattern": "^[A-Za-z0-9_-]{43}$",
+          "description": "Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.",
+          "x-sensitive": true,
+          "writeOnly": true
+        },
+        "newPassword": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 256,
+          "writeOnly": true,
+          "description": "Как RegisterRequest: не trim, не логировать, не сохранять на клиенте."
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/Profile/properties/emailVerified",
+    "value": {
+      "type": "boolean",
+      "readOnly": true,
+      "description": "False: только pending allowlist. Действующая сессия сама по себе не означает verified."
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/Profile/required/-",
+    "value": "emailVerified"
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/Problem/properties/code/enum/-",
+    "value": "EMAIL_NOT_VERIFIED"
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/Problem/properties/code/enum/-",
+    "value": "EMAIL_ACTION_INVALID"
+  },
+  {
+    "op": "add",
+    "path": "/components/schemas/Problem/properties/code/enum/-",
+    "value": "PASSWORD_RESET_REQUIRED"
+  },
+  {
+    "op": "add",
+    "path": "/components/responses",
+    "value": {}
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionAccepted",
+    "value": {
+      "description": "Принят к обработке, не обещает письмо или наличие аккаунта.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/EmailActionChallenge"
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionNoContent",
+    "value": {
+      "description": "Действие завершено; тело и новый Bearer отсутствуют.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/PasswordResetGrantIssued",
+    "value": {
+      "description": "Код потреблён; выдан одноразовый reset-only grant.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PasswordResetGrant"
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionBadRequest",
+    "value": {
+      "description": "Некорректная форма либо недействительный code/grant.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 400
+                  },
+                  "code": {
+                    "enum": [
+                      "VALIDATION_ERROR",
+                      "EMAIL_ACTION_INVALID"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionUnauthorized",
+    "value": {
+      "description": "Недействителен приложенный Bearer; это не ошибка кода.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 401
+                  },
+                  "code": {
+                    "enum": [
+                      "AUTH_REQUIRED"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionLimited",
+    "value": {
+      "description": "Общий лимит; не account-existence oracle.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        },
+        "Retry-After": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[1-9][0-9]*$"
+          },
+          "description": "Число секунд до следующей попытки."
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 429
+                  },
+                  "code": {
+                    "enum": [
+                      "RATE_LIMITED"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionInternalError",
+    "value": {
+      "description": "Без credentials и внутренних деталей.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 500
+                  },
+                  "code": {
+                    "enum": [
+                      "INTERNAL_ERROR"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailActionUnavailable",
+    "value": {
+      "description": "Общая недоступность/admission отказ.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 503
+                  },
+                  "code": {
+                    "enum": [
+                      "SERVICE_UNAVAILABLE"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/EmailVerificationRequired",
+    "value": {
+      "description": "Нужна подтверждённая почта или доступ запрещён.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 403
+                  },
+                  "code": {
+                    "enum": [
+                      "EMAIL_NOT_VERIFIED",
+                      "FORBIDDEN"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/components/responses/PasswordRecoveryRequired",
+    "value": {
+      "description": "После восстановления backup нужен email reset.",
+      "headers": {
+        "Cache-Control": {
+          "required": true,
+          "schema": {
+            "type": "string",
+            "const": "no-store"
+          }
+        }
+      },
+      "content": {
+        "application/problem+json": {
+          "schema": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Problem"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "const": 403
+                  },
+                  "code": {
+                    "enum": [
+                      "PASSWORD_RESET_REQUIRED"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1email-verification~1request",
+    "value": {
+      "post": {
+        "operationId": "requestEmailVerification",
+        "summary": "Запросить код подтверждения почты",
+        "description": "DRAFT. Адрес берётся из principal. Без тела. 204, если уже verified; иначе 202. Pending Bearer разрешён.",
+        "x-phase": "PROPOSED_ACCOUNT_LIFECYCLE",
+        "x-implemented": false,
+        "security": [
+          {
+            "BearerSession": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/EmailActionAccepted"
+          },
+          "204": {
+            "$ref": "#/components/responses/EmailActionNoContent"
+          },
+          "400": {
+            "$ref": "#/components/responses/EmailActionBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/EmailActionUnauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/EmailActionLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/EmailActionInternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/EmailActionUnavailable"
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1email-verification~1confirm",
+    "value": {
+      "post": {
+        "operationId": "confirmEmailVerification",
+        "summary": "Подтвердить почту кодом",
+        "description": "DRAFT. Нужен Bearer того же аккаунта и код. Успех 204 → GET /me. Replay/expired/wrong-purpose: generic 400.",
+        "x-phase": "PROPOSED_ACCOUNT_LIFECYCLE",
+        "x-implemented": false,
+        "security": [
+          {
+            "BearerSession": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/EmailActionNoContent"
+          },
+          "400": {
+            "$ref": "#/components/responses/EmailActionBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/EmailActionUnauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/EmailActionLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/EmailActionInternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/EmailActionUnavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1password-reset~1request",
+    "value": {
+      "post": {
+        "operationId": "requestPasswordReset",
+        "summary": "Запросить восстановление пароля",
+        "description": "DRAFT. Клиент не прикладывает Bearer. Для корректного email одинаковый 202, включая неизвестный/удалённый. Новый запрос не отзывает sessions и не отменяет ранее выданные codes/grants. Письмо не гарантировано. 401 возможен только если клиент всё же приложил недействительный Bearer.",
+        "x-phase": "PROPOSED_ACCOUNT_LIFECYCLE",
+        "x-implemented": false,
+        "security": [],
+        "responses": {
+          "202": {
+            "$ref": "#/components/responses/EmailActionAccepted"
+          },
+          "400": {
+            "$ref": "#/components/responses/EmailActionBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/EmailActionUnauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/EmailActionLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/EmailActionInternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/EmailActionUnavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1password-reset~1verify",
+    "value": {
+      "post": {
+        "operationId": "verifyPasswordResetCode",
+        "summary": "Обменять код на одноразовый reset grant",
+        "description": "DRAFT. Без Bearer. Код потребляется атомарно; аккаунт/пароль/verified пока не меняются. 400 для всех недействительных challenges; 200 не является login.",
+        "x-phase": "PROPOSED_ACCOUNT_LIFECYCLE",
+        "x-implemented": false,
+        "security": [],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/PasswordResetGrantIssued"
+          },
+          "400": {
+            "$ref": "#/components/responses/EmailActionBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/EmailActionUnauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/EmailActionLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/EmailActionInternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/EmailActionUnavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1password-reset~1confirm",
+    "value": {
+      "post": {
+        "operationId": "confirmPasswordReset",
+        "summary": "Установить новый пароль по reset grant",
+        "description": "DRAFT. Без Bearer. Атомарно: password hash, credential version, emailVerified=true, снятие restore reset-required, отзыв всех native/admin sessions и остальных codes/grants. 204 без login; повтор grant → 400 EMAIL_ACTION_INVALID. К обычным protected requests token не подходит.",
+        "x-phase": "PROPOSED_ACCOUNT_LIFECYCLE",
+        "x-implemented": false,
+        "security": [],
+        "responses": {
+          "204": {
+            "$ref": "#/components/responses/EmailActionNoContent"
+          },
+          "400": {
+            "$ref": "#/components/responses/EmailActionBadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/EmailActionUnauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/EmailActionLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/EmailActionInternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/EmailActionUnavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordResetConfirmRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1register/post/description",
+    "value": "DRAFT 0.2: прежние request/201 AuthResponse и 409 сохраняются; user.emailVerified=false, только pending allowlist, предлагаемый TTL 30 минут. Письмо запрашивается отдельной операцией. Production signup остаётся закрытым до отдельного допуска."
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1login/post/responses/403",
+    "value": {
+      "$ref": "#/components/responses/PasswordRecoveryRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1auth~1login/post/description",
+    "value": "DRAFT 0.2: правильный пароль даёт AuthResponse с актуальным emailVerified. Pending аккаунту — ограниченная сессия. Если после restore требуется recovery: 403 PASSWORD_RESET_REQUIRED без Bearer."
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me/patch/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me/patch/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1saved/get/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1saved/get/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1saved~1{id}/put/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1saved~1{id}/put/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1saved~1{id}/delete/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1saved~1{id}/delete/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1applications/get/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1applications/get/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1applications~1{id}/put/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1applications~1{id}/put/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1applications~1{id}/delete/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1me~1applications~1{id}/delete/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1suggestions/post/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1suggestions/post/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1hackathons~1{id}~1reports/post/x-proposed-email-verification-required",
+    "value": true
+  },
+  {
+    "op": "add",
+    "path": "/paths/~1hackathons~1{id}~1reports/post/responses/403",
+    "value": {
+      "$ref": "#/components/responses/EmailVerificationRequired"
+    }
+  }
+]
