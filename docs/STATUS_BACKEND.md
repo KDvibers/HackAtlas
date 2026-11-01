@@ -1,6 +1,81 @@
 # BACKEND: статус
 
-Дата актуального дополнения: 31 октября 2026.
+Дата актуального дополнения: 1 ноября 2026.
+
+## B4.5 — исправление CI в существующем PR #19
+
+Пользователь поручил исправить тест и повторить CI-сценарии без root.
+[PR #19](https://github.com/KDvibers/HackAtlas/pull/19) открыт, исходный head
+`a40344df1be513ca845ca53e1a0da8a9b1a5f34e`, ветка `feat/backend-recovery-archive`.
+Рабочая папка в начале была чистой. Оба удалённых CI падали на одном месте:
+[лог Backend verify](https://github.com/KDvibers/HackAtlas/actions/runs/41126599951/job/124306623106).
+
+Причина: fault-injection тест пытался перезаписать read-only pack restic и получал
+PermissionError раньше проверки повреждённого архива. Предыдущие локальные проверки
+под root обходили это ограничение. Ошибка воспроизведена обычным UID 1000 до правки.
+
+Исправление в [тесте](../scripts/b4/test_recovery_archive.py): chmod 0600 только
+одного собственного временного pack перед намеренным повреждением. Проверка отказа
+CLI и отсутствия UUID/ключа/пути в выводе сохранена. Права рабочих архивов, production
+код и workflow не менялись. [README](../scripts/b4/README.md) дополнен требованием
+запускать проверки прав обычным пользователем. Работа одним агентом.
+
+### Проверки под обычным пользователем
+
+Все проверяемые Maven/Python/Java/Node процессы запускались с UID/GID 1000
+(`amateru`); effective/permitted capabilities — 0. Для Docker-команд root использован
+только как launcher `setpriv`, переключающий процесс на UID/GID 1000 и временную
+supplementary group 106 (docker) до выполнения тестов. Постоянные группы пользователя
+и mode Docker socket не менялись; daemon Docker остаётся обычным системным daemon.
+Python unit suites запускались напрямую обычным WSL-пользователем, без launcher.
+
+| Проверка | Результат |
+|---|---|
+| Исходный сбой → исправленный targeted test | RED PermissionError → **PASS**, 10.079 с |
+| `backend/mvnw --batch-mode --no-transfer-progress verify dependency:list -DincludeScope=runtime -DoutputFile=target/runtime-dependencies.txt` (через bash) | **BUILD SUCCESS, 282 = 21 unit + 261 integration**, failures/errors/skipped 0; 4:34 с холодным пользовательским Maven cache |
+| unittest `scripts/b4` и `scripts/security` | **49 + 27 = 76 PASS**, 0 skips; B4 67.274 с |
+| Starter + fresh Maven HTTP exports | **PASS; 139 + 345 + 106 = 590 ответов** |
+| Maven runtime audit OSV | **106 пакетов, 0 affected** |
+| Packaged B1 / Bruno / Schemathesis | **PASS**, 12 deterministic HTTP cases, Bruno 10/10, Schemathesis 201/201 |
+| Packaged B2 / Bruno | **PASS**, 30 HTTP cases, Bruno 26/26 |
+| Packaged B3 / Bruno | **PASS**, 36 HTTP cases, Bruno 24/24 |
+| Полная `scripts/b4/run_rehearsal.py` | **PASS, 141.933 с**, encrypted archive/extract, quarantine, HTTPS, V6→V7, owned cleanup |
+
+Node 24.19.0, Bruno 4.2.1 после `npm ci --ignore-scripts --no-audit --no-fund`;
+Python зависимости установлены по pinned requirements, `pip check` PASS. SDK/tools
+подготовлены в пользовательском Linux home без global install. Локально Python
+3.14 и JDK 21.0.12.1, в GitHub Python 3.12 и JDK 21.0.13+9: побитовая идентичность
+сред не заявляется. Исправленный PermissionError проверен без root.
+
+Все собственные тестовые БД/контейнеры/volumes/temporary secrets и архивы очищены;
+SDK caches и built images оставлены. Существующие dev volumes не мигрировались.
+Логи — ignored `backend/target/b45-ci-{permission-repro,fix-targeted}.log`,
+`b45-ci-user-{verify,python,contract,http,osv,b1,b2,b3,rehearsal,npm}.log`,
+`b45-ci-user-rehearsal/report.json`, `b45-ci-fix-progress.md`.
+
+Git HTTPS account снова проверен: **yergaliuly**. История прошла Gitleaks под UID
+1000. Итоговый diff/secret/scope review записан в `b45-ci-fix-final-qa.log`.
+Коммит, staging, push и новый PR не выполнялись. Эти результаты локальные;
+GitHub проверит исправление после пользовательского push в ту же ветку PR #19.
+API/auth, dependencies и security gates не менялись. Отдельные restic/container
+security blockers этим исправлением не устранены; manual readiness и deployment
+не запускались. Новых этапов не начато, mobile/iOS не проверялись.
+
+Короткая передача напарнику: «Исправлена подготовка повреждённого test archive в B4.5;
+полный Backend CI-набор повторён обычным пользователем. API и подключение прежние».
+Сообщение не отправлялось.
+
+### Команды обновления того же PR
+
+```powershell
+git status --short --branch
+git add scripts/b4/test_recovery_archive.py scripts/b4/README.md docs/STATUS_BACKEND.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "fix(tests): allow archive corruption checks without root"
+git push origin feat/backend-recovery-archive
+Start-Process 'https://github.com/KDvibers/HackAtlas/pull/19/checks'
+```
 
 ## B4.5 — локальный шифрованный архив реализован; эксплуатация заблокирована
 

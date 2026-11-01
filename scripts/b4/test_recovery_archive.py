@@ -252,6 +252,8 @@ class ResticArchiveTests(PrivateFixtures, unittest.TestCase):
         self.store()
         packs = [p for p in (self.repo / 'data').rglob('*') if p.is_file()]
         self.assertTrue(packs)
+        # Restic packs are read-only; fault injection changes only this disposable test file.
+        packs[0].chmod(0o600)
         packs[0].write_bytes(b'corrupt-synthetic-pack')
         command = [sys.executable, str(ROOT / 'infra/release/ops/recovery_archive.py'),
                    '--restic', str(self.binary), '--repository', str(self.repo),
