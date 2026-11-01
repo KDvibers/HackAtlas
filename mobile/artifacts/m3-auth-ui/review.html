@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HackAtlas · M3 авторизация</title>
+<style>
+body{margin:0;background:#050507;color:#f5f2fa;font:16px/1.6 system-ui,sans-serif}main{max-width:1400px;margin:auto;padding:32px 24px}h1{font-size:30px;margin:0}p{max-width:920px;color:#c0b8cc}a{color:#63d8ff}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}figure{margin:0}img{width:100%;height:auto;border:1px solid #443053;border-radius:14px}figcaption{padding:12px 0;color:#e91df4}details{margin:32px 0}summary{cursor:pointer;color:#63d8ff}small{color:#9f97ad}@media(max-width:700px){.grid{grid-template-columns:1fr}main{padding:24px 16px}}
+</style>
+<main><small>HACKATLAS / M3 BLOCK 2_</small><h1>Вход, регистрация и профиль</h1>
+<p>Настоящие Android screenshots общего Compose UI. Сохранены пиксельные заголовки, фуксиевые действия, тёмные поверхности, шрифты и иллюстрации M1. Аккаунты на снимках — одноразовые тестовые аккаунты в локальном B2; события помечены DEMO.</p>
+<div class="grid">
+<figure><a href="screenshots/login.png"><img src="screenshots/login.png" alt="Экран входа"></a><figcaption>Вход</figcaption></figure>
+<figure><a href="screenshots/register.png"><img src="screenshots/register.png" alt="Экран регистрации"></a><figcaption>Регистрация</figcaption></figure>
+<figure><a href="screenshots/profile.png"><img src="screenshots/profile.png" alt="Профиль тестового аккаунта"></a><figcaption>Профиль из B2 · локальные закладки отдельно</figcaption></figure>
+</div>
+<p>Каталог открыт гостю. Сохранённое и календарь остаются на устройстве; синхронизации и автоматического переноса в аккаунт нет. Результаты: <a href="verification.json">проверки</a> · <a href="android-smoke.json">live Android smoke</a> · <a href="REVIEW.md">итоговое ревью и ограничения</a>.</p>
+<details><summary>Ошибки, offline и повторный вход</summary><div class="grid">
+<figure><img src="screenshots/login-error.png" alt="Общая ошибка входа"><figcaption>Неверный пароль</figcaption></figure>
+<figure><img src="screenshots/session-expired.png" alt="Приглашение войти после отзыва сессии"><figcaption>Отозванная сессия</figcaption></figure>
+<figure><img src="screenshots/logout-offline.png" alt="Честное сообщение о локальном выходе"><figcaption>Выход без сети</figcaption></figure>
+</div></details>
+<details><summary>Узкий экран и крупный текст</summary><div class="grid">
+<figure><img src="screenshots/register-360.png" alt="Регистрация 360dp"><figcaption>360dp</figcaption></figure>
+<figure><img src="screenshots/register-360-font130.png" alt="Регистрация 360dp, текст130 процентов"><figcaption>360dp · текст 130%</figcaption></figure>
+<figure><img src="screenshots/register-432.png" alt="Регистрация 432dp"><figcaption>432dp</figcaption></figure>
+</div></details>
+<p>iOS: код hosts и общих экранов подключён. Сборка, Keychain и lifecycle требуют отдельной проверки на Mac/iPhone. Скриншоты Android не подтверждают iOS.</p>
+</main></html>

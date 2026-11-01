@@ -1,0 +1,38 @@
+{
+  "source": "real local B2 private-dev, disposable PostgreSQL, DEMO events",
+  "device": "Pixel 8 Android 17 API 37",
+  "checks": [
+    {
+      "name": "live B2 registration, actual profile, Keystore ciphertext and unchanged local guest snapshot",
+      "status": "PASS"
+    },
+    {
+      "name": "process restart restores secure session through real GET /me",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed logout, generic wrong-password error and subsequent successful login",
+      "status": "PASS"
+    },
+    {
+      "name": "real protected 401 after server revocation on foreground; previous profile hidden",
+      "status": "PASS"
+    },
+    {
+      "name": "second account isolated; offline logout honest; guest snapshot survives and opens after cold restart",
+      "status": "PASS"
+    },
+    {
+      "name": "background clears email/password form memory without ending process owner",
+      "status": "PASS"
+    },
+    {
+      "name": "real normal/narrow/large-text/wide forms, keyboard reachability and local validation",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "restoreErrors": [],
+  "fullAcceptance": true,
+  "ios": "not built or run; Mac/Xcode required"
+}

@@ -2,6 +2,7 @@ package dev.hackatlas.mobile
 
 import androidx.compose.ui.window.ComposeUIViewController
 import dev.hackatlas.mobile.data.IosGuestSnapshotStorage
+import dev.hackatlas.mobile.data.auth.IosSecureTokenStore
 import dev.hackatlas.mobile.domain.selectCatalogSource
 import dev.hackatlas.mobile.ui.CatalogRuntime
 
@@ -11,8 +12,11 @@ fun MainViewController(isDebug: Boolean, sourceMode: String, apiBaseUrl: String)
     // Called on the main thread by the Swift host. Configuration is fixed for this process.
     // No ATS exceptions: iOS REMOTE requires HTTPS, including Debug until a dev host is agreed.
     val runtime = processRuntime ?: CatalogRuntime(selectCatalogSource(isDebug, sourceMode, apiBaseUrl),
-        { scope -> IosGuestSnapshotStorage(scope) }).also { processRuntime = it }
+        { scope -> IosGuestSnapshotStorage(scope) },
+        secureStoreFactory = { source -> IosSecureTokenStore(source) }).also { processRuntime = it }
     return ComposeUIViewController { App(runtime.state) }
 }
 
 fun closeCatalogRuntime() { processRuntime?.close() }
+fun authOnForeground() { processRuntime?.onForeground() }
+fun authOnBackground() { processRuntime?.onBackground() }

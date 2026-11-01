@@ -179,4 +179,6 @@ adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-de
 
 ## M3: клиент сессии без экранов
 
-Первый блок auth core описан в [AUTH_CORE.md](AUTH_CORE.md): API, native secure stores, обработка 401/expiry/logout, команды MockEngine/instrumentation и обязательные iOS-проверки. App и каталог пока не подключают этот клиент; экраны и синхронизация закладок относятся к следующему поручению.
+Первый блок auth core описан в [AUTH_CORE.md](AUTH_CORE.md): API, native secure stores, обработка 401/expiry/logout, команды MockEngine/instrumentation и обязательные iOS-проверки.
+
+Второй блок [AUTH_UI.md](AUTH_UI.md) подключает вход, регистрацию и настоящий профиль к Android/iOS hosts. Каталог остаётся гостевым, сохранения/календарь — локальными; синхронизация и guest import требуют отдельного этапа. iOS native build/runtime остаются непроверенными на Windows.
