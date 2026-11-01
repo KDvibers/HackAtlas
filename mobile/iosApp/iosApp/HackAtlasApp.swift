@@ -5,9 +5,17 @@ import HackAtlasShared
 @main
 struct HackAtlasApp: App {
     @UIApplicationDelegateAdaptor(CatalogAppDelegate.self) private var delegate
+    @Environment(\.scenePhase) private var scenePhase
     var body: some Scene {
         WindowGroup {
             ComposeHost().ignoresSafeArea()
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                MainViewControllerKt.authOnForeground()
+            } else {
+                MainViewControllerKt.authOnBackground()
+            }
         }
     }
 }

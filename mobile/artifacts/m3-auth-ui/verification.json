@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-01",
+  "branch": "feat/mobile-auth-ui",
+  "base": "066570d119dc66c21be315bcca2cd55af4f3e531",
+  "scope": "M3 block2 auth UI/hosts; no saved sync/import",
+  "mobile": {
+    "command": ".\\gradlew.bat :shared:testDebugUnitTest --rerun :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain -Phackatlas.debugSource=REMOTE -Phackatlas.debugApiBaseUrl=http://10.0.2.2:8770/api/v1/ -Phackatlas.allowDebugHttp=true",
+    "result": "BUILD SUCCESSFUL",
+    "tests": 188,
+    "newAuthUiTests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "lint": "No issues found",
+    "releaseNoDemoGate": "PASS",
+    "log": "mobile/build/m3-auth-ui/final-verification.log",
+    "apk": "mobile/build/m3-auth-ui/HackAtlas-auth-ui-debug.apk",
+    "apkSha256": "3541b7b87003fa5fc8e455188509ded40f003cc59b8479b19a297192c7637e0b",
+    "apkApi": "http://10.0.2.2:8770/api/v1/",
+    "apkEnvironment": "Disposable smoke backend stopped; configure/rebuild for your running B2"
+  },
+  "backend": {
+    "integrationVerifyRerun": false,
+    "unitTests": 21,
+    "command": "mvnw.cmd --batch-mode --no-transfer-progress package",
+    "result": "BUILD SUCCESS",
+    "sourceModified": false
+  },
+  "contract": {
+    "apiChanged": false,
+    "validator": "scripts/validate_contract.py",
+    "starter": "PASS",
+    "examples": 6
+  },
+  "androidSmoke": {
+    "report": "android-smoke.json",
+    "ownedServicesStopped": true,
+    "fullAcceptance": true,
+    "emulator": "Pixel8 Android17/API37,4GB",
+    "credentialsInArtifacts": false,
+    "restoreErrors": [],
+    "groupsPassed": 7,
+    "backend": "real current B2 JAR port8770, disposable PostgreSQL",
+    "guestBytesPreserved": true
+  },
+  "review": {
+    "independentReviews": 1,
+    "critical": 0,
+    "minorDeferred": 1,
+    "importantSourceFix": "SwiftUI scenePhase replaces undelivered AppDelegate activation callbacks",
+    "detail": "REVIEW.md",
+    "minor": "Password clears at accepted submit; email/name retained for retry despite broader spec wording",
+    "important": 1,
+    "importantNativeIosVerified": false
+  },
+  "ios": {
+    "reason": "Windows; Mac/Xcode/iPhone and HTTPS B2 required",
+    "compile": false,
+    "keychain": false,
+    "runtime": false,
+    "sourceWired": true
+  },
+  "git": {
+    "prCreated": false,
+    "committed": false,
+    "pushed": false,
+    "staged": false
+  },
+  "limits": [
+    "saved sync/import/profile edit/reminders/deletion/reset/verification excluded",
+    "production readiness and fresh crypto audit not asserted",
+    "iOS native acceptance open"
+  ]
+}

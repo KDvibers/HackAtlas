@@ -20,7 +20,7 @@ import kotlinx.datetime.Instant
 import kotlinx.io.IOException
 import kotlinx.serialization.Serializable
 
-/** Owns an isolated client and engine; use a dedicated engine, with retries/redirects disabled. No UI wiring yet. */
+/** Owns an isolated client and engine; use a dedicated engine, with retries/redirects disabled. */
 class AuthSessionClient(
     private val engine: HttpClientEngine,
     private val source: CatalogSource.Remote,

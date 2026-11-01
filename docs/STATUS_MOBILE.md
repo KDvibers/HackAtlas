@@ -1,5 +1,61 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M3 block 2: auth UI / hosts — 1 ноября 2026
+
+По поручению пользователя подключены вход, регистрация, настоящий профиль и
+host lifecycle. **Без saved sync/import, profile edit, reminders и других блоков M3.**
+Ветка `feat/mobile-auth-ui` от актуального `origin/main=066570d119dc66c21be315bcca2cd55af4f3e531`;
+PR18/auth core уже в main. Прежний managed worktree. Commit/push/PR выполняет пользователь.
+`.agents/` и `.interface-design/` остались пользовательскими, не менялись.
+
+**Код:** новые shared `ui/auth/{AuthForm,AuthStore,AuthScreen,AccountProfileScreen}.kt`
+и `commonTest/.../ui/auth/AuthStoreTest.kt`; изменения App, guest ProfileScreen,
+strings, AppState/CatalogRuntime, Android Application/Activity и iOS shared/Swift host.
+Один auth client/source на процесс; каталог имеет отдельный public HTTP client.
+Формы без rememberSaveable для credentials, пароль не trim, повторный submit блокируется,
+пароль очищается при принятом submit, все поля — при background/mode/disposal.
+GET me при foreground/открытии профиля; ошибка restore не притворяется отсутствием сессии.
+Logout скрывает private profile сразу и различает server revoke/local-only/storage failure.
+Real ProfileDto/server stats не подменяются гостевыми числами. Гостевые закладки и календарь
+явно локальные, source-scoped и не меняются от входа/выхода/смены аккаунта.
+
+**Android:** полный live smoke на Pixel8 Android17/API37, **7 групп PASS**,
+fullAcceptance=true, restoreErrors пуст. Актуальный local B2 JAR на8770 и собственная
+одноразовая PostgreSQL с DEMO-каталогом; synthetic example.org аккаунты, credentials
+не включены в artifacts. Проверены register/login/wrong password, cold restore через
+GET me, подтверждённый logout, реальный server-revoked401 на foreground, второй аккаунт,
+offline local-only logout, byte-for-byte guest сохранность и cold offline saved,
+background form clearing, normal/360dp/font130%/432dp формы, клавиатура и validation.
+Screenshot набор — `mobile/artifacts/m3-auth-ui/`, обзор `review.html`.
+Начальный конфликт UiAutomation был вызван параллельным диагностическим чтением;
+2GB AVD затем убивал приложение с LOW_MEMORY. Окончательный прогон выполнен одним
+владельцем автоматизации на4GB после остановки idle Gradle; product workaround нет.
+Настройки/guest bytes восстановлены, принадлежащие этапу emulator/backend/DB остановлены.
+
+**Проверки:** **188 tests (15 новых auth UI), 0 failures/errors/skipped**, BUILD SUCCESS,
+lint0, release gate PASS. Окончательные команды/числа — `mobile/artifacts/m3-auth-ui/verification.json`.
+Полный mobile testDebugUnitTest/assembleDebug/lintDebug/release-no-demo gate выполнен
+с REMOTE8770 и explicit debug HTTP. Backend `package` — BUILD SUCCESS, 21 unit test;
+это не новый backend verify/IT suite. Starter validator +6 fixtures PASS. API/backend/
+infra/design assets, версии/зависимости и шрифты не менялись. Документы — AUTH_UI.md,
+spec/plan `docs/superpowers/{specs,plans}/2026-11-01-mobile-auth-ui*.md`.
+
+**Review:** один свежий независимый read-only reviewer: 0 Critical / 1 Important /
+1 Minor. Important исправлен в source: SwiftUI scenePhase/onChange вместо AppDelegate
+scene callbacks. Native RED→GREEN/compile/runtime для этой правки на Windows не заявляется.
+Minor оставлен: имя/email сохраняются при submit/retry, хотя spec описывает очистку шире;
+пароль очищается, background/mode/disposal очищают всё. Подробности в REVIEW.md.
+
+**Открыто:** Mac/Xcode compile/link, Swift interop, Keychain и реальная iOS lifecycle/UI
+приёмка. Нужны HTTPS API и iPhone/Mac; Android screenshot не заменяет iOS. Поддержка
+public launch, backend production/crypto audit и все последующие функции не заявляются.
+Следующий отдельный блок — согласованная saved sync/подтверждаемый guest import;
+автоматически не начинать.
+
+Напарнику: «Auth UI Android подключён к прежнему B2/Starter, живые сценарии прошли.
+Opaque Bearer, без JWT/refresh, контракт не менялся. Guest saved пока локальные;
+sync/import отдельно. Для iOS-приёмки нужен Mac и HTTPS API».
+
 ## M3 block 1: auth core — 31 октября 2026
 
 Поручение пользователя: проверка B2, native secure storage, клиент авторизации и MockEngine. **Без экранов, profile edit, saved sync/guest import, reminders**. Ветка `feat/mobile-auth-core` от `origin/main=92ca815d4c12249cbff829fc3f62b1280bde866d` (PR15/16 уже merged), прежний managed worktree. Commit/push/PR выполняет пользователь. `.agents/` и `.interface-design/` не менялись.

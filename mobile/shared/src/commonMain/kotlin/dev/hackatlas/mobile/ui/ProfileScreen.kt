@@ -105,7 +105,7 @@ private fun ProfileCard(profile: DemoProfile, onEdit: () -> Unit, onDemo: () -> 
 }
 
 @Composable
-private fun ProfileStat(value: Int, label: String, modifier: Modifier) {
+internal fun ProfileStat(value: Int, label: String, modifier: Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(value.toString(), color = AtlasColors.Primary, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
         Text(label, color = AtlasColors.TextMuted, fontSize = 9.sp, lineHeight = 13.sp)
@@ -136,7 +136,8 @@ fun SavedScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen:
 
 @Composable
 fun GuestProfileScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit,
-    onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit, onSettings: () -> Unit) {
+    onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit, onSettings: () -> Unit,
+    authActions: @Composable () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -159,6 +160,7 @@ fun GuestProfileScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, 
                 Text(stringResource(Res.string.profile_motto), color = AtlasColors.Cyan, fontSize = 10.sp, lineHeight = 16.sp)
             }
         }
+        item { authActions() }
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(Res.string.saved_hackathons), Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)

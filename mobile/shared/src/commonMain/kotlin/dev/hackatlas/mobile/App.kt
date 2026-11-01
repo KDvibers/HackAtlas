@@ -22,6 +22,8 @@ import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.platform.rememberExternalActions
 import dev.hackatlas.mobile.resources.*
 import dev.hackatlas.mobile.ui.*
+import dev.hackatlas.mobile.ui.auth.*
+import dev.hackatlas.mobile.data.auth.AuthState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
@@ -60,6 +62,10 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val details by ready.details.state.collectAsState()
     val savedKeys = remember(snapshots) { snapshots.map { it.key }.toSet() }
     val profile = ready.repository?.profile?.collectAsState()?.value
+    val auth = app.auth
+    val authState = auth?.state?.collectAsState()?.value
+    val account = (authState?.session as? AuthState.Authenticated)?.user
+    val authRoute = route == "login" || route == "register"
     val saveableStates = rememberSaveableStateHolder()
     val catalogueScroll = rememberLazyListState()
     val format = displayFormat()
@@ -67,6 +73,11 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val bundled = app.source == CatalogSource.BundledDemo
     val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
+    val closeAuth: () -> Unit = { route = "profile" }
+    LaunchedEffect(route) { if (route == "profile") auth?.refresh() }
+    LaunchedEffect(authState?.session) {
+        if (authRoute && authState?.session is AuthState.Authenticated) route = "profile"
+    }
 
     val openEvent: (Hackathon) -> Unit = { event ->
         previousRoute = route; selectedId = event.id; selectedDemo = event.isDemo; openLocalCopy = false
@@ -98,7 +109,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         ready.catalog.setQuery(it)
         app.ownerScope.launch { catalogueScroll.scrollToItem(0) }
     }
-    BackHandler(enabled = route == "detail" || route == "typography", onBack = back)
+    BackHandler(enabled = route == "detail" || route == "typography" || authRoute,
+        onBack = if (authRoute) closeAuth else back)
     val content = details as? DetailUiState.Content
     val screenKey = if (route == "detail") ready.saved.scope.detailStateKey(
         if (!openLocalCopy && content?.detail?.hackathon?.id == selectedId) content.detail.hackathon.savedKey()
@@ -108,6 +120,11 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         Box(Modifier.weight(1f)) {
             saveableStates.SaveableStateProvider(screenKey) {
                 when (route) {
+                    "login", "register" -> if (auth != null) AuthScreen(auth,
+                        if (route == "register") AuthFormMode.REGISTER else AuthFormMode.LOGIN,
+                        { route = if (it == AuthFormMode.REGISTER) "register" else "login" }, closeAuth)
+                    else GuestProfileScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
+                        { route = "saved" }, { dialog = "settings" })
                     "detail" -> {
                         val matches = content?.detail?.hackathon?.id == selectedId &&
                             if (openLocalCopy) content.snapshot?.key == SavedEventKey(selectedId, selectedDemo) else content.snapshot == null
@@ -127,12 +144,20 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                             }
                         }
                     }
-                    "profile" -> if (profile != null) ProfileScreen(profile.copy(savedCount = snapshots.size),
+                    "profile" -> if (account != null && authState != null && auth != null) AccountProfileScreen(
+                        account, authState, snapshots, format, openSnapshot,
+                        { changeBookmark(it.detail.hackathon, true) }, { route = "saved" }, { dialog = "settings" },
+                        auth::refresh, { dialog = "logout" })
+                    else if (profile != null) ProfileScreen(profile.copy(savedCount = snapshots.size),
                         snapshots.map { it.detail.hackathon }, format,
                         { event -> snapshots.firstOrNull { it.key == event.savedKey() }?.let(openSnapshot) },
                         { changeBookmark(it, true) }, { route = "saved" }, { dialog = "settings" }, { dialog = "feature" }, { dialog = "about" })
                     else GuestProfileScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
-                        { route = "saved" }, { dialog = "settings" })
+                        { route = "saved" }, { dialog = "settings" }, authActions = {
+                            if (auth != null && authState != null) GuestAuthActions(auth, authState,
+                                { auth.dismissFeedback(); route = "login" },
+                                { auth.dismissFeedback(); route = "register" }, { dialog = "logout" })
+                        })
                     "saved" -> SavedScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
                         { route = "home" }, { dialog = "about" }, bundled)
                     "calendar" -> CalendarScreen(snapshots, format, openSnapshot, { route = "home" })
@@ -143,7 +168,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                 }
             }
         }
-        if (route != "detail" && route != "typography") AtlasTabBar(route) { route = it }
+        if (route != "detail" && route != "typography" && !authRoute) AtlasTabBar(route) { route = it }
     }
     val bookmarkFailure = bookmarks.failures.firstOrNull()
     if (bookmarkFailure != null) {
@@ -156,6 +181,17 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             text = { Text(body, color = AtlasColors.TextSecondary) }, containerColor = AtlasColors.SurfaceRaised,
             titleContentColor = AtlasColors.TextPrimary,
             confirmButton = { TextButton(onClick = acknowledge) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
+    } else if (dialog == "logout" && auth != null) {
+        AlertDialog(onDismissRequest = { dialog = null },
+            title = { Text(stringResource(Res.string.auth_logout_title)) },
+            text = { Text(stringResource(Res.string.auth_logout_body), color = AtlasColors.TextSecondary) },
+            containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
+            confirmButton = { TextButton(onClick = { dialog = null; auth.logout() }) {
+                Text(stringResource(Res.string.auth_logout), color = AtlasColors.Primary)
+            } },
+            dismissButton = { TextButton(onClick = { dialog = null }) {
+                Text(stringResource(Res.string.auth_cancel), color = AtlasColors.TextSecondary)
+            } })
     } else if (dialog != null) {
         val title = stringResource(when (dialog) {
             "settings" -> Res.string.settings

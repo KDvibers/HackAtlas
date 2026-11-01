@@ -7,6 +7,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        (application as HackAtlasApplication).onForeground()
+    }
+
+    override fun onPause() {
+        (application as HackAtlasApplication).onBackground()
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge(

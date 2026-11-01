@@ -1,6 +1,6 @@
 # M3 block 1 — session core
 
-Клиент `data/auth/AuthSessionClient.kt` пока не подключён к App/экранам. Создавайте один экземпляр на API scope и закрывайте его при завершении runtime. Каталог использует прежний отдельный public client.
+Клиент `data/auth/AuthSessionClient.kt` подключён к App через process-owned AuthStore/CatalogRuntime в M3 block 2; см. [AUTH_UI](AUTH_UI.md). Создавайте один экземпляр на API scope и закрывайте его при завершении runtime. Каталог использует прежний отдельный public client.
 
 ```kotlin
 val source = CatalogSource.Remote("https://YOUR_HOST/api/v1/")

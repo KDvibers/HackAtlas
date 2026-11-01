@@ -3,6 +3,7 @@ package dev.hackatlas.mobile.ui
 import dev.hackatlas.mobile.data.*
 import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.resources.Res
+import dev.hackatlas.mobile.ui.auth.AuthStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,12 +35,14 @@ class AppState(
     private val fixtureSource: FixtureSource = FixtureSource { name -> Res.readBytes("files/demo/$name").decodeToString() },
     private val catalogEnabled: Boolean = true,
     private val remotePageSize: Int = 20,
+    val auth: AuthStore? = null,
 ) {
     private val mutableState = MutableStateFlow<BootstrapState>(BootstrapState.Loading)
     val state = mutableState.asStateFlow()
     private val loadMutex = Mutex()
 
     suspend fun load() = loadMutex.withLock {
+        auth?.start()
         if (mutableState.value is BootstrapState.Ready) return@withLock
         val selected = source ?: run {
             mutableState.value = BootstrapState.ConfigurationUnavailable
