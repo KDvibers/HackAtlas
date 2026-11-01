@@ -14,6 +14,7 @@ data class AuthUiState(
     val fields: AuthFormErrors = AuthFormErrors(),
     val notice: AuthNotice? = null,
     val formRevision: Long = 0,
+    val localIdentity: LocalSessionIdentity? = null,
 ) {
     val canAuthenticate get() = busy == null && (session == AuthState.SignedOut || session == AuthState.SignInRequired)
     override fun toString() = "AuthUiState(busy=$busy,error=$error,notice=$notice)"
@@ -24,6 +25,14 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
     private val mutableState = MutableStateFlow(AuthUiState())
     val state = mutableState.asStateFlow()
     private var started = false
+
+    init {
+        scope.launch { combine(client.state, client.localIdentity) { session, identity -> session to identity }.collect { (session, identity) ->
+            val current = mutableState.value
+            if (current.busy != AuthOperation.LOGOUT) mutableState.value = current.copy(
+                session = session, localIdentity = identity)
+        } }
+    }
 
     fun start() {
         if (started) return
@@ -79,6 +88,7 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
         val previous = mutableState.value
         mutableState.value = previous.copy(
             session = if (operation == AuthOperation.LOGOUT) AuthState.NotLoaded else previous.session,
+            localIdentity = if (operation == AuthOperation.LOGOUT) null else previous.localIdentity,
             busy = operation, error = null, fields = AuthFormErrors(), notice = null,
         )
         scope.launch {
@@ -89,7 +99,8 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
             } catch (failed: AuthException) {
                 mutableState.value = mutableState.value.copy(error = failed.error)
             } finally {
-                mutableState.value = mutableState.value.copy(session = client.state.value, busy = null)
+                mutableState.value = mutableState.value.copy(session = client.state.value,
+                    localIdentity = client.localIdentity.value, busy = null)
             }
         }
     }

@@ -30,7 +30,8 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: List<SavedGuestEvent>, format: DisplayFormat,
     onOpen: (SavedGuestEvent) -> Unit, onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit,
-    onSettings: () -> Unit, onRefresh: () -> Unit, onLogout: () -> Unit) {
+    onSettings: () -> Unit, onRefresh: () -> Unit, onLogout: () -> Unit,
+    accountSaved: Boolean = false, savedRemoveEnabled: Boolean = true, savedStatus: @Composable () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
@@ -91,14 +92,15 @@ fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: Lis
         item {
             HorizontalDivider(color = AtlasColors.Border)
             Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(Res.string.auth_local_saved), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+                Text(stringResource(if(accountSaved) Res.string.account_saved_title else Res.string.auth_local_saved), Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
                 TextButton(onClick = onAllSaved) { Text(stringResource(Res.string.all)) }
             }
-            Text(stringResource(Res.string.auth_local_saved_note), color = AtlasColors.TextSecondary,
+            Text(stringResource(if(accountSaved) Res.string.account_cache_note else Res.string.auth_local_saved_note), color = AtlasColors.TextSecondary,
                 style = MaterialTheme.typography.bodySmall)
         }
+        item { savedStatus() }
         items(snapshots.take(3), key = { it.key.listKey() }) { snapshot ->
-            HackathonMiniCard(snapshot.detail.hackathon, format, { onOpen(snapshot) }, { onRemove(snapshot) })
+            HackathonMiniCard(snapshot.detail.hackathon, format, { onOpen(snapshot) }, { onRemove(snapshot) }, removeEnabled = savedRemoveEnabled)
         }
     }
 }

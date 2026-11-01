@@ -113,21 +113,23 @@ internal fun ProfileStat(value: Int, label: String, modifier: Modifier) {
 }
 
 @Composable
-fun SavedScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit, onRemove: (SavedGuestEvent) -> Unit, onCatalog: () -> Unit, onDemo: () -> Unit, bundled: Boolean = true) {
+fun SavedScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit, onRemove: (SavedGuestEvent) -> Unit, onCatalog: () -> Unit, onDemo: () -> Unit, bundled: Boolean = true,
+    accountMode: Boolean = false, showEmpty: Boolean = true, removeEnabled: Boolean = true, statusContent: @Composable () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             PixelHeading(stringResource(Res.string.saved), fontSize = 23.sp)
             Spacer(Modifier.height(10.dp))
-            Text(stringResource(Res.string.saved_local_subtitle), color = AtlasColors.Cyan, fontSize = 12.sp)
+            Text(stringResource(if(accountMode) Res.string.account_saved_subtitle else Res.string.saved_local_subtitle), color = AtlasColors.Cyan, fontSize = 12.sp)
             Spacer(Modifier.height(7.dp))
             Text(stringResource(Res.string.snapshot_note), color = AtlasColors.TextSecondary, fontSize = 12.sp, lineHeight = 17.sp)
             if (bundled) DemoBadge(onDemo)
         }
-        if (snapshots.isEmpty()) item { StatePanel(stringResource(Res.string.empty_saved), stringResource(Res.string.empty_saved_body), stringResource(Res.string.go_catalog), onCatalog) }
+        item { statusContent() }
+        if (snapshots.isEmpty() && showEmpty) item { StatePanel(stringResource(Res.string.empty_saved), stringResource(Res.string.empty_saved_body), stringResource(Res.string.go_catalog), onCatalog) }
         items(snapshots, key = { it.key.listKey() }) { snapshot ->
             val event = snapshot.detail.hackathon
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                HackathonMiniCard(event, format, { onOpen(snapshot) }, { onRemove(snapshot) }, showDemoLabel = !bundled)
+                HackathonMiniCard(event, format, { onOpen(snapshot) }, { onRemove(snapshot) }, showDemoLabel = !bundled, removeEnabled = removeEnabled)
                 Text(stringResource(Res.string.snapshot_captured, format.snapshotTimestamp(snapshot.savedAt)), color = AtlasColors.TextMuted, fontSize = 11.sp)
             }
         }

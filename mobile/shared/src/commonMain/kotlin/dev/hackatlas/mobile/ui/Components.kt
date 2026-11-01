@@ -138,7 +138,7 @@ fun HackathonCard(event: Hackathon, saved: Boolean, format: DisplayFormat, onOpe
 }
 
 @Composable
-fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Unit, onRemove: () -> Unit, showDemoLabel: Boolean = true) {
+fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Unit, onRemove: () -> Unit, showDemoLabel: Boolean = true, removeEnabled: Boolean = true) {
     val shape = RoundedCornerShape(11.dp)
     Box(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border.copy(alpha = .65f), shape).clickable(role = Role.Button, onClick = onOpen)) {
         ArtworkView(event.artwork, Modifier.align(Alignment.CenterEnd).width(105.dp).height(75.dp).padding(end = 28.dp), .66f)
@@ -148,7 +148,7 @@ fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Uni
                 Text(event.title, Modifier.fillMaxWidth(.84f), style = MaterialTheme.typography.titleMedium, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                 Text("${format.range(event)} · ${format.location(event)}", Modifier.fillMaxWidth(.82f), color = AtlasColors.TextSecondary, fontSize = 10.sp, lineHeight = 14.sp)
             }
-            IconAction(AtlasIcon.Bookmark, stringResource(Res.string.unsave_event), onRemove, AtlasColors.Primary)
+            IconAction(AtlasIcon.Bookmark, stringResource(Res.string.unsave_event), onRemove, AtlasColors.Primary, enabled = removeEnabled)
         }
     }
 }

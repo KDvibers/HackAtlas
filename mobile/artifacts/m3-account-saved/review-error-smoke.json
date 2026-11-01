@@ -1,0 +1,17 @@
+{
+  "source": "real local B2, disposable PostgreSQL, synthetic accounts and DEMO catalogue",
+  "checks": [
+    {
+      "name": "account mutation failure is visible on the detail screen with explicit ambiguous-outcome wording",
+      "status": "PASS"
+    },
+    {
+      "name": "authoritative removal/archival clears already-open snapshot and stale registration CTA",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "restoreErrors": [],
+  "fullAcceptance": true,
+  "ios": "source only; Mac/Xcode required"
+}

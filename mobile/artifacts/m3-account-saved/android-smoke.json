@@ -1,0 +1,37 @@
+{
+  "source": "real local B2, disposable PostgreSQL, synthetic accounts and DEMO catalogue",
+  "checks": [
+    {
+      "name": "account starts empty, guest data retained, declining copy makes no server changes",
+      "status": "PASS"
+    },
+    {
+      "name": "explicit confirmed copy uses real PUTs, durable per-item journal, full snapshots and unchanged guest bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "real account DELETE/PUT, catalogue membership and account calendar; guest bytes unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "cold offline restore uses matching account cache; detail/calendar work; mutations disabled; no fake profile",
+      "status": "PASS"
+    },
+    {
+      "name": "logout removes private cache/credential and restores original guest saved without conversion",
+      "status": "PASS"
+    },
+    {
+      "name": "second account sees neither first account snapshots nor silent guest import",
+      "status": "PASS"
+    },
+    {
+      "name": "account status/copy controls remain reachable at360dp and font130%",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "restoreErrors": [],
+  "fullAcceptance": true,
+  "ios": "source only; Mac/Xcode required"
+}

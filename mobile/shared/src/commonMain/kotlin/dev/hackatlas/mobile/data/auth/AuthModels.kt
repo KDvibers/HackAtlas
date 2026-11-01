@@ -29,6 +29,11 @@ sealed interface AuthError {
 class AuthException(val error: AuthError) : Exception("Auth request failed: $error")
 class SecureStorageException : Exception("Secure session storage unavailable")
 
+/** Locally validated credential metadata, never proof of current server acceptance. */
+data class LocalSessionIdentity(val userId: String, val expiresAt: String) {
+    override fun toString() = "LocalSessionIdentity([REDACTED])"
+}
+
 sealed interface LogoutResult {
     data object Revoked : LogoutResult
     data object AlreadyInvalid : LogoutResult

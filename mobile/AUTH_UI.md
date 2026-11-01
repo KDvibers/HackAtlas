@@ -1,5 +1,9 @@
 # M3 block 2: авторизация в приложении
 
+Этот документ фиксирует границу второго блока. Последующий блок закладок аккаунта,
+private offline cache и подтверждённого guest-copy описан в [ACCOUNT_SAVED](ACCOUNT_SAVED.md).
+Там обновлено поведение saved/календаря после входа; auth screens остаются прежними.
+
 Общий Compose UI использует готовый [auth core](AUTH_CORE.md). `CatalogRuntime`
 владеет одним AuthSessionClient/AuthStore для фиксированного REMOTE API URL;
 Android Application и iOS process runtime передают Keystore/Keychain factories.

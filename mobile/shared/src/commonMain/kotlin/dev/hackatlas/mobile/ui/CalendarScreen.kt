@@ -32,7 +32,8 @@ import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun CalendarScreen(saved: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit, onCatalog: () -> Unit) {
+fun CalendarScreen(saved: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit, onCatalog: () -> Unit,
+    statusContent: @Composable () -> Unit = {}) {
     val today = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
     var monthText by rememberSaveable { mutableStateOf(SavedCalendar.shiftMonth(today, 0).toString()) }
     var selectedText by rememberSaveable { mutableStateOf(today.toString()) }
@@ -61,6 +62,7 @@ fun CalendarScreen(saved: List<SavedGuestEvent>, format: DisplayFormat, onOpen: 
             Spacer(Modifier.height(10.dp))
             Text(stringResource(Res.string.calendar_subtitle), color = AtlasColors.TextSecondary, fontSize = 12.sp)
         }
+        item { statusContent() }
         if (saved.isEmpty()) {
             item { StatePanel(stringResource(Res.string.calendar_empty), stringResource(Res.string.calendar_empty_body), stringResource(Res.string.go_catalog), onCatalog) }
         } else {

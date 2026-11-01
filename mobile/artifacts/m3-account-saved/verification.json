@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-01",
+  "branch": "feat/mobile-account-saved",
+  "base": "991be66123b5f791d0ee9a33302b9d681170e345",
+  "scope": "M3 account saved/confirmed guest copy; server mutations/read-only offline, no outbox",
+  "mobile": {
+    "releaseGate": "PASS",
+    "apiBaseUrl": "http://10.0.2.2:8771/api/v1/",
+    "lint": "No issues found",
+    "apkSha256": "62b70d103cf3928793d68d42e8318251ce3a90af9fd7727f12140e8485a42f1c",
+    "command": ".\\gradlew.bat :shared:testDebugUnitTest --rerun :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain -Phackatlas.debugSource=REMOTE -Phackatlas.debugApiBaseUrl=http://10.0.2.2:8771/api/v1/ -Phackatlas.allowDebugHttp=true",
+    "result": "BUILD SUCCESSFUL",
+    "newTests": 23,
+    "errors": 0,
+    "failures": 0,
+    "log": "mobile/build/m3-account-saved/final-verification.log",
+    "apk": "mobile/build/m3-account-saved/HackAtlas-account-saved-debug.apk",
+    "tests": 211,
+    "skipped": 0
+  },
+  "contract": {
+    "apiChanged": false,
+    "starter": "PASS",
+    "examples": 6
+  },
+  "backend": {
+    "sourceChanged": false,
+    "result": "BUILD SUCCESS",
+    "verifyIntegrationRerun": false,
+    "unitTests": 21,
+    "command": "mvnw.cmd --batch-mode --no-transfer-progress package"
+  },
+  "review": {
+    "detail": "REVIEW.md",
+    "reviews": 1,
+    "minor": 0,
+    "reReview": false,
+    "critical": 0,
+    "importantFixed": 3,
+    "important": 3,
+    "regressions": [
+      "removedAccountSnapshotRefetchesPublicDetailAndRejectsArchivedCta RED->GREEN",
+      "sameTotalPaginationRaceKeepsPreviousCompleteCache RED->GREEN",
+      "native account mutation-error detail dialog RED->GREEN; archived snapshot smoke PASS"
+    ]
+  },
+  "android": {
+    "cleanup": "Owned emulator and backend stopped, disposable container removed after ID verification, DB env file removed; display/network/guest bytes restored",
+    "guestBytesPreserved": true,
+    "backend": "Real current B2/dev, disposable PostgreSQL",
+    "device": "Pixel8 Android17/API37,4GB",
+    "mainSmoke": "android-smoke.json",
+    "reviewSmoke": "review-error-smoke.json",
+    "credentialsInArtifacts": false,
+    "fullAcceptance": true,
+    "mainGroupsPassed": 7,
+    "reviewGroupsPassed": 2,
+    "restoreErrors": []
+  },
+  "ios": {
+    "compile": false,
+    "sourceAdaptersWired": true,
+    "fileProtectionBackupKeychainVerified": false,
+    "runtime": false,
+    "required": "Mac/Xcode/iPhone and HTTPS B2"
+  },
+  "limitations": [
+    "No absolute snapshot consistency without API revision; bounded ordered rescan for multi-page replacement",
+    "200 page safety bound retains previous cache with explicit error",
+    "Server mutations only; no offline outbox",
+    "Guest bytes always kept; private copy journal cleared at logout",
+    "Profile edit/application marks/reminders/deletion/reset/verification/release excluded"
+  ],
+  "git": {
+    "staged": false,
+    "prCreated": false,
+    "committed": false,
+    "pushed": false
+  }
+}

@@ -1,5 +1,78 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M3 block3: account saved / confirmed guest copy — 1 ноября 2026
+
+Пользователь сообщил merge PR20 и поручил следующий этап. Явно выбрано:
+**изменения через сервер, без сети — просмотр кеша**, без outbox. Ветка
+`feat/mobile-account-saved` от `origin/main=991be66` (merged PR20).
+Commit/push/PR выполняет пользователь; прежний worktree сохранён.
+
+**Код:** AuthSessionClient получил GET saved/PUT/DELETE с проверкой expectedUserId
+под credential mutex и локальную identity userId/expiresAt для offline restore.
+Identity не означает подтверждённый профиль/право записи; protected401/expiry
+очищают её. AuthStore наблюдает общий client state/identity и получает saved401.
+Новые `data/saved/AccountCache.kt`, Android/iOS cache adapters,
+`ui/saved/{AccountSavedStore,AccountSavedStatus}.kt` и тесты. AppState/Runtime/native
+factories/App/Saved/Profile/Calendar/DetailStore подключают account ownership.
+
+Кеш source/owner-scoped, version1, полные event snapshots/freshness и журнал
+подтверждённых копирований. Profile/password/token в JSON не пишутся. Guest schema
+и файлы не меняются. Полная staged загрузка страниц/details предшествует atomic
+cache replace, owner epoch отбрасывает поздние ответы, mutex упорядочивает write/clear.
+Logout/switch удаляют cache и скрывают private navigation; cleanup failure блокирует
+доступ и даёт повтор. Android noBackupFilesDir; iOS protected/excluded-from-backup
+ApplicationSupport подготовлен в исходниках, native-приёмка остаётся открытой.
+
+Guest copy запускается только после подтверждения числа и аккаунта. ID/isDemo
+проверяется public detail; success каждого PUT сохраняется до следующего.
+Частичный сбой допускает повтор без дублей; guest bytes **не удаляются даже после
+успеха**. Нет silent import между владельцами/источниками. Account saved и календарь
+показывают matching cache, offline mutations disabled. Каталог без login-wall.
+Утверждённые visual/fonts/assets сохранены, зависимости не добавлены.
+
+**Проверки:** полный shared suite **211 PASS (23 новых), 0 failures/errors/skipped**,
+assembleDebug/lintDebug0/release-no-demo gate PASS. Starter validator +6fixtures PASS.
+Backend package — BUILD SUCCESS,21unit tests (не повторный verify/IT).
+MockEngine/cache tests: scoped headers/owner/401, missing credential identity,
+offline restore, corruption/write/clear errors, canceled late write/logout,
+partial import/retry/guest preservation, cold cache, detail reset/removal,
+same-total pagination race. Evidence `mobile/build/m3-account-saved/` (ignored),
+`mobile/artifacts/m3-account-saved/verification.json` и native JSON.
+
+**Review:** одно независимое read-only review,0Critical/3Important/0Minor.
+Все3исправлены одним проходом: исчезнувший snapshot рефетчит public detail
+(archived404 скрывает CTA), account errors видны в catalogue/detail, multi-page
+состав сверяется второй ограниченной упорядоченной выборкой. Регрессии RED→GREEN,
+полный211suite GREEN; повторный reviewer не запускался.
+`asOf` не snapshot revision: абсолютная транзакционная согласованность не обещается.
+Предел200страниц/наблюдённый mismatch сохраняют прежнюю копию с ошибкой.
+
+**Live Android:** отдельный актуальный B2 JAR8771 и собственная disposable PostgreSQL,
+synthetic accounts, DEMO catalogue. Основной smoke7групп: отказ/подтверждение guest
+copy, real PUT/DELETE, private cache/journal, account calendar, cold offline
+saved/detail/calendar/profile-warning, logout cleanup/guest bytes unchanged,
+второй аккаунт без прежних данных и 360dp/font130%. Дополнительные native-regressions:
+ошибка offline mutation видна на details, архивирование уже открытого snapshot
+удаляет старый CTA. Финальный прогон/restoreErrors отражены в JSON, screenshot
+обзор `review.html`; no credentials в artifacts.
+
+Финальный APK повторно прошёл основной live7/7 и отдельный review2/2 сценарий;
+оба fullAcceptance=true, restoreErrors пуст. Собственные emulator/backend остановлены,
+одноразовый DB-container удалён после проверки ID, временный env удалён; guest bytes
+и display/network настройки восстановлены. APK в ignored
+`mobile/build/m3-account-saved/HackAtlas-account-saved-debug.apk`, настроен на8771.
+
+**Границы:** API/backend/infra/design assets/versions не менялись. iOS compile,
+Foundation protections/backup exclusion/Keychain/runtime/device приёмка на Windows
+не выполнены; нужен Mac/iPhone/HTTPS endpoint. Outbox, profile edit, application
+marks, reminders, deletion/reset/verification, production crypto audit и release
+не входят. Следующий отдельный блок после приёмки — согласовать profile edit и
+личную отметку заявки; автоматически не начинать.
+
+Напарнику: «Account saved + подтверждаемый copy guest подключены по Starter/B2,
+контракт unchanged. Offline read-only, guest bytes сохраняем, токен только в native
+secure store. Android проверен на отдельной dev DB, для iOS нужен Mac/HTTPS».
+
 ## M3 block 2: auth UI / hosts — 1 ноября 2026
 
 По поручению пользователя подключены вход, регистрация, настоящий профиль и

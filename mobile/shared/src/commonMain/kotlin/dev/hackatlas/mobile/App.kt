@@ -23,6 +23,8 @@ import dev.hackatlas.mobile.platform.rememberExternalActions
 import dev.hackatlas.mobile.resources.*
 import dev.hackatlas.mobile.ui.*
 import dev.hackatlas.mobile.ui.auth.*
+import dev.hackatlas.mobile.ui.saved.*
+import dev.hackatlas.mobile.ui.auth.AuthOperation
 import dev.hackatlas.mobile.data.auth.AuthState
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringArrayResource
@@ -56,17 +58,32 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     var openLocalCopy by rememberSaveable { mutableStateOf(false) }
     var dialog by remember { mutableStateOf<String?>(null) }
     val bookmarks by ready.bookmarks.state.collectAsState()
-    val pendingKeys = bookmarks.pendingKeys
-    val snapshots by ready.saved.entries.collectAsState()
+    val guestSnapshots by ready.saved.entries.collectAsState()
     val catalog by ready.catalog.state.collectAsState()
     val details by ready.details.state.collectAsState()
-    val savedKeys = remember(snapshots) { snapshots.map { it.key }.toSet() }
     val profile = ready.repository?.profile?.collectAsState()?.value
     val auth = app.auth
     val authState = auth?.state?.collectAsState()?.value
     val account = (authState?.session as? AuthState.Authenticated)?.user
+    val accountSaved = ready.accountSaved
+    val savedState = accountSaved?.state?.collectAsState()?.value
+    val accountMode = accountSaved != null && (savedState?.mode != SavedMode.GUEST || authState?.localIdentity != null || authState?.busy == AuthOperation.LOGOUT)
+    val identity = authState?.localIdentity?.userId
+    val cacheVisible = savedState?.mode == SavedMode.ACCOUNT && savedState.ownerId == identity && authState?.busy != AuthOperation.LOGOUT
+    val snapshots = if(accountMode) savedState?.entries?.takeIf { cacheVisible }.orEmpty() else guestSnapshots
+    val activeOwner = if(accountMode) identity ?: "pending" else "guest"
+    val canWrite = !accountMode || (cacheVisible && savedState?.writable == true && !savedState.syncing)
+    val savedKeys = remember(snapshots) { snapshots.map { it.key }.toSet() }
+    val pendingKeys = if(!canWrite) (catalog.items.map { it.savedKey() } + snapshots.map { it.key } +
+        listOfNotNull((details as? DetailUiState.Content)?.detail?.hackathon?.savedKey())).toSet()
+        else if(accountMode) savedState?.pendingKeys.orEmpty() else bookmarks.pendingKeys
+    var selectedSavedOwner by remember { mutableStateOf<String?>(null) }
+    var importCandidates by remember { mutableStateOf<List<SavedGuestEvent>?>(null) }
+    var importOwner by remember { mutableStateOf<String?>(null) }
     val authRoute = route == "login" || route == "register"
     val saveableStates = rememberSaveableStateHolder()
+    val privateStateKeys = remember { mutableSetOf<String>() }
+    var previousOwner by remember { mutableStateOf(activeOwner) }
     val catalogueScroll = rememberLazyListState()
     val format = displayFormat()
     val externalActions = rememberExternalActions()
@@ -74,6 +91,20 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
     val closeAuth: () -> Unit = { route = "profile" }
+    val savedStatus: @Composable () -> Unit = {
+        if(accountSaved != null && savedState != null) AccountSavedStatus(accountSaved, savedState, guestSnapshots, format,
+            onImport = { importCandidates = guestSnapshots.toList(); importOwner = identity })
+    }
+    LaunchedEffect(activeOwner) {
+        if(previousOwner != activeOwner) {
+            privateStateKeys.forEach(saveableStates::removeState); privateStateKeys.clear()
+            if(openLocalCopy && selectedSavedOwner != activeOwner) {
+                route = "home"; selectedId = ""; selectedSavedOwner = null; openLocalCopy = false
+            }
+            if(importOwner != identity) importCandidates = null
+            previousOwner = activeOwner
+        }
+    }
     LaunchedEffect(route) { if (route == "profile") auth?.refresh() }
     LaunchedEffect(authState?.session) {
         if (authRoute && authState?.session is AuthState.Authenticated) route = "profile"
@@ -84,26 +115,34 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         ready.details.open(event.id); route = "detail"
     }
     val openSnapshot: (SavedGuestEvent) -> Unit = { snapshot ->
+        selectedSavedOwner = activeOwner
         previousRoute = route; selectedId = snapshot.key.id; selectedDemo = snapshot.key.isDemo; openLocalCopy = true
         ready.details.showSnapshot(snapshot); route = "detail"
     }
     // Restores navigation after host recreation without refetching an already opened local copy.
-    LaunchedEffect(route, selectedId, selectedDemo, openLocalCopy, catalog.items.firstOrNull()?.id) {
+    LaunchedEffect(route, selectedId, selectedDemo, openLocalCopy, catalog.items.firstOrNull()?.id, activeOwner, snapshots, savedState?.cachedAt, cacheVisible) {
         if (route == "detail") {
             if (selectedId.isEmpty()) {
                 catalog.items.firstOrNull()?.let { selectedId = it.id; selectedDemo = it.isDemo }
             } else {
                 val content = ready.details.state.value as? DetailUiState.Content
                 if (openLocalCopy) {
-                    if (content?.snapshot?.key != SavedEventKey(selectedId, selectedDemo))
-                        snapshots.firstOrNull { it.key == SavedEventKey(selectedId, selectedDemo) }?.let(ready.details::showSnapshot)
+                    val currentSnapshot = snapshots.firstOrNull { it.key == SavedEventKey(selectedId, selectedDemo) }
+                    if(accountMode && cacheVisible && savedState?.cachedAt != null && currentSnapshot == null) {
+                        openLocalCopy = false
+                        if(content?.snapshot != null) ready.details.reconcileAccountSnapshots(snapshots)
+                        else ready.details.open(selectedId)
+                    } else currentSnapshot?.takeIf { it != content?.snapshot }?.let {
+                            selectedSavedOwner = activeOwner; ready.details.showSnapshot(it)
+                        }
                 } else if (ready.details.state.value == DetailUiState.Idle) ready.details.open(selectedId)
             }
         }
     }
 
     fun changeBookmark(event: Hackathon, remove: Boolean, snapshot: SavedGuestEvent? = null) {
-        ready.bookmarks.change(event, remove, snapshot)
+        if(accountMode) accountSaved?.change(event, remove)
+        else ready.bookmarks.change(event, remove, snapshot)
     }
     val onQuery: (CatalogQuery) -> Unit = {
         ready.catalog.setQuery(it)
@@ -112,9 +151,10 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     BackHandler(enabled = route == "detail" || route == "typography" || authRoute,
         onBack = if (authRoute) closeAuth else back)
     val content = details as? DetailUiState.Content
-    val screenKey = if (route == "detail") ready.saved.scope.detailStateKey(
+    val screenKey = "$activeOwner:" + if (route == "detail") ready.saved.scope.detailStateKey(
         if (!openLocalCopy && content?.detail?.hackathon?.id == selectedId) content.detail.hackathon.savedKey()
         else SavedEventKey(selectedId, selectedDemo), openLocalCopy) else "$sourceId:$route"
+    if(activeOwner != "guest") privateStateKeys.add(screenKey)
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f)) {
@@ -126,7 +166,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                     else GuestProfileScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
                         { route = "saved" }, { dialog = "settings" })
                     "detail" -> {
-                        val matches = content?.detail?.hackathon?.id == selectedId &&
+                        val present = !accountMode || !openLocalCopy || savedState?.cachedAt == null || snapshots.any { it.key == SavedEventKey(selectedId, selectedDemo) }
+                        val matches = present && (!openLocalCopy || !accountMode || cacheVisible) && (!openLocalCopy || selectedSavedOwner == activeOwner) && content?.detail?.hackathon?.id == selectedId &&
                             if (openLocalCopy) content.snapshot?.key == SavedEventKey(selectedId, selectedDemo) else content.snapshot == null
                         if (matches) {
                             val event = content.detail.hackathon
@@ -144,10 +185,13 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                             }
                         }
                     }
-                    "profile" -> if (account != null && authState != null && auth != null) AccountProfileScreen(
+                    "profile" -> if (account != null) AccountProfileScreen(
                         account, authState, snapshots, format, openSnapshot,
                         { changeBookmark(it.detail.hackathon, true) }, { route = "saved" }, { dialog = "settings" },
-                        auth::refresh, { dialog = "logout" })
+                        auth::refresh, { dialog = "logout" }, accountSaved = accountMode,
+                        savedRemoveEnabled = canWrite, savedStatus = savedStatus)
+                    else if(authState?.localIdentity != null) UnverifiedAccountProfile(auth, authState,
+                        { dialog = "logout" }, savedStatus)
                     else if (profile != null) ProfileScreen(profile.copy(savedCount = snapshots.size),
                         snapshots.map { it.detail.hackathon }, format,
                         { event -> snapshots.firstOrNull { it.key == event.savedKey() }?.let(openSnapshot) },
@@ -159,8 +203,10 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                                 { auth.dismissFeedback(); route = "register" }, { dialog = "logout" })
                         })
                     "saved" -> SavedScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
-                        { route = "home" }, { dialog = "about" }, bundled)
-                    "calendar" -> CalendarScreen(snapshots, format, openSnapshot, { route = "home" })
+                        { route = "home" }, { dialog = "about" }, bundled, accountMode = accountMode,
+                        showEmpty = !accountMode || (cacheVisible && savedState?.cachedAt != null && !savedState.syncing),
+                        removeEnabled = canWrite, statusContent = savedStatus)
+                    "calendar" -> CalendarScreen(snapshots, format, openSnapshot, { route = "home" }, savedStatus)
                     "typography" -> TypographyScreen(back)
                     else -> CatalogueScreen(catalog, savedKeys, pendingKeys, format, onQuery, catalogueScroll,
                         openEvent, { changeBookmark(it, it.savedKey() in savedKeys) }, { dialog = "about" },
@@ -171,7 +217,34 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         if (route != "detail" && route != "typography" && !authRoute) AtlasTabBar(route) { route = it }
     }
     val bookmarkFailure = bookmarks.failures.firstOrNull()
-    if (bookmarkFailure != null) {
+    val accountError = savedState?.error
+    if(importCandidates != null && accountSaved != null) {
+        val captured = importCandidates.orEmpty()
+        AlertDialog(onDismissRequest = { importCandidates = null },
+            title = { Text(stringResource(Res.string.account_copy_title)) },
+            text = { Text(stringResource(Res.string.account_copy_body, captured.size, account?.displayName.orEmpty())) },
+            containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
+            confirmButton = { TextButton(onClick = {
+                if(identity == importOwner && savedState?.writable == true) accountSaved.importGuest(captured)
+                importCandidates = null
+            }) { Text(stringResource(Res.string.account_copy_confirm)) } },
+            dismissButton = { TextButton(onClick = { importCandidates = null }) { Text(stringResource(Res.string.auth_cancel)) } })
+    }
+    if(accountError != null && (route == "home" || route == "detail")) {
+        AlertDialog(onDismissRequest = accountSaved::dismissError,
+            title = { Text(stringResource(Res.string.account_sync_error_title)) },
+            text = { Text(stringResource(when(accountError) {
+                SavedFailure.Storage -> Res.string.account_write_error
+                SavedFailure.ReadOnly -> Res.string.account_read_only
+                SavedFailure.Busy -> Res.string.account_busy
+                else -> Res.string.account_sync_error
+            }), color = AtlasColors.TextSecondary) },
+            containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
+            confirmButton = { TextButton(onClick = { accountSaved.dismissError(); accountSaved.refresh() }) {
+                Text(stringResource(Res.string.account_refresh))
+            } },
+            dismissButton = { TextButton(onClick = accountSaved::dismissError) { Text(stringResource(Res.string.understood)) } })
+    } else if (bookmarkFailure != null) {
         val acknowledge = { ready.bookmarks.acknowledgeFailure(bookmarkFailure.id) }
         val body = when (val error = bookmarkFailure.error) {
             BookmarkError.Storage -> stringResource(Res.string.storage_write_error_body)
