@@ -54,4 +54,26 @@ python scripts/security/container_policy.py --evidence backend/target/container-
 
 Неполная повторная проверка заменяет прежний readiness-результат на blocked, чтобы устаревший PASS не сохранился после ошибки. Всегда учитывайте exit code и `checkedAt`.
 
-В GitHub Actions добавлен отдельный ручной workflow **External release readiness** (`workflow_dispatch`). Он выполняет Maven verify, OSV, локальный HTTPS/restore и container gate; известные blockers завершают его ошибкой. JSON/log evidence сохраняются на 7 дней, в том числе при blocked. Workflow ничего не разворачивает. Обычный Backend CI проверяет также unit tests политики; его успешный статус не заменяет ручную проверку внешнего выпуска.
+В GitHub Actions добавлен отдельный ручной workflow **External release readiness** (`workflow_dispatch`). Он выполняет Maven verify, OSV, локальный HTTPS/restore, container gate и аудит recovery tool; известные blockers завершают его ошибкой. JSON/log evidence сохраняются на 7 дней, в том числе при blocked. Workflow ничего не разворачивает. Обычный Backend CI проверяет также unit tests политики; его успешный статус не заменяет ручную проверку внешнего выпуска.
+
+## Операторский инструмент B4.5
+
+`audit_recovery_tool.py` проверяет закреплённый restic binary, а не исходники Java
+и не контейнеры приложения. Использует тот же pinned Trivy, `rootfs` для Go binary,
+свежую advisory DB, read-only input, offline scan без Docker socket и отдельный
+owned cache с проверяемой очисткой. `filesystem` scan без Go inventory не считается
+успешной проверкой. Версии main module/stdlib и findings должны присутствовать в
+достаточном inventory; unversioned packages не получают молчаливого исключения.
+
+```bash
+python scripts/security/audit_recovery_tool.py \
+  --restic backend/target/restic-0.19.1 \
+  --output-dir backend/target/recovery-tool-audit-unique
+```
+
+Exit 0 — dependency gate, 1 — findings/inventory gap, 2 — незавершённая процедура.
+`publicReleaseReady` всегда false: этот audit не разрешает deployment. Новый output
+directory обязателен, старое evidence не перезаписывается. Restic 0.19.1 сейчас
+заблокирован для реальных данных: [фактический отчёт](../../docs/research/2026-10-31-recovery-tool-security.md).
+Manual workflow запускает этот audit и при провале предыдущего container gate;
+только package evidence попадает в artifacts. Private snapshots/ключи не публикуются.

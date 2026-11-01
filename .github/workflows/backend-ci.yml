@@ -118,6 +118,7 @@ jobs:
       - name: Rehearse local HTTPS release and backup restoration on disposable resources
         working-directory: .
         run: |
+          scripts/b1/.venv/bin/python scripts/b4/install_restic.py --output backend/target/restic-0.19.1
           scripts/b1/.venv/bin/python -m unittest discover -s scripts/b4 -p 'test_*.py'
           scripts/b1/.venv/bin/python scripts/b4/run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b4-rehearsal
       - name: Preserve bounded release verification reports
