@@ -1,6 +1,10 @@
 # Подтверждение почты и восстановление пароля: предложение
 
-Дата: 1 ноября 2026. **DRAFT — ждёт согласования backend/mobile. Реализация не разрешена этим документом.**
+Дата: 1 ноября 2026. **Целевой дизайн из merged PR #22; реализация этим документом не разрешена.**
+
+Поручена только подготовка canonical 0.1.1. Её [план совместимости](../../../api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md)
+использует optional flag, planned endpoints и LifecycleProblem без activation.
+Required flag/новые ошибки старых маршрутов ниже относятся к будущему 0.2.
 
 База обсуждения: main `991be66123b5f791d0ee9a33302b9d681170e345`, включая
 PR #19 и мобильный PR #20 с экранами авторизации. Единственный действующий контракт
@@ -11,9 +15,11 @@ PR #19 и мобильный PR #20 с экранами авторизации. 
 ## Задача и ограничения
 
 Перед публичной регистрацией ROADMAP требует подтверждать владение почтой и
-восстанавливать забытый пароль. Сейчас register выдаёт полноценную сессию, Profile
-не содержит verification state, reset отсутствует. Мобильные core и UI уже используют
-register → AuthResponse и register/login/logout/me; saved sync ещё не подключён.
+восстанавливать забытый пароль. На базе исходного предложения register выдавал
+полноценную сессию, Profile не содержал verification state, reset отсутствовал.
+Мобильные core и UI использовали register → AuthResponse и register/login/logout/me;
+saved sync тогда ещё не был подключён. В нынешнем main account saved/guest copy уже
+подключены PR #21; это учтено в переходном плане совместимости выше.
 
 Сохраняются Java 21/Spring Boot/PostgreSQL, opaque Bearer и абсолютный expiresAt.
 Нет JWT, refresh, OAuth/IdP, смены email, passwordless login, MFA, новых социальных

@@ -1,9 +1,11 @@
 openapi: 3.1.0
 info:
   title: HackAtlas Mobile API
-  version: 0.1.0
+  version: 0.1.1
   description: Проектный контракт для общей реализации. Наличие операции в спецификации
     не означает, что она реализована. Этап указан в x-phase. Семантика в README.md.
+x-account-lifecycle-stage: contract-only
+x-email-verification-enforced: false
 servers:
 - url: http://localhost:8080/api/v1
   description: Только локальная разработка; base URL переопределяется под устройство.
@@ -314,6 +316,7 @@ paths:
       operationId: login
       summary: Войти в HackAtlas
       x-phase: B2
+      x-password-recovery-after-restore: planned
       security: []
       responses:
         '200':
@@ -449,6 +452,7 @@ paths:
       operationId: updateMe
       summary: Изменить разрешённые поля профиля
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -504,6 +508,7 @@ paths:
       operationId: getSaved
       summary: Сохранённые события аккаунта
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -556,6 +561,7 @@ paths:
       operationId: saveHackathon
       summary: Идемпотентно сохранить событие
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -608,6 +614,7 @@ paths:
       operationId: unsaveHackathon
       summary: Идемпотентно удалить свою закладку
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -655,6 +662,7 @@ paths:
       operationId: listApplicationMarks
       summary: Личные отметки подачи заявки
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -705,6 +713,7 @@ paths:
       operationId: markApplied
       summary: Самостоятельно отметить подачу заявки
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -761,6 +770,7 @@ paths:
       operationId: unmarkApplied
       summary: Удалить собственную отметку
       x-phase: B2
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -808,6 +818,7 @@ paths:
       operationId: suggestHackathon
       summary: Предложить событие на модерацию
       x-phase: B3
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -863,6 +874,7 @@ paths:
       operationId: reportHackathon
       summary: Сообщить об ошибке
       x-phase: B3
+      x-email-verification-required-after-activation: true
       security:
       - BearerSession: []
       responses:
@@ -972,6 +984,147 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DeleteAccountRequest'
+  /auth/email-verification/request:
+    post:
+      operationId: requestEmailVerification
+      summary: Запросить код подтверждения почты
+      description: PLANNED, не реализовано. Адрес берётся из principal. Без тела. 204, если уже verified;
+        иначе 202. Pending Bearer разрешён.
+      x-phase: ACCOUNT_LIFECYCLE
+      security:
+      - BearerSession: []
+      responses:
+        '202':
+          $ref: '#/components/responses/EmailActionAccepted'
+        '204':
+          $ref: '#/components/responses/EmailActionNoContent'
+        '400':
+          $ref: '#/components/responses/EmailActionBadRequest'
+        '401':
+          $ref: '#/components/responses/EmailActionUnauthorized'
+        '429':
+          $ref: '#/components/responses/EmailActionLimited'
+        '500':
+          $ref: '#/components/responses/EmailActionInternalError'
+        '503':
+          $ref: '#/components/responses/EmailActionUnavailable'
+      x-implementation-status: planned
+  /auth/email-verification/confirm:
+    post:
+      operationId: confirmEmailVerification
+      summary: Подтвердить почту кодом
+      description: 'PLANNED, не реализовано. Нужен Bearer того же аккаунта и код. Успех 204 → GET /me. Replay/expired/wrong-purpose:
+        generic 400.'
+      x-phase: ACCOUNT_LIFECYCLE
+      security:
+      - BearerSession: []
+      responses:
+        '204':
+          $ref: '#/components/responses/EmailActionNoContent'
+        '400':
+          $ref: '#/components/responses/EmailActionBadRequest'
+        '401':
+          $ref: '#/components/responses/EmailActionUnauthorized'
+        '429':
+          $ref: '#/components/responses/EmailActionLimited'
+        '500':
+          $ref: '#/components/responses/EmailActionInternalError'
+        '503':
+          $ref: '#/components/responses/EmailActionUnavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailCodeRequest'
+      x-implementation-status: planned
+  /auth/password-reset/request:
+    post:
+      operationId: requestPasswordReset
+      summary: Запросить восстановление пароля
+      description: PLANNED, не реализовано. Клиент не прикладывает Bearer. Для корректного email одинаковый
+        202, включая неизвестный/удалённый. Новый запрос не отзывает sessions и не отменяет ранее выданные
+        codes/grants. Письмо не гарантировано. 401 возможен только если клиент всё же приложил недействительный
+        Bearer.
+      x-phase: ACCOUNT_LIFECYCLE
+      security: []
+      responses:
+        '202':
+          $ref: '#/components/responses/EmailActionAccepted'
+        '400':
+          $ref: '#/components/responses/EmailActionBadRequest'
+        '401':
+          $ref: '#/components/responses/EmailActionUnauthorized'
+        '429':
+          $ref: '#/components/responses/EmailActionLimited'
+        '500':
+          $ref: '#/components/responses/EmailActionInternalError'
+        '503':
+          $ref: '#/components/responses/EmailActionUnavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+      x-implementation-status: planned
+  /auth/password-reset/verify:
+    post:
+      operationId: verifyPasswordResetCode
+      summary: Обменять код на одноразовый reset grant
+      description: PLANNED, не реализовано. Без Bearer. Код потребляется атомарно; аккаунт/пароль/verified
+        пока не меняются. 400 для всех недействительных challenges; 200 не является login.
+      x-phase: ACCOUNT_LIFECYCLE
+      security: []
+      responses:
+        '200':
+          $ref: '#/components/responses/PasswordResetGrantIssued'
+        '400':
+          $ref: '#/components/responses/EmailActionBadRequest'
+        '401':
+          $ref: '#/components/responses/EmailActionUnauthorized'
+        '429':
+          $ref: '#/components/responses/EmailActionLimited'
+        '500':
+          $ref: '#/components/responses/EmailActionInternalError'
+        '503':
+          $ref: '#/components/responses/EmailActionUnavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailCodeRequest'
+      x-implementation-status: planned
+  /auth/password-reset/confirm:
+    post:
+      operationId: confirmPasswordReset
+      summary: Установить новый пароль по reset grant
+      description: 'PLANNED, не реализовано. Без Bearer. Атомарно: password hash, credential version, emailVerified=true,
+        снятие restore reset-required, отзыв всех native/admin sessions и остальных codes/grants. 204 без
+        login; повтор grant → 400 EMAIL_ACTION_INVALID. К обычным protected requests token не подходит.'
+      x-phase: ACCOUNT_LIFECYCLE
+      security: []
+      responses:
+        '204':
+          $ref: '#/components/responses/EmailActionNoContent'
+        '400':
+          $ref: '#/components/responses/EmailActionBadRequest'
+        '401':
+          $ref: '#/components/responses/EmailActionUnauthorized'
+        '429':
+          $ref: '#/components/responses/EmailActionLimited'
+        '500':
+          $ref: '#/components/responses/EmailActionInternalError'
+        '503':
+          $ref: '#/components/responses/EmailActionUnavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+      x-implementation-status: planned
 components:
   securitySchemes:
     BearerSession:
@@ -1646,6 +1799,12 @@ components:
             interestsCount:
               type: integer
               minimum: 0
+        emailVerified:
+          type: boolean
+          readOnly: true
+          description: Переходный optional флаг без default. Отсутствие означает UNKNOWN/legacy, не verified.
+            True/false имеют lifecycle-семантику только после согласованной активации сервера; этот контракт не
+            включает runtime enforcement.
     UpdateProfile:
       type: object
       additionalProperties: false
@@ -1899,4 +2058,336 @@ components:
           minLength: 1
           maxLength: 256
           writeOnly: true
+    LifecycleProblem:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      - title
+      - status
+      - detail
+      - instance
+      - code
+      - requestId
+      - fieldErrors
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          enum:
+          - VALIDATION_ERROR
+          - AUTH_REQUIRED
+          - INVALID_CREDENTIALS
+          - FORBIDDEN
+          - NOT_FOUND
+          - EMAIL_ALREADY_EXISTS
+          - RATE_LIMITED
+          - INTERNAL_ERROR
+          - SERVICE_UNAVAILABLE
+          - EMAIL_NOT_VERIFIED
+          - EMAIL_ACTION_INVALID
+          - PASSWORD_RESET_REQUIRED
+        requestId:
+          type: string
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - field
+            - message
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+      description: Планируемая lifecycle ошибка. Старые операции продолжают использовать
+        прежний Problem.
+    EmailActionChallenge:
+      type: object
+      additionalProperties: false
+      required:
+      - challengeId
+      - expiresAt
+      - resendAfterSeconds
+      properties:
+        challengeId:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.
+          x-sensitive: true
+        expiresAt:
+          type: string
+          format: date-time
+        resendAfterSeconds:
+          type: integer
+          const: 60
+      description: Принят к best-effort обработке; не подтверждает наличие аккаунта или доставку письма.
+    EmailCodeRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - challengeId
+      - code
+      properties:
+        challengeId:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.
+          x-sensitive: true
+          writeOnly: true
+        code:
+          type: string
+          minLength: 8
+          maxLength: 8
+          pattern: ^[0-9]{8}$
+          writeOnly: true
+          description: Восемь ASCII цифр, включая ведущие нули. Не логировать.
+    PasswordResetRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - email
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+    PasswordResetGrant:
+      type: object
+      additionalProperties: false
+      required:
+      - resetToken
+      - expiresAt
+      properties:
+        resetToken:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.
+          x-sensitive: true
+        expiresAt:
+          type: string
+          format: date-time
+      description: Один reset в течение пяти минут. Не Bearer, не refresh token, не авторизация.
+    PasswordResetConfirmRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - resetToken
+      - newPassword
+      properties:
+        resetToken:
+          type: string
+          minLength: 43
+          maxLength: 43
+          pattern: ^[A-Za-z0-9_-]{43}$
+          description: Синтетические примеры не являются действующими credentials; в реальности 256-bit CSPRNG.
+          x-sensitive: true
+          writeOnly: true
+        newPassword:
+          type: string
+          minLength: 12
+          maxLength: 256
+          writeOnly: true
+          description: 'Как RegisterRequest: не trim, не логировать, не сохранять на клиенте.'
+  responses:
+    EmailActionAccepted:
+      description: PLANNED. Принят к обработке, не обещает письмо или наличие аккаунта.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/EmailActionChallenge'
+    EmailActionNoContent:
+      description: PLANNED. Действие завершено; тело и новый Bearer отсутствуют.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+    PasswordResetGrantIssued:
+      description: PLANNED. Код потреблён; выдан одноразовый reset-only grant.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PasswordResetGrant'
+    EmailActionBadRequest:
+      description: PLANNED. Некорректная форма либо недействительный code/grant.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 400
+                code:
+                  enum:
+                  - VALIDATION_ERROR
+                  - EMAIL_ACTION_INVALID
+    EmailActionUnauthorized:
+      description: PLANNED. Недействителен приложенный Bearer; это не ошибка кода.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 401
+                code:
+                  enum:
+                  - AUTH_REQUIRED
+    EmailActionLimited:
+      description: PLANNED. Общий лимит; не account-existence oracle.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+        Retry-After:
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]*$
+          description: Число секунд до следующей попытки.
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 429
+                code:
+                  enum:
+                  - RATE_LIMITED
+    EmailActionInternalError:
+      description: PLANNED. Без credentials и внутренних деталей.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 500
+                code:
+                  enum:
+                  - INTERNAL_ERROR
+    EmailActionUnavailable:
+      description: PLANNED. Общая недоступность/admission отказ.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 503
+                code:
+                  enum:
+                  - SERVICE_UNAVAILABLE
+    EmailVerificationRequired:
+      description: PLANNED. Нужна подтверждённая почта или доступ запрещён.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 403
+                code:
+                  enum:
+                  - EMAIL_NOT_VERIFIED
+                  - FORBIDDEN
+    PasswordRecoveryRequired:
+      description: PLANNED. После восстановления backup нужен email reset.
+      headers:
+        Cache-Control:
+          required: true
+          schema:
+            type: string
+            const: no-store
+      content:
+        application/problem+json:
+          schema:
+            allOf:
+            - $ref: '#/components/schemas/LifecycleProblem'
+            - type: object
+              properties:
+                status:
+                  const: 403
+                code:
+                  enum:
+                  - PASSWORD_RESET_REQUIRED
 security: []

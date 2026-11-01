@@ -1,0 +1,9 @@
+{
+  "profile-pending.json": "Profile",
+  "email-action-challenge.json": "EmailActionChallenge",
+  "password-reset-grant.json": "PasswordResetGrant",
+  "invalid-email-action.json": "LifecycleProblem",
+  "email-not-verified.json": "LifecycleProblem",
+  "password-reset-required.json": "LifecycleProblem",
+  "profile-verified.json": "Profile"
+}

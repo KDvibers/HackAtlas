@@ -2,6 +2,83 @@
 
 Дата актуального дополнения: 1 ноября 2026.
 
+## Canonical account lifecycle 0.1.1 — контракт и совместимость подготовлены
+
+Пользователь поручил canonical contract/compatibility/tests, без почты и новых
+runtime operations. Чистая ветка `chore/account-lifecycle-contract` от main
+`7f6795530489e1be409c9457d10d83f4e5645761` (PR #22 и mobile PR #21 merged).
+Main CI этой базы прошёл. Работа одним агентом; commit/staging/push/PR не выполнялись.
+
+Канон [OpenAPI](../api/openapi.yaml)/[README](../api/README.md) — 0.1.1: emailVerified
+optional non-null boolean без default; 5 POST в ACCOUNT_LIFECYCLE planned. Root metadata
+не является runtime capability. Старые B1/B2/B3, AuthResponse/request schemas,
+status maps, Problem9 и legacy 6 fixtures сохранены. Отдельный LifecycleProblem12
+и nested fixture manifest отделяют будущее от работающего API. Client может
+распарсить новые поля/строки ошибок, но ещё не реализует pending/recovery flow.
+
+[План перехода](../api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md) учитывает нынешние auth UI,
+account saved/guest copy, UNKNOWN vs false, required mode без downgrade, staged
+backend/client readiness и rollback. Target 0.2 required/error refs/enforcement —
+будущий отдельный этап. Старая proposal delta помечена исторической для базы 0.1.0.
+
+`scripts/validate_contract.py` сохраняет и усиливает точные phase/access/opaque
+invariants; planned marker не скрывает старые операции. Добавлены 13 regression
+tests и их запуск в contract CI. Обе fixture manifests проверяются, root 6 не растёт
+из-за существующего mobile теста. Implementation plan этого этапа —
+[здесь](superpowers/plans/2026-11-01-canonical-account-lifecycle-contract.md).
+
+### Проверки
+
+| Область | Результат |
+|---|---|
+| Canonical OpenAPI / 13 fixtures | PASS |
+| Transitional / B4 / security Python | **13 + 49 + 27 = 89 PASS** |
+| Maven verify + dependency:list | **282 PASS**, no failures/errors/skips, BUILD SUCCESS 1:37 |
+| Fresh HTTP exports | **590 PASS** |
+| Реальные текущие Kotlin DTO | **3 Profile variants + 3 Problem payloads PASS**, исходник не изменён |
+| Oasdiff v1.35.0, base 0.1.0 → 0.1.1 | **exit 0, 0 breaking findings**, без suppression |
+| OSV | **106 packages / 0 affected** |
+| Packaged B1/B2/B3, Bruno/Schemathesis | PASS |
+| HTTPS/restore/legacy upgrade/cleanup | **PASS, 143.325 с** |
+| Final scope/syntax/links/Gitleaks | **22 файла / 163 ссылки PASS**, прежние CI checks сохранены |
+
+Первый enum вариант получил 255 oasdiff ERR; исправлено реальное разделение схем,
+не конфигурация проверок. RED→GREEN наблюдался для переходных invariants и старого
+Problem9. Все test processes UID1000, Docker через временную group106/setpriv
+launcher, без root test execution/постоянных правок групп. Полный KMP/Android/iOS
+build и новый UI не проверялись; JVM replay не выдаётся за device acceptance.
+
+[Полный отчёт и команды воспроизведения](research/2026-11-01-account-lifecycle-compatibility.md).
+Логи в ignored target `canonical-*`; DTO replay tools только в user cache/target.
+Java/SQL/migrations/infra/mobile sources и зависимости приложения не менялись.
+Почта, endpoints и enforcement не реализованы, signup закрыт, security blockers
+остаются. GitHub для этих незакоммиченных изменений ещё не запускался.
+HTTPS account проверен: yergaliuly; commit identity отдельно —
+softache <itsyergaliuly@gmail.com>. Index пуст, изменения оставлены пользователю.
+
+Следующий шаг после совместного review этого PR — отдельное поручение на client
+readiness/backend implementation; статус planned меняется вместе с реальным HTTP
+coverage. Не ужесточать required и не включать guards раньше готовности обеих сторон.
+Напарнику: «Canonical 0.1.1 оставляет ваш нынешний saved/import flow и legacy DTO
+совместимыми; lifecycle пока planned. Перед активацией нужны UNKNOWN/pending/verified,
+обработка новых ошибок и явный guard для guest import». Сообщение не отправлялось.
+
+### Команды пользователя
+
+PR title: **Prepare canonical account lifecycle contract and compatibility plan**.
+
+```powershell
+git status --short --branch
+git add api/openapi.yaml api/README.md api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md api/examples/account-lifecycle
+git add scripts/validate_contract.py scripts/test_contract_transition.py .github/workflows/backend-ci.yml
+git add docs/DECISIONS.md docs/STATUS_BACKEND.md docs/research/2026-11-01-account-lifecycle-compatibility.md docs/proposals/account-lifecycle/README.md docs/proposals/account-lifecycle/VALIDATION.md docs/superpowers/specs/2026-11-01-account-lifecycle-design.md docs/superpowers/plans/2026-11-01-canonical-account-lifecycle-contract.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "feat(api): prepare staged account lifecycle contract"
+git push -u origin chore/account-lifecycle-contract
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...chore/account-lifecycle-contract?expand=1'
+```
+
 ## Account lifecycle — предложение дизайна и API, без реализации
 
 Пользователь поручил подготовить дизайн/контракт email verification и password

@@ -1,5 +1,19 @@
 # Принятые решения
 
+## 1 ноября 2026 — переходный canonical lifecycle contract
+
+После merge PR #22 пользователь поручил canonical/compatibility без реализации.
+Выбран [0.1.1](../api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md): optional non-null emailVerified
+без default, пять planned POST в ACCOUNT_LIFECYCLE, сохранённые B1/B2/B3 наборы.
+Общий Problem оставляет 9 кодов, LifecycleProblem изолирует 3 будущих. Первый
+вариант расширял enum всех старых ошибок и получил 255 oasdiff findings; исправлено
+само разделение контракта, без suppression. Старые status maps/6 mobile fixtures сохранены.
+
+Текущий клиент читает extra fields/string codes, но ещё не поддерживает lifecycle
+UI. OpenAPI metadata не является runtime negotiation. Required 0.2/enforcement
+допустимы после готовности backend/client и отдельного согласованного допуска.
+Mail/provider/миграции/runtime operations не поручены. Commit/push/PR делает пользователь.
+
 ## 31 октября 2026 — B4.5: локальный шифрованный архив
 
 После merge B4.4 PR #17 пользователь утвердил вариант B из
