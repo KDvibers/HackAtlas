@@ -1,0 +1,10 @@
+{
+  "type": "urn:hackatlas:problem:email_not_verified",
+  "title": "Действие не выполнено",
+  "status": 403,
+  "detail": "Запрос не может быть выполнен в текущем состоянии.",
+  "instance": "/api/v1/me/saved",
+  "code": "EMAIL_NOT_VERIFIED",
+  "requestId": "proposal-example-request",
+  "fieldErrors": []
+}

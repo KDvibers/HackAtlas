@@ -2,6 +2,59 @@
 
 Дата актуального дополнения: 1 ноября 2026.
 
+## Account lifecycle — предложение дизайна и API, без реализации
+
+Пользователь поручил подготовить дизайн/контракт email verification и password
+reset для согласования с другом, к реализации не переходить. В чистом checkout
+после fetch создана `chore/account-lifecycle-contract-proposal` от main
+`991be66123b5f791d0ee9a33302b9d681170e345`: PR #19 уже merged, также слит mobile
+PR #20 с auth UI/host lifecycle. Исходные backend/M3 core/UI изучены, не изменены.
+
+Подготовлены [дизайн](superpowers/specs/2026-11-01-account-lifecycle-design.md),
+[краткое предложение другу](proposals/account-lifecycle/README.md),
+[JSON Patch](proposals/account-lifecycle/openapi.patch.json), 6 synthetic examples
+и [отчёт проверки](proposals/account-lifecycle/VALIDATION.md).
+Варианты: pending Bearer (рекомендуется) либо email-first; коды либо ссылки;
+best-effort mail либо отдельная durable delivery. Выбор **ещё не согласован**.
+
+Кандидат сохраняет register/AuthResponse envelopes, добавляет обязательный
+emailVerified, pending allowlist, 5 proposed endpoints, 3 Problem codes и login
+403 для forced recovery после старого backup. Reset-only grant не является
+Bearer/refresh; предусматривается отзыв native и browser admin sessions.
+Существенные tradeoffs: код требует попыток/HMAC key, delivery пока предлагается
+без durable гарантии, прежний register 409 всё ещё раскрывает существование email,
+а после restore без password-change history предлагается принудительный email reset.
+
+Проверки: 50 JSON Patch операций на **копии**, полный OpenAPI 3.1 candidate, 6 response
+fixtures, 3 request fixtures и 13 отрицательных schema случаев — PASS. Полная копия
+только в ignored target. Canonical `api/openapi.yaml`/README/examples, Java/SQL,
+dependencies, CI, mobile и STATUS_MOBILE не менялись. Runtime/API/mail/миграции не
+реализованы; их тесты и device builds не заявляются выполненными. Работа одним
+агентом; авторский review, никаких сообщений другу через tools не отправлялось.
+Действующий Starter validator, JSON/UTF-8/links, исполняемый пример сборки кандидата
+из README, `git diff --check` и Gitleaks всех 11 draft-файлов — PASS под UID 1000.
+Git HTTPS account **yergaliuly** и author config `softache <itsyergaliuly@gmail.com>`
+проверены отдельно. Логи — ignored `backend/target/account-lifecycle-*.log`.
+
+Следующий шаг — получить ответы обеих сторон на решения в README, обновить draft,
+затем отдельным согласованным contract PR менять canonical API/semantics/fixtures.
+Implementation plan и реализация требуют следующего поручения. Этот draft их не
+разрешает. Public signup по-прежнему закрыт, staging/SMTP provider не выбраны.
+
+Staging Git, commit, push и PR не выполнялись. При желании передать draft как PR:
+
+PR title: **Propose email verification and password recovery contract**.
+
+```powershell
+git status --short --branch
+git add docs/proposals/account-lifecycle docs/superpowers/specs/2026-11-01-account-lifecycle-design.md docs/STATUS_BACKEND.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "docs(api): propose email verification and password recovery contract"
+git push -u origin chore/account-lifecycle-contract-proposal
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...chore/account-lifecycle-contract-proposal?expand=1'
+```
+
 ## B4.5 — исправление CI в существующем PR #19
 
 Пользователь поручил исправить тест и повторить CI-сценарии без root.
