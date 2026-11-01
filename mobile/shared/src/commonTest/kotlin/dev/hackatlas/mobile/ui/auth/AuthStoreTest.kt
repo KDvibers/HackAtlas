@@ -277,4 +277,20 @@ class AuthStoreTest {
             assertNull(auth.state.value.busy)
         } finally { client.close() }
     }
+
+    @Test fun protectedSaved401OutsideAuthScreenUpdatesAuthUi() = runTest {
+        val disk = MemoryStore(source.baseUrl).apply { value = session() }
+        val client = client(disk) { addHandler {
+            if(it.url.encodedPath.endsWith("/me/saved")) respond("", HttpStatusCode.Unauthorized)
+            else respond(profileJson, headers = jsonHeaders)
+        } }
+        try {
+            val auth = AuthStore(client, backgroundScope); auth.start(); runCurrent()
+            assertIs<AuthState.Authenticated>(auth.state.value.session)
+            val request = async { assertFailsWith<AuthException> { client.listSaved(user.id, 0, 20) } }
+            runCurrent(); request.await(); runCurrent()
+            assertEquals(AuthState.SignInRequired, auth.state.value.session)
+            assertNull(auth.state.value.localIdentity)
+        } finally { client.close() }
+    }
 }

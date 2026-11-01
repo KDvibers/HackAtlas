@@ -2,6 +2,9 @@ package dev.hackatlas.mobile.data.auth
 
 import dev.hackatlas.mobile.data.ContractJson
 import dev.hackatlas.mobile.data.ProfileDto
+import dev.hackatlas.mobile.data.HackathonPageDto
+import dev.hackatlas.mobile.data.toDomain
+import dev.hackatlas.mobile.domain.CatalogPage
 import dev.hackatlas.mobile.data.network.createApiClient
 import dev.hackatlas.mobile.domain.CatalogSource
 import io.ktor.client.call.*
@@ -32,6 +35,8 @@ class AuthSessionClient(
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow<AuthState>(AuthState.NotLoaded)
     val state: StateFlow<AuthState> = mutableState.asStateFlow()
+    private val mutableIdentity = MutableStateFlow<LocalSessionIdentity?>(null)
+    val localIdentity = mutableIdentity.asStateFlow()
 
     suspend fun register(email: String, password: String, displayName: String): ProfileDto = mutex.withLock {
         authenticate("auth/register", Register(email, password, displayName), 201)
@@ -48,6 +53,51 @@ class AuthSessionClient(
 
     suspend fun profile(): ProfileDto = mutex.withLock {
         profile(readSession() ?: throw AuthException(AuthError.Unauthorized))
+    }
+
+    suspend fun listSaved(expectedUserId: String, page: Int = 0, size: Int = 50): CatalogPage = mutex.withLock {
+        require(page >= 0 && size in 1..50)
+        val session = ownedSession(expectedUserId)
+        val response = transport { client.get(source.baseUrl + "me/saved") {
+            bearerAuth(session.accessToken); parameter("page", page); parameter("size", size)
+        } }
+        requireProtected(response, 200)
+        val dto = decode<HackathonPageDto>(response)
+        invalidResponse {
+            require(dto.page == page && dto.size == size && dto.totalElements >= 0 && dto.totalPages >= 0)
+            require(dto.items.size <= size && dto.items.size <= dto.totalElements)
+            require(dto.totalPages == (dto.totalElements.toLong() + size - 1).div(size).toInt())
+            require(dto.hasNext == (page.toLong() + 1 < dto.totalPages))
+            Instant.parse(dto.asOf)
+            CatalogPage(dto.items.map { it.toDomain() }, dto.page, dto.size, dto.totalElements, dto.totalPages, dto.hasNext, dto.asOf)
+        }
+    }
+
+    suspend fun save(expectedUserId: String, id: String) = mutateSaved(expectedUserId, id, HttpMethod.Put)
+    suspend fun unsave(expectedUserId: String, id: String) = mutateSaved(expectedUserId, id, HttpMethod.Delete)
+
+    private suspend fun mutateSaved(expectedUserId: String, id: String, verb: HttpMethod) = mutex.withLock {
+        require(USER_ID.matches(id))
+        val session = ownedSession(expectedUserId)
+        val response = transport { client.request(source.baseUrl + "me/saved/$id") {
+            method = verb; bearerAuth(session.accessToken)
+        } }
+        requireProtected(response, 204)
+    }
+
+    private suspend fun ownedSession(expectedUserId: String): StoredSession {
+        require(USER_ID.matches(expectedUserId))
+        val session = readSession() ?: run { localClear(AuthState.SignInRequired); throw AuthException(AuthError.Unauthorized) }
+        if (session.userId != expectedUserId) throw AuthException(AuthError.Unauthorized)
+        return session
+    }
+
+    private suspend fun requireProtected(response: HttpResponse, expected: Int) {
+        if (response.status.value == 401) {
+            localClear(AuthState.SignInRequired)
+            throw AuthException(AuthError.Unauthorized)
+        }
+        if (response.status.value != expected) throw AuthException(response.error())
     }
 
     suspend fun logout(): LogoutResult = mutex.withLock {
@@ -88,6 +138,7 @@ class AuthSessionClient(
         // Once received, persist and publish together, even if the caller is canceled during disk IO.
         withContext(NonCancellable) {
             storage { store.write(session) }
+            mutableIdentity.value = LocalSessionIdentity(session.userId, session.expiresAt)
             mutableState.value = AuthState.Authenticated(dto.user)
         }
         return dto.user
@@ -107,11 +158,12 @@ class AuthSessionClient(
     }
 
     private suspend fun readSession(): StoredSession? {
-        val session = readStored() ?: return null
+        val session = readStored() ?: run { mutableIdentity.value = null; return null }
         if (Instant.parse(session.expiresAt) <= now()) {
             localClear(AuthState.SignInRequired)
             throw AuthException(AuthError.Unauthorized)
         }
+        mutableIdentity.value = LocalSessionIdentity(session.userId, session.expiresAt)
         return session
     }
 
@@ -119,6 +171,7 @@ class AuthSessionClient(
 
     private suspend fun localClear(next: AuthState) = withContext(NonCancellable) {
         // Never leave an old authenticated profile visible after a failed clear.
+        mutableIdentity.value = null
         mutableState.value = AuthState.StorageUnavailable
         storage { store.clear() }
         mutableState.value = next
@@ -128,6 +181,7 @@ class AuthSessionClient(
         block()
     } catch (cancelled: CancellationException) { throw cancelled
     } catch (_: Exception) {
+        mutableIdentity.value = null
         mutableState.value = AuthState.StorageUnavailable
         throw AuthException(AuthError.Storage)
     }

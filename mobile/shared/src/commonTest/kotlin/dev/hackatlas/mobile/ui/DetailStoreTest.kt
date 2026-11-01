@@ -8,6 +8,24 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DetailStoreTest {
+    @Test fun removedAccountSnapshotRefetchesPublicDetailAndRejectsArchivedCta() = runTest {
+        val repository = StoreTestRepository().apply { onDetail = { throw dev.hackatlas.mobile.domain.CatalogException(dev.hackatlas.mobile.domain.CatalogError.NotFound) } }
+        val store = DetailStore(repository, backgroundScope)
+        store.showSnapshot(dev.hackatlas.mobile.data.SavedGuestEvent(StoreTestFixtures.detail, "2026-11-01T12:00:00Z"))
+        runCurrent()
+        store.reconcileAccountSnapshots(emptyList()); runCurrent()
+        assertEquals(dev.hackatlas.mobile.domain.CatalogError.NotFound, assertIs<DetailUiState.Error>(store.state.value).error)
+    }
+    @Test fun clearingPrivateOwnerDiscardsSnapshotAndLateRequest() = runTest {
+        val repository = StoreTestRepository()
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        repository.onDetail = { kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { gate.await() }; StoreTestFixtures.detail(it) }
+        val store = DetailStore(repository, backgroundScope)
+        store.open(StoreTestFixtures.events.first().id); runCurrent()
+        store.reset(); runCurrent()
+        gate.complete(Unit); runCurrent()
+        assertEquals(DetailUiState.Idle, store.state.value)
+    }
     private val firstId = StoreTestFixtures.events[0].id
     private val secondId = StoreTestFixtures.events[1].id
 

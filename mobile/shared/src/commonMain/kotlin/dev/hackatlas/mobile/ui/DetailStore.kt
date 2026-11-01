@@ -29,9 +29,25 @@ class DetailStore(private val repository: CatalogRepository, private val scope: 
     fun open(id: String) { actions.trySend(Action.Open(id)) }
     fun retry() { actions.trySend(Action.Retry) }
     fun showSnapshot(saved: SavedGuestEvent) { actions.trySend(Action.Snapshot(saved)) }
+    fun reset() { actions.trySend(Action.Reset) }
+    fun reconcileAccountSnapshots(snapshots: List<SavedGuestEvent>) {
+        val expected = (mutableState.value as? DetailUiState.Content)?.snapshot ?: return
+        actions.trySend(Action.Reconcile(expected, snapshots))
+    }
 
     private fun handle(action: Action) {
         when (action) {
+            Action.Reset -> {
+                generation++; request?.cancel(); mutableState.value = DetailUiState.Idle
+            }
+            is Action.Reconcile -> {
+                val current = mutableState.value as? DetailUiState.Content
+                if(current?.snapshot === action.expected) {
+                    val updated = action.snapshots.firstOrNull { it.key == action.expected.key }
+                    if(updated == null) begin(action.expected.key.id)
+                    else mutableState.value = DetailUiState.Content(updated.detail, updated)
+                }
+            }
             is Action.Open -> begin(action.id)
             Action.Retry -> (mutableState.value as? DetailUiState.Error)?.let { begin(it.id) }
             is Action.Snapshot -> {
@@ -70,6 +86,8 @@ class DetailStore(private val repository: CatalogRepository, private val scope: 
     private sealed interface Action {
         data class Open(val id: String) : Action
         data object Retry : Action
+        data object Reset : Action
+        data class Reconcile(val expected: SavedGuestEvent, val snapshots: List<SavedGuestEvent>) : Action
         data class Snapshot(val saved: SavedGuestEvent) : Action
         data class Ready(val generation: Long, val detail: HackathonDetail) : Action
         data class Failed(val generation: Long, val id: String, val error: CatalogError) : Action

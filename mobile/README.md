@@ -182,3 +182,9 @@ adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-de
 Первый блок auth core описан в [AUTH_CORE.md](AUTH_CORE.md): API, native secure stores, обработка 401/expiry/logout, команды MockEngine/instrumentation и обязательные iOS-проверки.
 
 Второй блок [AUTH_UI.md](AUTH_UI.md) подключает вход, регистрацию и настоящий профиль к Android/iOS hosts. Каталог остаётся гостевым, сохранения/календарь — локальными; синхронизация и guest import требуют отдельного этапа. iOS native build/runtime остаются непроверенными на Windows.
+
+Третий блок [ACCOUNT_SAVED.md](ACCOUNT_SAVED.md) подключает серверные закладки и
+подтверждаемое копирование гостевых данных. После входа сохранённое/календарь
+используют account cache, без сети — только чтение; исходные гостевые файлы
+сохраняются. Cleanup/изолирование владельцев, snapshot freshness и ограничения
+пагинации описаны отдельно. API, шрифты и визуальная система не менялись.

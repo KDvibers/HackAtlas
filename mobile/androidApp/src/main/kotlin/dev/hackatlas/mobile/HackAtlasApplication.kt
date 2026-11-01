@@ -3,6 +3,7 @@ package dev.hackatlas.mobile
 import android.app.Application
 import dev.hackatlas.mobile.data.AndroidGuestSnapshotStorage
 import dev.hackatlas.mobile.data.auth.AndroidSecureTokenStore
+import dev.hackatlas.mobile.data.saved.AndroidAccountCacheStorage
 import dev.hackatlas.mobile.domain.selectCatalogSource
 import dev.hackatlas.mobile.ui.AppState
 import dev.hackatlas.mobile.ui.CatalogRuntime
@@ -16,6 +17,7 @@ class HackAtlasApplication : Application() {
         selectCatalogSource(BuildConfig.DEBUG, BuildConfig.CATALOG_SOURCE, BuildConfig.API_BASE_URL, BuildConfig.ALLOW_DEBUG_HTTP),
         { scope -> AndroidGuestSnapshotStorage(this, scope) }, catalogEnabled, BuildConfig.CATALOG_PAGE_SIZE,
         secureStoreFactory = { source -> AndroidSecureTokenStore(this, source) },
+        accountCacheFactory = { source -> AndroidAccountCacheStorage(this, source) },
     ).also { runtime = it }).state
 
     fun onForeground() { runtime?.onForeground() }

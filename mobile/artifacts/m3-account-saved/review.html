@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HackAtlas · M3 закладки аккаунта</title>
+<style>body{margin:0;background:#050507;color:#f5f2fa;font:16px/1.6 system-ui,sans-serif}main{max-width:1400px;margin:auto;padding:32px 24px}h1{font-size:30px;margin:0}p{max-width:1000px;color:#c0b8cc}a{color:#63d8ff}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}figure{margin:0}img{width:100%;height:auto;border:1px solid #443053;border-radius:14px}figcaption{padding:12px 0;color:#e91df4}details{margin:32px 0}summary{cursor:pointer;color:#63d8ff}small{color:#9f97ad}@media(max-width:700px){.grid{grid-template-columns:1fr}main{padding:24px 16px}}</style>
+<main><small>HACKATLAS / M3 ACCOUNT SAVED_</small><h1>Закладки аккаунта и подтверждённое копирование</h1>
+<p>Реальные Android screenshots Compose UI. Изменения подтверждаются сервером, без сети доступна копия аккаунта. Гостевые сохранения остаются на устройстве. Снимки используют одноразовые тестовые аккаунты в настоящем локальном B2 и явно обозначенные DEMO-события.</p>
+<div class="grid">
+<figure><a href="screenshots/copy-confirmation.png"><img src="screenshots/copy-confirmation.png" alt="Подтверждение копирования гостевых закладок"></a><figcaption>Копирование только с подтверждением</figcaption></figure>
+<figure><a href="screenshots/account-saved.png"><img src="screenshots/account-saved.png" alt="Закладки текущего аккаунта"></a><figcaption>Сохранённое аккаунта</figcaption></figure>
+<figure><a href="screenshots/account-saved-offline.png"><img src="screenshots/account-saved-offline.png" alt="Копия аккаунта без сети"></a><figcaption>Без сети · просмотр копии</figcaption></figure>
+</div>
+<p><a href="verification.json">Проверки</a> · <a href="android-smoke.json">live B2 smoke</a> · <a href="review-error-smoke.json">регрессии review</a> · <a href="REVIEW.md">ревью и ограничения</a>. iOS требует Mac/Xcode/native-приёмки; Android не подтверждает Foundation/Keychain.</p>
+<details><summary>Изоляция, подробности и календарь</summary><div class="grid">
+<figure><img src="screenshots/second-account-empty.png" alt="Второй аккаунт с пустым списком"><figcaption>Второй аккаунт без чужих данных</figcaption></figure>
+<figure><img src="screenshots/account-detail-offline.png" alt="Подробности из offline-копии"><figcaption>Подробности без сети</figcaption></figure>
+<figure><img src="screenshots/account-calendar-offline.png" alt="Календарь offline-копий аккаунта"><figcaption>Календарь аккаунта без сети</figcaption></figure>
+</div></details>
+<details><summary>Исправления review и крупный текст</summary><div class="grid">
+<figure><img src="screenshots/mutation-error-detail.png" alt="Ошибка изменения закладки в подробностях"><figcaption>Ошибка видна на текущем экране</figcaption></figure>
+<figure><img src="screenshots/archived-open-detail.png" alt="Архивированное событие стало недоступно"><figcaption>Старый CTA скрыт после архивирования</figcaption></figure>
+<figure><img src="screenshots/profile-360-font130.png" alt="Копирование из профиля на узком экране с крупным текстом"><figcaption>360dp · текст130%</figcaption></figure>
+</div></details>
+</main></html>
