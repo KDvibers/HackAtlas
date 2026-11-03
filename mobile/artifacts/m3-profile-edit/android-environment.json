@@ -1,0 +1,22 @@
+{
+  "status": "BLOCKED_SYSTEM_SERVICES",
+  "date": "2026-11-02",
+  "api37": "Final APK installed and SHA verified; profile smoke stopped in prepare(): svc data could not find phone service. Settings readback matched original.",
+  "api36": "Separate fresh temporary AVD,3GB. Primary dex compilation finished; phone and SystemUI startup ANR. Phone service unavailable after cold boot and one warm reboot. No profile test executed on this AVD.",
+  "evidence": [
+    "ANR in com.android.phone: failed to complete startup",
+    "ANR in com.android.systemui",
+    "Service phone: not found"
+  ],
+  "appCrashObserved": false,
+  "testTimeoutsChanged": false,
+  "testsDisabled": false,
+  "cleanup": {
+    "ownedBackend8772": "stopped",
+    "ownedPostgreSqlContainer": "stopped and removed",
+    "privateDbEnv": "removed",
+    "ownedTemporaryAvd": "stopped, registry removed, directory sent to Recycle Bin",
+    "userAvds": "not wiped",
+    "otherUserProcesses": "not stopped"
+  }
+}

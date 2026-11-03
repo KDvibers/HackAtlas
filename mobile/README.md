@@ -188,3 +188,8 @@ adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-de
 используют account cache, без сети — только чтение; исходные гостевые файлы
 сохраняются. Cleanup/изолирование владельцев, snapshot freshness и ограничения
 пагинации описаны отдельно. API, шрифты и визуальная система не менялись.
+
+Редактирование профиля — [PROFILE_EDIT.md](PROFILE_EDIT.md): шесть полей через
+частичный PATCH /me, подтверждаемый успех, черновик в памяти/отмена, безопасный
+повтор после неоднозначного ответа. Без application marks/reminders/email lifecycle.
+Оценка присланного backend draft отделена от реализации; Starter не менялся.

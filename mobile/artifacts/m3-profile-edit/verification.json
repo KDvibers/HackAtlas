@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-02",
+  "branch": "feat/mobile-profile-edit",
+  "base": "7f6795530489e1be409c9457d10d83f4e5645761",
+  "scope": "Profile editing only; no application marks/reminders/lifecycle proposal implementation",
+  "mobile": {
+    "apk": "mobile/build/m3-profile-edit/HackAtlas-profile-edit-debug.apk",
+    "result": "BUILD SUCCESSFUL",
+    "tests": 228,
+    "failures": 0,
+    "log": "mobile/build/m3-profile-edit/final-verification.log",
+    "skipped": 0,
+    "errors": 0,
+    "apkSha256": "e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4",
+    "command": ".\\gradlew.bat :shared:testDebugUnitTest --rerun :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures --offline --console=plain -Phackatlas.debugSource=REMOTE -Phackatlas.debugApiBaseUrl=http://10.0.2.2:8772/api/v1/ -Phackatlas.allowDebugHttp=true",
+    "newTests": 17,
+    "releaseGate": "PASS",
+    "apiBaseUrl": "http://10.0.2.2:8772/api/v1/",
+    "lint": "No issues found"
+  },
+  "backend": {
+    "verifyIntegrationRerun": false,
+    "sourceChanged": false,
+    "unitTests": 21,
+    "command": "mvnw.cmd --batch-mode --no-transfer-progress package",
+    "result": "BUILD SUCCESS"
+  },
+  "contract": {
+    "starter": "PASS",
+    "changed": false,
+    "message18": "Unapproved PR22 draft only; no patch/lifecycle endpoints applied",
+    "examples": 6
+  },
+  "review": {
+    "important": 2,
+    "importantFixed": 2,
+    "critical": 0,
+    "reReview": false,
+    "regressions": [
+      "appliedResponseLostThenRevertAndOtherEditHonorsCurrentDraft RED->GREEN",
+      "structurallyValidButContractInvalidProfileNeverPublishes RED->GREEN",
+      "unicodeLimitsCountCodePointsAndRejectBrokenText RED->GREEN"
+    ],
+    "independentReviews": 1,
+    "detail": "REVIEW.md",
+    "nativeInput": "Country kz raw-input fix confirmed by real B2 SQL on prior UI APK; final auth-only restore fix has unit GREEN, native confirmation pending.",
+    "minor": 0,
+    "executorRegression": "revokedForegroundDiscardsDraftAndProfileRefreshKeepsSignInRequired: expected SignInRequired, was SignedOut RED -> GREEN; route refresh retains invalid-session reason"
+  },
+  "android": {
+    "device": "API37 Pixel8 4GB; separate API36 Pixel8 profile 3GB",
+    "report": "android-acceptance.json",
+    "status": "INCOMPLETE: final APK native preflight blocked by Android phone/SystemUI startup",
+    "backend": "Real local B2, disposable PostgreSQL",
+    "credentialsInArtifacts": false,
+    "history": "android-history.json",
+    "fullAcceptance": false,
+    "finalApkChecksPassed": 0,
+    "priorUiChecksPassed": 4,
+    "environment": "android-environment.json",
+    "installedApkShaVerified": true,
+    "testBackendRunningAtHandoff": false,
+    "temporaryAvdDisposition": "Stopped; directory sent to Recycle Bin"
+  },
+  "ios": {
+    "physicalDeviceTalkBack": false,
+    "keychain": false,
+    "build": false,
+    "runtime": false,
+    "requirement": "Mac/Xcode/iPhone/HTTPS B2",
+    "sharedSource": true
+  },
+  "draftReview": "BACKEND_DRAFT_REVIEW.md",
+  "git": {
+    "prCreated": false,
+    "pushed": false,
+    "staged": false,
+    "committed": false
+  }
+}

@@ -97,7 +97,7 @@ fun AuthScreen(store: AuthStore, mode: AuthFormMode, onMode: (AuthFormMode) -> U
 }
 
 @Composable
-private fun AuthField(value: String, onChange: (String) -> Unit, label: String, errorText: String?, enabled: Boolean,
+internal fun AuthField(value: String, onChange: (String) -> Unit, label: String, errorText: String?, enabled: Boolean,
     keyboard: KeyboardOptions, actions: KeyboardActions, visual: VisualTransformation = VisualTransformation.None,
     trailing: (@Composable () -> Unit)? = null) {
     OutlinedTextField(value, onChange, modifier = Modifier.fillMaxWidth(), enabled = enabled,

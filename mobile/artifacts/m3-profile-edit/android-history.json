@@ -1,0 +1,55 @@
+{
+  "note": "Diagnostic history only. Final acceptance status: android-acceptance.json. Last final-APK preflight attempt: android-smoke.json.",
+  "apkSha256": "a9592067acb8127a1a68d1d0d659009e8d4731897e4ad7e5c360dd59e19cddc2",
+  "interruptionRun": {
+    "source": "Real local B2, disposable DB, synthetic account and DEMO catalogue",
+    "checks": [
+      {
+        "name": "dirty cancel confirmation, continue-edit and discard without PATCH",
+        "status": "PASS"
+      },
+      {
+        "name": "real PATCH updates six fields, returns actual profile, survives restart and preserves guest bytes",
+        "status": "PASS"
+      },
+      {
+        "name": "nullable fields explicitly clear, interests empty replacement and avatar change confirmed by B2",
+        "status": "PASS"
+      },
+      {
+        "name": "offline save keeps draft and shows honest error; explicit online retry succeeds",
+        "status": "PASS"
+      }
+    ],
+    "failure": "TimeoutExpired: Command '['C:/Users/user/AppData/Local/Android/Sdk/platform-tools/adb.exe', '-s', 'emulator-5554', 'shell', 'rm', '-f', '/data/local/tmp/hackatlas-m3-auth-ui.xml']' timed out after 45 seconds",
+    "restoreErrors": [],
+    "fullAcceptance": false,
+    "ios": "Source only; Mac/Xcode required"
+  },
+  "revokedNoticeRegression": {
+    "source": "Real local B2, disposable DB, synthetic account and DEMO catalogue",
+    "checks": [],
+    "failure": "AssertionError: Missing text: Сессия завершена. Войдите снова.; visible: ['Профиль', 'Развивайся. Участвуй. Будь частью сообщества.', 'Гостевой режим', 'Сохранено: 0', 'Сохранения доступны на этом устройстве. Вход не переносит их в аккаунт автоматически.', 'Код сегодня —\\nбольше возможностей завтра._', 'Войти', 'Создать аккаунт', 'Сохранённые хакатоны', 'Все', 'Нажмите на закладку в карточке, чтобы сохранить событие.', 'Главная', 'Календарь', 'Сохранённое', 'Профиль']",
+    "restoreErrors": [],
+    "fullAcceptance": false,
+    "ios": "Source only; Mac/Xcode required",
+    "scope": "lifecycle and font variants only"
+  },
+  "api37PreflightFailure": {
+    "source": "Real local B2, disposable DB, synthetic account and DEMO catalogue",
+    "checks": [],
+    "failure": "RuntimeError: ADB shell svc failed: cmd: Can't find service: phone\r\n",
+    "restoreErrors": [
+      "ADB shell svc failed: cmd: Can't find service: phone\r\n"
+    ],
+    "fullAcceptance": false,
+    "ios": "Source only; Mac/Xcode required",
+    "scope": "full profile smoke",
+    "apkSha256": "e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4"
+  },
+  "api37NetworkRestoreReadback": {
+    "airplane_mode_on": true,
+    "wifi_on": true,
+    "mobile_data": true
+  }
+}

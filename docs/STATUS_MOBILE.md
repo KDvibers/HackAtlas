@@ -1,5 +1,78 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M3: редактирование профиля — 2 ноября 2026
+
+Пользователь поручил profile edit, сохранить дизайн, sequential+final review;
+**без application marks/reminders**. Ветка `feat/mobile-profile-edit` от
+`origin/main=7f67955` (PR21saved/PR22draft merged), прежний worktree.
+Commit/push/PR выполняет пользователь; `.agents/`/`.interface-design/` не менялись.
+
+**Сообщение бэкендчика:** `message (18).txt` — unapproved PR22 email/reset draft,
+не новый контракт и не готовые endpoint. Canonical API untouched; его patch/SMTP/
+pending/verification/reset не реализованы. Подготовлен mobile review/готовый текст
+для ручной передачи `mobile/artifacts/m3-profile-edit/BACKEND_DRAFT_REVIEW.md`.
+Рекомендуемый pending Bearer — предложение исполнителя, не одобрение за пользователя.
+
+**Реализация:** новые `data/auth/ProfilePatch.kt`, `ui/profile/{ProfileDraft,
+ProfileEditStore,ProfileEditScreen}.kt`; updateProfile(expectedUserId,JsonObject)
+в AuthSessionClient, ручная DI в AppState/Runtime, общая route из AccountProfileScreen.
+Поля: displayName/city/countryCode/roleLabel/avatarKey/interests. Email/permissions/
+stats read-only. Partial PATCH сохраняет absent и explicit null, unchanged interests
+не пересылает; metadata error не очищает выбор. Unicode code point limits совпадают
+с B2, NUL/unpaired surrogate запрещены. Токен не выходит из secure/auth client.
+
+Draft/baseline process-memory only, без rememberSaveable/disk. Confirm discard/reload,
+duplicate guard, сохранение same-owner draft на foreground, logout/switch invalidation,
+expected-owner под auth mutex. Успех только после schema-valid200 same user.
+Потерянный ответ требует явного retry/reload; uncertain sent-fields сохраняются,
+чтобы возврат поля к baseline не терял намерение пользователя. Bookmarks/import/cache
+схемы не менялись. Шрифты/artwork/palette/tab structure M1 прежние; новые chips
+привязаны к существующим Primary/Surface/Border, не default Material gray.
+
+**Проверки:** full shared **228 PASS (17 новых), 0 failures/errors/skipped**,
+assembleDebug/lintDebug0/release gate PASS. Starter validator +6fixtures PASS.
+Backend package — BUILD SUCCESS/21unit tests, не повторный verify/IT.
+Evidence ignored `mobile/build/m3-profile-edit/`, итог `verification.json` в artifacts.
+RED absentAPI →13GREEN; Unicode boundary RED→GREEN; два Important behavioral
+regressions RED→GREEN. Live input дополнительно обнаружил потерю второй буквы kz
+при uppercase в onValueChange; raw input сохраняется, uppercase только при PATCH.
+После UI-исправлений повторно full228/build/lint/release PASS.
+
+Дополнительная native-регрессия: route refresh после foreground401 скрывал
+сообщение о завершённой сессии. Новый behavioral test RED expected SignInRequired /
+was SignedOut; restore без токена теперь сохраняет SignInRequired до login/logout.
+После исправления full228/build/lint/release PASS; ранние native-попытки сохранены
+в android-history.json. SHA установленного финального APK проверен отдельно.
+
+**Нативная приёмка НЕ завершена:** прежний UI APK прошёл 4/6 групп (cancel, шесть
+полей/restart, nullable clear, offline/retry), затем ADB timeout после перерыва.
+Последняя auth-only правка прошла unit regression, но финальный APK остановился
+на preflight: phone service отсутствовал. Отдельный временный API36 AVD подтвердил
+системные startup ANR com.android.phone/SystemUI, один warm reboot не восстановил
+сервисы. Тесты/таймауты не отключались. Прежние 4 PASS не засчитаны финальному APK:
+android-acceptance.json/verification.json явно INCOMPLETE. На здоровом Android нужно
+повторить все 6 групп, включая401 и360dp/font130; этих финальных screenshot нет.
+
+**Review:** одно независимое read-only review,0Critical/2Important/0Minor.
+Оба исправлены одним проходом: uncertain result сохраняет sent keys/предупреждение;
+Profile200 валидируется по editable schema перед success. Повторный reviewer не
+запускался. Правка rapid input подтверждается native RED→GREEN, текущие чек-листы
+и точные результаты — в REVIEW.md/verification.json.
+
+**Открыто:** iOS build/Swift interop/Keychain/UI на Windows не выполнены,
+нужен Mac/iPhone/HTTPS; TalkBack/физическое устройство отдельно не приняты.
+Временная isolated B2/DB8772 использует synthetic account/DEMO events. Guest bytes/
+display восстановлены; при недоступном phone restore-команда вернула ошибку,
+последующий readback всех трёх network settings совпал с исходным. Временные
+B2/БД остановлены, временный AVD убран в Корзину; состояние cleanup — android-environment.json.
+Следующий шаг — закрыть нативную приёмку на исправном Android и затем Mac/iPhone.
+Следующие M3 блоки, lifecycle contract rollout,
+production audit/release не разрешены этим этапом.
+
+Напарнику: «Profile edit подключён по текущему PATCH /me: absent/null/interests,
+opaque Bearer/expected owner, без смены API. Draft по почте посмотрели, рекомендации
+отдельно; verification/reset не считаем готовыми и не внедряли. iOS требует Mac/HTTPS».
+
 ## M3 block3: account saved / confirmed guest copy — 1 ноября 2026
 
 Пользователь сообщил merge PR20 и поручил следующий этап. Явно выбрано:

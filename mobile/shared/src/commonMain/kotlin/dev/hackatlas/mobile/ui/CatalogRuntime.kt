@@ -6,6 +6,7 @@ import dev.hackatlas.mobile.data.auth.*
 import dev.hackatlas.mobile.ui.auth.AuthStore
 import dev.hackatlas.mobile.data.saved.*
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
+import dev.hackatlas.mobile.ui.profile.ProfileEditStore
 import dev.hackatlas.mobile.domain.*
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
@@ -22,11 +23,12 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
     private val authClient = if (source is CatalogSource.Remote && secureStoreFactory != null)
         createAuthSessionClient(source, secureStoreFactory(source)) else null
     private val auth = authClient?.let { AuthStore(it, scope) }
+    private val profileEditor=if(auth!=null && authClient!=null) ProfileEditStore(auth,authClient,scope) else null
     val state = AppState(source, scope, storageFactory, remoteRepositoryFactory = { remote ->
         val transport = createPlatformHttpEngine().also { engine = it }
         val api = createApiClient(transport, remote).also { client = it }
         RemoteCatalogRepository(api, remote)
-    }, catalogEnabled = catalogEnabled, remotePageSize = remotePageSize, auth = auth,
+    }, catalogEnabled = catalogEnabled, remotePageSize = remotePageSize, auth = auth, profileEditor=profileEditor,
         accountSavedFactory = if(source is CatalogSource.Remote && auth != null && authClient != null && accountCacheFactory != null)
             { guest, repository, invalidate -> AccountSavedStore(auth, authClient, repository, guest,
                 AccountCache(source.baseUrl, accountCacheFactory(source)), scope,
