@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "branch": "feat/mobile-profile-edit",
   "base": "7f6795530489e1be409c9457d10d83f4e5645761",
   "scope": "Profile editing only; no application marks/reminders/lifecycle proposal implementation",
@@ -16,7 +16,10 @@
     "newTests": 17,
     "releaseGate": "PASS",
     "apiBaseUrl": "http://10.0.2.2:8772/api/v1/",
-    "lint": "No issues found"
+    "lint": "No issues found",
+    "originalBuildVerificationDate": "2026-11-02",
+    "rerunForThisAcceptance": false,
+    "binaryChanged": false
   },
   "backend": {
     "verifyIntegrationRerun": false,
@@ -29,7 +32,8 @@
     "starter": "PASS",
     "changed": false,
     "message18": "Unapproved PR22 draft only; no patch/lifecycle endpoints applied",
-    "examples": 6
+    "examples": 6,
+    "rerunForThisAcceptance": false
   },
   "review": {
     "important": 2,
@@ -43,24 +47,53 @@
     ],
     "independentReviews": 1,
     "detail": "REVIEW.md",
-    "nativeInput": "Country kz raw-input fix confirmed by real B2 SQL on prior UI APK; final auth-only restore fix has unit GREEN, native confirmation pending.",
+    "nativeInput": "Country kz -> KZ verified by real B2 DB in final APK run",
     "minor": 0,
-    "executorRegression": "revokedForegroundDiscardsDraftAndProfileRefreshKeepsSignInRequired: expected SignInRequired, was SignedOut RED -> GREEN; route refresh retains invalid-session reason"
+    "executorRegression": "Expired-notice survives route refresh after real session revocation; draft,credential,private cache cleared and guest bytes unchanged"
   },
   "android": {
-    "device": "API37 Pixel8 4GB; separate API36 Pixel8 profile 3GB",
+    "device": "API36 Android16,2GB,4cores,swiftshader",
     "report": "android-acceptance.json",
-    "status": "INCOMPLETE: final APK native preflight blocked by Android phone/SystemUI startup",
+    "status": "6/6 PASS, one full final-APK run",
     "backend": "Real local B2, disposable PostgreSQL",
     "credentialsInArtifacts": false,
     "history": "android-history.json",
-    "fullAcceptance": false,
-    "finalApkChecksPassed": 0,
+    "fullAcceptance": true,
+    "finalApkChecksPassed": 6,
     "priorUiChecksPassed": 4,
     "environment": "android-environment.json",
     "installedApkShaVerified": true,
     "testBackendRunningAtHandoff": false,
-    "temporaryAvdDisposition": "Stopped; directory sent to Recycle Bin"
+    "temporaryAvdDisposition": "Stopped, registries removed, directories sent to Recycle Bin",
+    "checksRequired": 6,
+    "singleRunComplete": true,
+    "freshObservationRetries": 0,
+    "revocation": {
+      "revokedSessions": 1,
+      "noticeShown": true,
+      "draftAbsent": true,
+      "credentialAbsent": true,
+      "privateCacheAbsent": true,
+      "guestBytesUnchanged": true
+    },
+    "variant": {
+      "widthPx": 1080,
+      "heightPx": 2400,
+      "densityDpi": 480,
+      "widthDp": 360,
+      "fontScale": 1.3
+    },
+    "compatibilityFinding": "API34_TZDATA.md",
+    "log": "mobile/build/m3-profile-edit/acceptance-2026-11-03/android-smoke-final.log",
+    "command": "python -X utf8 mobile/scripts/android_profile_edit_smoke.py --serial emulator-5560 --adb 'C:/Users/user/AppData/Local/Android/Sdk/platform-tools/adb.exe' --docker 'C:/Users/user/AppData/Local/Programs/DockerDesktop/resources/bin/docker.exe'",
+    "visualInspection": [
+      "editor-initial",
+      "editor-360-font130",
+      "validation-360-font130",
+      "revoked-draft-cleared"
+    ],
+    "physicalDevice": false,
+    "talkBack": false
   },
   "ios": {
     "physicalDeviceTalkBack": false,
@@ -72,9 +105,19 @@
   },
   "draftReview": "BACKEND_DRAFT_REVIEW.md",
   "git": {
-    "prCreated": false,
-    "pushed": false,
     "staged": false,
-    "committed": false
+    "committed": false,
+    "pushed": false,
+    "prCreated": false,
+    "existingPr": 24
+  },
+  "acceptanceHead": "e06c6d488ba2ce5edaea1dc6b17790875ad10c06",
+  "pr": "https://github.com/KDvibers/HackAtlas/pull/24",
+  "harness": {
+    "deviceLossReportRegression": "PASS (simulated lost device)",
+    "freshObservationRetryAndGlobalCap": "PASS (simulated read timeout)",
+    "retryLimit": 1,
+    "retryUsedInAcceptance": 0,
+    "businessActionsRetried": false
   }
 }

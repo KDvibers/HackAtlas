@@ -49,13 +49,18 @@ guest bytes/display/network; не запускать против пользов
 Shared228tests/Android build/lint/release gate проверены. iOS build/Swift interop/
 Keychain/actual device UI остаются открытыми на Windows; нужен Mac/Xcode/HTTPS B2.
 
-Полная Android native acceptance также открыта: android-acceptance.json явно
-INCOMPLETE. Прежний UI APK прошёл4/6групп до финальной auth-only правки. Финальный
-APK установлен/SHA проверен, но preflight упёрся в отсутствующий phone service;
-отдельный API36 AVD дал системные startup ANR phone/SystemUI. Нужно повторить все6
-групп на здоровом эмуляторе/устройстве, особенно401notice и360dp/font130.
-Тестовые B2/DB8772 остановлены, контейнер и private env удалены. Временный AVD
-остановлен/убран из списка; его папка перемещена в Корзину. Исходные AVD не сбрасывались.
+Android-приёмка3ноября:6/6PASS в одном полном запуске на Android16/API36,
+2GB,4cores,swiftshader,tzdata2025a. SHA установленного APK совпал с прежней сборкой;
+код приложения не менялся, прежний228unit/build/lint/release прогон не повторялся.
+Отозвана1активная сессия, сообщение видно, draft/credential/cache удалены, guest
+bytes прежние. Readback1080px/480dpi=360dp,font_scale1.3; ошибка имени/Save доступны.
+Скриншоты просмотрены. RestoreErrors=[], повторов UI-наблюдения в финальном прогоне0.
+
+API34 с конкретной старой tzdata2023a отклоняет корректный MINUTE для Алматы.
+Это отдельный незакрытый вопрос, детали в artifacts/m3-profile-edit/API34_TZDATA.md.
+Правила/даты не подменялись. API36PASS не означает проверку всех версий Android.
+Тестовые B2/DB8772 остановлены, контейнер/private env удалены; временные AVD
+остановлены/убраны в Корзину. Исходные AVD не сбрасывались.
 
 ## Сообщение бэкендчика
 

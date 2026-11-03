@@ -44,9 +44,9 @@ AuthScreen shared field visibility, strings. Reuse metadata from CatalogStore.
 
 ### Task3: Native acceptance, review and handoff
 
-- [ ] Real local B2/disposable DB Android: set/clear six fields, cancel, restart,
+- [x] Real local B2/disposable DB Android: set/clear six fields, cancel, restart,
   offline error/retry, session invalidation; no saved/import changes.
-- [ ] Capture normal/360dp/font130, one final independent review, important regressions
+- [x] Capture normal/360dp/font130, one final independent review, important regressions
   RED→GREEN/full suite. iOS native remains open.
 - [x] Update STATUS_MOBILE, profile usage, draft-review artifact, verification/screenshots,
   PR body and commit/push commands; leave changes unstaged.
@@ -58,3 +58,5 @@ Task3 native boxes remain open: prior UI APK4/6PASS, final APK preflight blocked
 by missing phone service on API37 and phone/SystemUI startup ANR on separate API36 AVD. Do not
 carry older PASS to final APK. Repeat all6groups/360dp/font130 on healthy Android;
 iOS native requires Mac/iPhone. No next M3 features until separately authorized.
+
+Execution2026-11-03: Task3 Android complete on API36/Android16, final reviewedAPK SHA unchanged. One full run6/6PASS, restoreErrors[],1session revoked, guest preserved,360dp/font_scale1.3 readback/screenshots inspected. Zero observation retries in final run. Original228unit/build/lint/release checks not rerun (app code unchanged). Separate oldAPI34/tzdata2023a catalogue compatibility finding documented, not fixed. iOS/TalkBack/physical device open; no next M3 blocks. Reports updated for user commit/push to PR24.
