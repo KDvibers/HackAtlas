@@ -2,6 +2,17 @@
 
 Дата актуального дополнения: 3 ноября 2026.
 
+## Исправление проверки PR #25 — повторный init-volumes
+
+PR run41644693211 на N1 commit98f1cbe упал до запуска legacy migrator: повторный
+init-volumes завершился exit1. Java318/HTTP593/Contract/Gitleaks/OSV уже прошли.
+Рекурсивный chown живых томов заменён на настройку только корней. Реальный regression
+test наблюдал RED на изменении metadata существующего файла и GREEN после исправления;
+полный HTTPS/restore/V6→V7→V8 rehearsal и 49 Python B4 tests прошли с UID1000.
+[Диагностика, границы вывода и команды для того же PR](research/2026-11-03-pr25-volume-initialization.md).
+Изменения оставлены без staging/commit/push в отдельном checkout N1. N2 WIP сохранён
+на feat/account-lifecycle-test-runtime в основной копии. Remote CI fix ещё не запускался.
+
 ## Account lifecycle N1 — неактивная серверная основа
 
 После merged PR #23 пользователь поручил следующий backend этап. База main

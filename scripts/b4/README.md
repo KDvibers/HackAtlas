@@ -24,6 +24,11 @@ python scripts/b4/run_rehearsal.py \
 
 ## Что проверяется
 
+- Повторный init-volumes на работающем stack настраивает только корни томов.
+  Собственный marker подтверждает, что uid/gid/mode/ctime существующего файла
+  PostgreSQL не изменяются. Рекурсивное исправление прав live data не выполняется:
+  исчезающие файлы PostgreSQL/Caddy не должны срывать повторный запуск migrator.
+
 - B4.5: закреплённый restic Linux amd64, локальные encrypted snapshots с полным dump и отдельным более поздним export; `check --read-data`, exact-ID extraction и равенство bytes. Существующий PostgreSQL restore получает именно извлечённые файлы; ложное утверждение полноты и автоматический approve не добавляются. Тесты также отклоняют wrong password, повреждённый архив, extra files, неверное окружение и overwrite. [Операторские команды](../../infra/release/RECOVERY_ARCHIVE.md); binary пока имеет [security blockers](../../docs/research/2026-10-31-recovery-tool-security.md).
 - Случайное уникальное имя Compose project, отдельные volumes и временные file secrets. `.env` не читается; унаследованные переменные приложения/Compose не используются. Проверка эффективного Compose запрещает публикацию портов app/PostgreSQL и любых адресов, кроме двух proxy ports на `127.0.0.1`.
 - Отдельный migrator process, runtime без Flyway, минимальные права PostgreSQL и реальное редактирование каталога через admin под runtime-ролью. Проверяются запреты DDL, изменения admin grants и удаления/редактирования audit.

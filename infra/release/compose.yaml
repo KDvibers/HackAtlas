@@ -43,8 +43,8 @@ services:
     command:
       - >-
         chmod 0700 /postgres-data /caddy-data /caddy-config;
-        chown -R 999:999 /postgres-data;
-        chown -R 10001:10001 /caddy-data /caddy-config
+        chown 999:999 /postgres-data;
+        chown 10001:10001 /caddy-data /caddy-config
     read_only: true
     network_mode: none
     cap_drop: [ALL]

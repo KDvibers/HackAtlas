@@ -215,6 +215,25 @@ class Rehearsal:
         self.dc("Export disposable Caddy root certificate", "cp", "proxy:/data/caddy/pki/authorities/local/root.crt", str(self.temp / "root.crt"))
         self.http = Http(f"https://localhost:{self.https_port}", self.temp / "root.crt")
         self.passed("separate migration process exits successfully and runtime/proxy health checks pass")
+        self.check_repeated_volume_initialization()
+
+    def check_repeated_volume_initialization(self):
+        # This marker belongs only to this disposable project; existing DB files must not be touched.
+        marker = "/var/lib/postgresql/data/.hackatlas-volume-init-regression"
+        self.dc("Create disposable initializer regression marker", "exec", "-T", "postgres", "sh", "-ec",
+                "printf volume-initialization-regression > " + marker)
+        try:
+            before = self.dc("Inspect existing volume marker metadata", "exec", "-T", "postgres",
+                             "stat", "-c", "%u:%g:%a:%z", marker).stdout.strip()
+            self.dc("Repeat volume initialization while services are running", "run", "--rm", "--no-deps", "init-volumes")
+            after = self.dc("Recheck existing volume marker metadata", "exec", "-T", "postgres",
+                            "stat", "-c", "%u:%g:%a:%z", marker).stdout.strip()
+            require(before == after, "Repeated volume initialization must preserve existing file metadata")
+        finally:
+            self.dc("Remove only disposable initializer regression marker", "exec", "-T", "postgres",
+                    "rm", "-f", marker, allow_failure=True)
+        self.report["volumeInitialization"] = {"repeatSafe": True, "existingFileMetadataPreserved": True}
+        self.passed("repeated volume initialization preserves existing files while PostgreSQL and proxy are running")
 
     def sql(self, statements, database="hackatlas", role="hackatlas_admin", allow_failure=False):
         result = self.dc("PostgreSQL rehearsal statement (input/output withheld)", "exec", "-T", "postgres", "psql",
