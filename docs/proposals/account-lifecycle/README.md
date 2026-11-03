@@ -1,10 +1,17 @@
 # Для совместного review: почта и восстановление пароля
 
-**DRAFT, 1 ноября 2026. Не утверждено и не реализовано.**
+**Архив исходного предложения PR #22, 1 ноября 2026. Runtime не реализован.**
 
-Предложение для backend/mobile; [полный дизайн](../../superpowers/specs/2026-11-01-account-lifecycle-design.md).
-Действующие `api/openapi.yaml`, `api/README.md`, fixtures и приложение не менялись.
-Этот каталог содержит только delta к будущему контракту. Он не заменяет Starter.
+Новый canonical — [0.1.1](../../../api/README.md) с
+[планом совместимости](../../../api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md): optional
+flag, planned endpoints, отдельный LifecycleProblem. Ниже сохранён исходный целевой
+draft 0.2. Старый patch/recipe работает **только на указанной базе 0.1.0**, не на
+нынешнем api/openapi.yaml. Не накладывать его на новый canonical.
+
+Историческое предложение PR #22 для backend/mobile;
+[целевой дизайн](../../superpowers/specs/2026-11-01-account-lifecycle-design.md).
+В том PR canonical/fixtures/приложение не менялись. Здесь сохранена delta к старой
+базе; нынешний Starter 0.1.1 находится в api/, не в этом архиве.
 
 ## Предложение, которое нужно обсудить
 

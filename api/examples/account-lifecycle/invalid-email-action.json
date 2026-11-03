@@ -1,0 +1,10 @@
+{
+  "type": "urn:hackatlas:problem:email_action_invalid",
+  "title": "Действие не выполнено",
+  "status": 400,
+  "detail": "Запрос не может быть выполнен в текущем состоянии.",
+  "instance": "/api/v1/auth/password-reset/verify",
+  "code": "EMAIL_ACTION_INVALID",
+  "requestId": "proposal-example-request",
+  "fieldErrors": []
+}

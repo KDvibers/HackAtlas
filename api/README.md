@@ -1,6 +1,14 @@
-# Общий API 0.1.0
+# Общий API 0.1.1
 
-**Статус: единый стартовый проектный контракт для обоих промптов, не готовый сервис. До реализации подтвердить его между разработчиками на этапе G0.** Каждый endpoint помечен `x-phase`. Источник схем — `openapi.yaml`; поведенческие правила — этот файл. Если схема и описание расходятся, остановить затронутую реализацию и вынести вопрос, не угадывать.
+**Переходная контрактная версия.** Нынешние B1/B2/B3 сохраняют прежнее поведение.
+Пять account lifecycle POST объявлены `x-phase: ACCOUNT_LIFECYCLE`,
+`x-implementation-status: planned`: на backend они пока не реализованы.
+Root `x-account-lifecycle-stage: contract-only` / `x-email-verification-enforced: false`
+описывают этап документа, не runtime capabilities. [План совместимости](ACCOUNT_LIFECYCLE_COMPATIBILITY.md).
+
+Источник схем — `openapi.yaml`; поведенческие правила — этот файл. Изменения проходят
+совместный review backend/mobile. При расхождении схемы и описания остановить
+затронутую реализацию и вынести вопрос, не угадывать.
 
 ## Общие правила
 Base path `/api/v1`. JSON UTF-8, camelCase, UUID идентификаторы. Названия display-localization отделены от стабильных id. DTO — не JPA entities. `null` означает неизвестно/не задано, а не ноль, false или пустой текст. Клиент терпим к дополнительным полям ответа; неизвестный enum не должен падать — показать безопасное UNKNOWN/unsupported состояние и зафиксировать рассогласование, не отправлять выдуманное значение на сервер.
@@ -34,6 +42,11 @@ totalAmount — строка decimal, Java BigDecimal. Валюта ISO4217. sta
 TeamRules отдельно различает подачу индивидуальной заявки, участие соло и формирование команды. allowedCountryCodes=null — неизвестно, [] — явное отсутствие географического ограничения. Online не означает worldwide eligibility.
 
 ## Auth — B2
+Это текущий legacy режим закрытого dev/staging. Optional `Profile.emailVerified`
+не имеет default: отсутствие — UNKNOWN, не true/false. Нынешний backend его не
+выдаёт; нынешний mobile игнорирует новое поле. Login не доказывает владение почтой.
+Этот PR не включает verification UI и не ограничивает работающие личные операции.
+
 POST `/auth/register` {email,password,displayName} →201 AuthResponse.
 POST `/auth/login` {email,password} →200 AuthResponse.
 POST `/auth/logout` →204, текущая сессия отзывает доступ.
@@ -48,6 +61,43 @@ GET `/me`, PATCH `/me` требуют Authorization: Bearer <opaque token>.
 Mobile accessToken хранит через SecureTokenStore: iOS Keychain, Android storage с ключом, защищённым Android Keystore; plaintext SharedPreferences/обычные settings запрещены. Не делать доступ к native credentials из общего UI. На logout и account switch очищать account-specific cache; не превращать сохранения аккаунта в гостевые автоматически. Logout на сервере при сети недоступен — локальное стирание не выдавать за подтверждённый отзыв серверной сессии.
 
 Регистрацию в production по умолчанию держать закрытой до anti-abuse/account-lifecycle проверки; private dev signup включать отдельным flag. Public launch требует email verification и password reset (отдельный согласованный contract PR до публичного релиза). Не создавать неработающие кнопки «письмо отправлено».
+
+## Account lifecycle — ACCOUNT_LIFECYCLE / planned, не runtime
+
+| POST относительно `/api/v1` | Будущий вход | Будущий успех |
+|---|---|---|
+| `/auth/email-verification/request` | Bearer того же аккаунта, без тела | 202 EmailActionChallenge; 204, если уже verified |
+| `/auth/email-verification/confirm` | Bearer + EmailCodeRequest | 204, затем свежий GET /me |
+| `/auth/password-reset/request` | PasswordResetRequest, без Bearer | одинаковый 202 для корректного существующего/неизвестного/удалённого email |
+| `/auth/password-reset/verify` | EmailCodeRequest, без Bearer | 200 PasswordResetGrant, без login |
+| `/auth/password-reset/confirm` | PasswordResetConfirmRequest, без Bearer | 204, затем обычный login |
+
+Это отдельный точный allowlist, не часть нынешних smoke/fuzzing наборов B1/B2/B3.
+Нельзя произвольно пометить старую операцию planned, чтобы убрать её из проверок.
+
+Предусмотрены 8 ASCII цифр code (строка с ведущими нулями), TTL 10 минут / 5 неверных
+попыток, resend через 60 секунд. Attempts должны переживать restart/неудачный ответ.
+ChallengeId и resetToken — разные 256-bit значения Base64URL, 43 символа. Reset grant
+одноразовый на 5 минут, не Bearer/refresh. Новый пароль как register: 12–256, без trim.
+202 означает принятие к обработке, не наличие аккаунта/доставку письма. SMTP не настроен.
+
+Будущие ошибки имеют схему **LifecycleProblem**, закрытый wire shape прежнего Problem
+с тремя дополнительными codes. Общий **Problem** текущих операций сохраняет старые
+9 codes. Новые error refs/403 для старых маршрутов вводятся перед активацией отдельным
+контрактным изменением; пока существуют только metadata будущих guard.
+
+В planned lifecycle: плохая форма → 400 VALIDATION_ERROR; неверный/истёкший/чужой/
+повторный code/grant → одинаковый 400 EMAIL_ACTION_INVALID. 401 — недействительность
+приложенного Bearer, не опечатка code. Public recovery не прикладывает Authorization;
+400 не вызывает logout, 429 содержит Retry-After. Ответы no-store, credentials не логируются.
+
+После активации pending allowlist — GET /me, logout, delete-account с паролем и
+verification. Остальные личные read/write и admin требуют verified. Reset должен
+отозвать native/admin sessions и исключить возврат старого пароля из backup.
+Эти guards/миграции/почта **не реализованы**. Детали — [целевой дизайн](../docs/superpowers/specs/2026-11-01-account-lifecycle-design.md).
+
+Старые 6 fixtures сохранены; [отдельный lifecycle manifest](examples/account-lifecycle/README.md)
+проверяет 7 новых synthetic examples. Schema PASS не доказывает HTTP availability.
 
 ## Сохранённое и отметки — B2
 GET `/me/saved` (page,size) → HackathonPage, порядок savedAt DESC,id ASC. GET включает доступные опубликованные ended/cancelled события с честным статусом. PUT `/me/saved/{id}` →204, DELETE →204; повтор того же действия идемпотентен. Unique(user_id,hackathon_id).
