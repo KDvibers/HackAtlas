@@ -1,6 +1,83 @@
 # BACKEND: статус
 
-Дата актуального дополнения: 1 ноября 2026.
+Дата актуального дополнения: 3 ноября 2026.
+
+## Account lifecycle N1 — неактивная серверная основа
+
+После merged PR #23 пользователь поручил следующий backend этап. База main
+`2d05c6fab434829b5c34f52af2bd2b947ed22e36`, её CI `41631949529` прошёл.
+Ветка `feat/account-lifecycle-foundation`, исходно чистая. Работа одним исполнителем;
+один read-only reviewer для криптографии и гонок. Commit/staging/push/PR не выполнялись.
+
+Сделано:
+
+- [V8](../backend/src/main/resources/db/migration/V8__account_lifecycle_foundation.sql):
+  lifecycle flags/version, nullable delivery address, challenge/grant hashes/MAC,
+  persistent attempts, timestamps/constraints/CASCADE. Старые credentials сохранены,
+  legacy не объявлены verified; новые таблицы закрыты runtime ACL.
+- [Crypto](../backend/src/main/java/com/hackatlas/auth/lifecycle/EmailActionCrypto.java)
+  и [store](../backend/src/main/java/com/hackatlas/auth/lifecycle/EmailActionStore.java):
+  random identifiers, HMAC-bound code, cooldown/limits, atomic consumption/exchange,
+  user-first locks и caller transaction. Компоненты не включены как runtime beans.
+- Регистрация сохраняет исходное написание delivery email после прежней canonical
+  validation; matching/Profile/DTO/Bearer/TTL остаются прежними. JsonRequests раньше
+  терял регистр, поэтому изменены parser и INSERT, с HTTP regression test.
+- Rehearsal report проверяет и сообщает фактический V6→V7→V8 upgrade вместо старого
+  фиксированного V7. Quarantine/approve/permissions policy не менялись.
+
+[План N1](superpowers/plans/2026-11-03-account-lifecycle-foundation.md),
+[подробности и обязательная будущая композиция](../backend/ACCOUNT_LIFECYCLE.md),
+[полный отчёт](research/2026-11-03-account-lifecycle-foundation.md).
+
+### Проверки N1
+
+| Область | Результат |
+|---|---|
+| Финальный Maven verify / dependency:list | **318 = 31 unit + 287 IT PASS**, 0 failures/errors/skips, BUILD SUCCESS 1:52 |
+| Canonical / examples / Python | 13 fixtures и **13 + 49 + 27 = 89 tests PASS** |
+| Fresh HTTP exports | **593 PASS** |
+| OSV | **106 packages / 0 affected** |
+| Packaged B1/B2/B3 / Bruno/Schemathesis | PASS, 201 generated fuzz cases passed |
+| HTTPS/restore/upgrade/cleanup | **PASS, 150.597 с**, точный JAR, legacy upgrade до V8 |
+| Финальные scope/syntax/links/Gitleaks | **18 файлов / 185 ссылок PASS**, index пуст, без suppression |
+
+RED→GREEN наблюдался на crypto/schema/store/metadata и двух timing regressions.
+Review нашёл один Important/P2 cooldown bypass задержанными кандидатами: исправлен
+accepted_at под lock без продления initial expiry; новая полная suite прошла.
+Critical/Minor не сообщены. Tests UID1000, Docker group106 временно через setpriv;
+никаких root test processes/постоянного изменения socket/groups.
+
+API 0.1.1 и все planned markers сохранены; HTTP lifecycle/mail/guards не включены.
+Мобильные исходники/dependencies/CI/infra ACL и прежние миграции не менялись.
+Реальные dev volumes не использовались. Android/iOS/KMP/устройства/настоящая почта
+не проверялись; прежние public-release blockers остаются. Новый GitHub CI ещё не запускался.
+HTTPS credential account проверен: **yergaliuly**; автор отдельно —
+**softache <itsyergaliuly@gmail.com>**. Index пуст, изменения оставлены пользователю.
+
+Следующий отдельный backend этап N2 — wiring facade/limits/mail/API и необходимые
+version/revocation/restore guards. Активация требует готового клиента и совместного
+расширения контракта; N1 ещё не даёт пользователю сменить или восстановить пароль.
+Напарнику: «N1 готовит внутреннее хранилище, canonical 0.1.1 остаётся planned.
+Текущий клиент продолжает работать. Email verification/reset UI и UNKNOWN/pending/
+verified/unsupported можно готовить по согласованному плану; live endpoints ещё нет».
+Сообщение не отправлялось.
+
+### Команды пользователя N1
+
+PR title: **Add inactive account lifecycle foundation**.
+
+```powershell
+git status --short --branch
+git add backend/src/main/java/com/hackatlas/auth/AuthService.java backend/src/main/java/com/hackatlas/web/JsonRequests.java backend/src/main/java/com/hackatlas/auth/lifecycle
+git add backend/src/main/resources/db/migration/V8__account_lifecycle_foundation.sql backend/src/test/java/com/hackatlas/AccountLifecycleMigrationIT.java backend/src/test/java/com/hackatlas/EmailActionStoreIT.java backend/src/test/java/com/hackatlas/PersonalApiIT.java backend/src/test/java/com/hackatlas/auth/lifecycle
+git add scripts/b4/run_rehearsal.py backend/README.md backend/ACCOUNT_LIFECYCLE.md
+git add docs/DECISIONS.md docs/PRIVACY.md docs/STATUS_BACKEND.md docs/research/2026-11-03-account-lifecycle-foundation.md docs/superpowers/plans/2026-11-03-account-lifecycle-foundation.md
+git diff --cached --check
+git diff --cached --stat
+git commit -m "feat(backend): add inactive account lifecycle foundation"
+git push -u origin feat/account-lifecycle-foundation
+Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...feat/account-lifecycle-foundation?expand=1'
+```
 
 ## Canonical account lifecycle 0.1.1 — контракт и совместимость подготовлены
 

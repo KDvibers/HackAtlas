@@ -66,9 +66,9 @@ public class AuthService {
         Instant now = now();
         int inserted = jdbc.update("""
                 INSERT INTO hackatlas.user_account
-                    (id, email, password_hash, display_name, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING
-                """, userId, normalizedEmail, passwordHash, displayName, Timestamp.from(now), Timestamp.from(now));
+                    (id, email, email_delivery_address, password_hash, display_name, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT (email) DO NOTHING
+                """, userId, normalizedEmail, email.strip(), passwordHash, displayName, Timestamp.from(now), Timestamp.from(now));
         if (inserted == 0) {
             throw new ApiFailure(409, "EMAIL_ALREADY_EXISTS", "Не удалось создать аккаунт с указанными данными.");
         }

@@ -1,5 +1,19 @@
 # Принятые решения
 
+## 3 ноября 2026 — неактивная account lifecycle основа N1
+
+После merged PR #23 пользователь поручил следующий backend этап. Mobile main пока
+не поддерживает lifecycle: [ограниченная основа](../backend/ACCOUNT_LIFECYCLE.md)
+добавляет V8/crypto/transactional store, не включает HTTP/mail/guards и не меняет
+канонический 0.1.1. Новые таблицы остаются закрытыми для runtime роли.
+User-first locks сохраняют порядок login/delete; потребление proof и будущее
+изменение аккаунта выполняются в одной caller transaction. Invalid — outcome,
+чтобы attempts фиксировались до HTTP error mapping. Нет новых dependencies.
+Исходное написание email сохраняется только для новых registrations после прежней
+canonical validation; legacy delivery=NULL и verified=false. Runtime/key provider,
+SMTP, limits, native/admin revocation/version guards и forced recovery при restore
+остаются следующими отдельными работами. Commit/push/PR выполняет пользователь.
+
 ## 1 ноября 2026 — переходный canonical lifecycle contract
 
 После merge PR #22 пользователь поручил canonical/compatibility без реализации.

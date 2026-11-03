@@ -63,6 +63,21 @@ class PersonalApiIT extends B2HttpSupport {
     }
 
     @Test
+    void registrationPreservesDeliverySpellingWithoutChangingCanonicalEmailOrActivatingVerification() throws Exception {
+        var created = register("  Mixed.Case+Tag@Example.COM  ", PASSWORD, "Delivery spelling");
+        UUID createdId = UUID.fromString(created.path("user").path("id").stringValue());
+        var row = jdbc.queryForMap("SELECT email,email_delivery_address,email_verified,credential_version,password_reset_required FROM hackatlas.user_account WHERE id=?", createdId);
+        assertThat(row.get("email")).isEqualTo("mixed.case+tag@example.com");
+        assertThat(row.get("email_delivery_address")).isEqualTo("Mixed.Case+Tag@Example.COM");
+        assertThat(row.get("email_verified")).isEqualTo(false);
+        assertThat(row.get("credential_version")).isEqualTo(0L);
+        assertThat(row.get("password_reset_required")).isEqualTo(false);
+        assertThat(created.path("user").path("email").stringValue()).isEqualTo("mixed.case+tag@example.com");
+        assertThat(created.path("user").has("emailVerified")).isFalse();
+        call("POST", "/auth/login", null, loginPayload("mixed.case+tag@example.com", PASSWORD), 200);
+    }
+
+    @Test
     void registrationIssuesOpaqueAbsoluteSessionAndStoresOnlyHashes() throws Exception {
         assertThat(Base64.getUrlDecoder().decode(token)).hasSizeGreaterThanOrEqualTo(32);
         assertThat(token).doesNotContain(".");

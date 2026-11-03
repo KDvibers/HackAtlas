@@ -491,17 +491,19 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
             require(self.sql("SELECT to_regclass('hackatlas.account_deletion_receipt') IS NULL;", target) == "t",
                     "Legacy backup must genuinely predate the receipt schema")
             self.env["HACKATLAS_DB_NAME"] = target
-            self.dc("Migrate quarantined legacy restore from V6 to V7", "--profile", "ops", "run", "--rm", "migrate",
+            self.dc("Migrate quarantined legacy restore from V6 to current schema", "--profile", "ops", "run", "--rm", "migrate",
                     timeout=self.timeout)
             require(self.sql("SELECT count(*) FROM hackatlas.account_deletion_receipt;", target) == "0",
                     "Migration must not fabricate historical deletion receipts")
             require(self.sql("SELECT count(*) FROM public.flyway_schema_history WHERE version='7' AND success;", target) == "1",
                     "V7 must apply to a V6 restored database")
+            current_version = self.sql("SELECT version FROM public.flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;", target)
+            require(current_version == "8", "Lifecycle foundation V8 must also apply to the legacy restore")
             require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
                     "Legacy migration callback must preserve quarantine")
-            self.report["legacyRestore"] = {"backupSchemaVersion": 6, "migratedToVersion": 7,
+            self.report["legacyRestore"] = {"backupSchemaVersion": 6, "migratedToVersion": int(current_version),
                                             "quarantinePreserved": True, "historicalReceiptsBackfilled": False}
-            self.passed("genuine V6 backup restores and migrates to V7 without opening quarantine or inventing history")
+            self.passed("genuine V6 backup restores through V7 to V8 without opening quarantine or inventing history")
         finally:
             self.env["HACKATLAS_DB_NAME"] = previous
 
