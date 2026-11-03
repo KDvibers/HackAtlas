@@ -1,22 +1,40 @@
 {
-  "status": "BLOCKED_SYSTEM_SERVICES",
-  "date": "2026-11-02",
-  "api37": "Final APK installed and SHA verified; profile smoke stopped in prepare(): svc data could not find phone service. Settings readback matched original.",
-  "api36": "Separate fresh temporary AVD,3GB. Primary dex compilation finished; phone and SystemUI startup ANR. Phone service unavailable after cold boot and one warm reboot. No profile test executed on this AVD.",
-  "evidence": [
-    "ANR in com.android.phone: failed to complete startup",
-    "ANR in com.android.systemui",
-    "Service phone: not found"
+  "status": "READY_AND_SIX_SCENARIOS_PASSED_API36",
+  "date": "2026-11-03",
+  "device": "API36 Android16,2048MB,4cores,swiftshader",
+  "tzdata": "2025a",
+  "backend": "Real B2 on loopback8772; disposable PostgreSQL5549, synthetic accounts and DEMO events",
+  "userFreedMemory": true,
+  "priorApi34Finding": "API34_TZDATA.md",
+  "priorAutoGpuCrash": "QEMU0xc0000005; exact module unknown; software-renderer run passed",
+  "harnessReadProbe": [
+    {
+      "networkOnline": true,
+      "readOnlyCatCalls": 12,
+      "failedCalls": 0,
+      "maxSeconds": 0.048
+    },
+    {
+      "networkOnline": false,
+      "readOnlyCatCalls": 12,
+      "failedCalls": 0,
+      "maxSeconds": 0.08
+    }
   ],
-  "appCrashObserved": false,
   "testTimeoutsChanged": false,
   "testsDisabled": false,
+  "observationRetryLimit": 1,
+  "observationRetriesUsed": 0,
   "cleanup": {
     "ownedBackend8772": "stopped",
-    "ownedPostgreSqlContainer": "stopped and removed",
+    "ownedPostgresContainer": "stopped and removed",
     "privateDbEnv": "removed",
-    "ownedTemporaryAvd": "stopped, registry removed, directory sent to Recycle Bin",
+    "taskApi34AndApi36Avds": "stopped; registry files removed; directories sent to Recycle Bin",
     "userAvds": "not wiped",
     "otherUserProcesses": "not stopped"
-  }
+  },
+  "sources": [
+    "https://developer.android.com/studio/run/emulator-acceleration",
+    "https://data.iana.org/time-zones/tzdb/NEWS"
+  ]
 }

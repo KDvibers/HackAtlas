@@ -4,16 +4,21 @@
 <style>body{margin:0;background:#050507;color:#f5f2fa;font:16px/1.6 system-ui,sans-serif}main{max-width:1400px;margin:auto;padding:32px 24px}h1{font-size:30px;margin:0}p{max-width:1000px;color:#c0b8cc}a{color:#63d8ff}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}figure{margin:0}img{width:100%;height:auto;border:1px solid #443053;border-radius:14px}figcaption{padding:12px 0;color:#e91df4}details{margin:32px 0}summary{cursor:pointer;color:#63d8ff}small{color:#9f97ad}@media(max-width:700px){.grid{grid-template-columns:1fr}main{padding:24px 16px}}</style>
 <main><small>HACKATLAS / PROFILE EDIT_</small><h1>Редактирование профиля</h1>
 <p>Общие Compose-компоненты на реальном Android. Изменяются имя, город, код страны, подпись, аватар и интересы. Сохраняются только изменённые поля через действующий Starter PATCH /me. На снимках одноразовый аккаунт в локальном B2; токен/пароль в artifacts отсутствуют.</p>
-<p><strong>Нативная приёмка ещё не завершена.</strong> Кадры ниже получены на прежнем UI APK (4/6 групп PASS), до последней правки только auth restore. Финальная сборка: 228 тестов, build/lint/release PASS; системные ANR phone/SystemUI и отсутствующий phone service заблокировали новый UI-прогон. Нужен повтор всех шести групп на здоровом Android. 360dp/font130 и новый expired-notice пока не приняты.</p>
+<p><strong>Android16/API36:6/6 PASS,3ноября2026.</strong> Один полный прогон на финальном APK PR24: отмена, шесть полей/restart, очистка, offline/retry, отзыв сессии и360dp/font130. Failure=null, restoreErrors=[], повторов наблюдения0. Все кадры ниже — из этого запуска. Приложение и APK не менялись.</p>
 <div class="grid">
 <figure><a href="screenshots/editor-initial.png"><img src="screenshots/editor-initial.png" alt="Поля профиля"></a><figcaption>Редактор · прежняя визуальная система</figcaption></figure>
 <figure><a href="screenshots/editor-choices.png"><img src="screenshots/editor-choices.png" alt="Выбор аватара и интересов"></a><figcaption>Аватар и интересы</figcaption></figure>
 <figure><a href="screenshots/profile-edited.png"><img src="screenshots/profile-edited.png" alt="Сохранённый профиль из B2"></a><figcaption>Подтверждённый сервером профиль</figcaption></figure>
 </div>
 <p><a href="verification.json">Проверки</a> · <a href="android-acceptance.json">статус native acceptance</a> · <a href="android-history.json">история прогонов</a> · <a href="android-environment.json">окружение</a> · <a href="REVIEW.md">итоговое review</a> · <a href="BACKEND_DRAFT_REVIEW.md">сообщение бэкендчика и mobile feedback</a>.</p>
-<details><summary>Отмена и ошибка сохранения</summary><div class="grid">
-<figure><img src="screenshots/discard-confirmation.png" alt="Подтверждение отмены"><figcaption>Черновик не теряется без подтверждения</figcaption></figure>
-<figure><img src="screenshots/save-error-offline.png" alt="Ошибка сохранения без сети"><figcaption>Ошибка · явный повтор</figcaption></figure>
+<details><summary>Отмена, offline, отзыв и360dp/font130</summary><div class="grid">
+<figure><img src="screenshots/discard-confirmation.png" alt="Подтверждение отмены"><figcaption>Черновик сохраняется до подтверждения</figcaption></figure>
+<figure><img src="screenshots/save-error-offline.png" alt="Ошибка сохранения без сети"><figcaption>Offline · явный повтор</figcaption></figure>
+<figure><img src="screenshots/revoked-draft-cleared.png" alt="Повторный вход после отзыва сессии"><figcaption>Отзыв · draft и приватные файлы очищены, guest сохранён</figcaption></figure>
+<figure><img src="screenshots/editor-360-font130.png" alt="Редактор360dp font130"><figcaption>360dp · font_scale1.3</figcaption></figure>
+<figure><img src="screenshots/validation-360-font130.png" alt="Ошибка пустого имени360dp font130"><figcaption>Крупный текст · валидация читаема</figcaption></figure>
+<figure><img src="screenshots/profile-cleared.png" alt="Очищенный профиль"><figcaption>Nullable поля и интересы очищены</figcaption></figure>
 </div></details>
+<p>Проверена1реально отозванная сессия, readback1080px/480dpi=360dp,font_scale1.3. <a href="screenshots/profile-restored.png">Профиль после перезапуска</a> · <a href="API34_TZDATA.md">Открытый вопрос старой tzdata2023a в образе API34</a> · <a href="COMMIT_PR.md">Команды обновления PR24</a> · <a href="PR_DESCRIPTION.md">Описание PR</a>.</p>
 <p>iOS: общий UI и прежний host подготовлены в исходниках, native build/Swift/Keychain/UI требуют Mac/iPhone. Предложенные email verification/reset из message18 здесь не реализованы и не считаются утверждённым API.</p>
 </main></html>

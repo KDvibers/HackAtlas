@@ -11,6 +11,9 @@ failure не очищает прежние интересы. Draft только 
 
 ## Проверка
 
+Прежний unit/build/lint/release прогон —2ноября. В приёмке3ноября APK и код приложения
+не менялись; эти проверки повторно не запускались. Ниже их команда и результат.
+
 Из `mobile/`, JDK21/SDK36:
 
 ```powershell
@@ -26,23 +29,33 @@ Backend package BUILD SUCCESS/21unit tests, не повторный backend veri
 network retry, logout during PATCH и foreground draft. Review-регрессии воспроизвели
 applied-response-lost и schema-invalid200 до исправлений, затем GREEN/full suite.
 
-**Полная нативная приёмка открыта.** Прежний UI APK прошёл4/6 групп Android→B2:
-cancel, шесть полей/restart, nullable/interests clear, offline/retry. После последней
-auth-only правки финальный APK прошёл unit/build checks, установленный SHA проверен,
-но native preflight остановлен отсутствующим phone service. На отдельном API36 AVD
-системные startup ANR phone/SystemUI сохранились после одного warm reboot.
-Прежние4PASS не засчитаны финальному APK. Повторить все6групп на здоровом Android.
-Итог — `android-acceptance.json`, история/окружение отдельно, SHA/build — verification.
-Synthetic account/DEMO events, guest bytes/display восстановлены; при ошибке команды
-restore phone сетевые settings дополнительно сверены readback. Credentials не в artifacts.
+**Android-приёмка3ноября:6/6 PASS в одном полном запуске** на Android16/API36,
+2GB,4cores,swiftshader,tzdata2025a. SHA установленного APK совпал с проверенной
+сборкой e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4.
+
+1. Dirty cancel/продолжение редактирования без PATCH.
+2. Шесть полей, подтверждение в БД, восстановление после restart.
+3. Nullable clear, пустые интересы и смена аватара.
+4. Offline ошибка сохраняет draft, явный online retry успешен.
+5. Same-owner draft сохраняется на foreground; отозвана1active session,
+   сообщение входа показано, draft/credential/cache очищены, guest bytes прежние.
+6. Readback1080px/480dpi=360dp,font_scale1.3, Save и валидация пустого имени доступны;
+   профиль на сервере не изменился.
+
+Failure=null, restoreErrors=[], свежих повторов наблюдения0. Реальный локальный
+B2 и одноразовая PostgreSQL, synthetic accounts/DEMO; credentials в artifacts нет.
+Smoke helper добавляет SQL/readback доказательства и надёжный false-отчёт при потере
+device. Максимум1повтор свежего read-only XML-наблюдения на весь прогон, без повторов
+input/HTTP/SQL или изменения таймаутов. Два harness selfcheck PASS; в финальном run
+повтор не понадобился. Отчёты android-acceptance.json/android-smoke.json, устройство
+android-device.json, прежние неудачные попытки android-history.json.
 
 ## Интерфейс
 
-Сохранены M1 black/magenta/cyan, pixel heading, шрифты/artwork/четыре вкладки.
-Общие реальные text fields, avatar/interest chips, IME scrolling и cancel confirmation.
-Новых fonts/assets/dependencies нет. Screenshots в `mobile/artifacts/m3-profile-edit/`;
-обзор `review.html`. Normal screenshots с прежнего UI APK; финальная правка меняла
-только auth restore. 360dp/font130 и revoked-notice screenshots ещё не приняты.
+M1 black/magenta/cyan, pixel heading, шрифты/artwork/четыре вкладки сохранены.
+Новых fonts/assets/dependencies нет. Все текущие screenshots сняты на финальном
+APK3ноября, включая360dp/font130, ошибку имени и сообщение после отзыва.
+Галерея review.html; изображения просмотрены исполнителем, текст/ошибка читаемы.
 
 ## API и данные
 
@@ -64,7 +77,10 @@ guest-copy/calendar схемы и файлы не меняются.
   Потерянный ответ не доказывает отсутствие server update, UI сообщает это явно.
 - Native регрессия с исчезновением expired-notice воспроизведена отдельным unit RED:
   route refresh заменял SignInRequired на SignedOut. Исправлена, full228 GREEN;
-  подтверждение на Android входит в оставшуюся нативную приёмку.
+  подтверждено реальным отзывом сессии в полном Android-прогоне3ноября.
+- Отдельный открытый вопрос: конкретный API34 образ с tzdata2023a отвергает валидный
+  MINUTE для Алматы (старыйUTC+6). API34_TZDATA.md содержит воспроизведение и IANA.
+  Проверки дат/fixtures не ослаблялись;6/6 относится к API36, не ко всем версиям ОС.
 - iOS native build/Swift/Keychain/UI не выполнены на Windows; Mac/iPhone обязательны.
   TalkBack/физическое устройство отдельно не приняты.
 - APK dev8772 требует своего запущенного B2/подходящего URL. Временная среда тестов
@@ -72,6 +88,7 @@ guest-copy/calendar схемы и файлы не меняются.
 
 ## Сообщение напарнику
 
+Android-профиль6/6PASS на API36, включая401 и360dp/font130. Старыйtzdata риск отдельно.
 Profile edit подключён по прежнему PATCH /me, контракт unchanged, opaque Bearer
 сохранён. Клиент учитывает absent/null/interests и неопределённый ответ, не трогает
 guest saved. Draft lifecycle proposal посмотрели; готовый mobile feedback отдельно,

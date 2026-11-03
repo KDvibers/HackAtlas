@@ -35,11 +35,18 @@ SignInRequired на SignedOut и скрывал причину повторно�
 release gate PASS. Native/device результаты — отдельно android-acceptance.json;
 reviewer не запускал тесты или UiAutomator параллельно.
 
-**Android native INCOMPLETE:**4/6 групп прошли на прежнем UI APK. После последней
-auth-only правки финальный APK остановился на system preflight, не на assert UI:
-phone service отсутствовал; отдельный API36 AVD дал startup ANR phone/SystemUI,
-один warm reboot не восстановил сервисы. Нужен повтор всех6групп на здоровом
-Android, включая expired-notice/360dp/font130. Прежние PASS не выданы за финальные.
+**Android-приёмка3ноября:6/6 PASS на API36.** Один полный запуск на неизменённом
+APK e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4.
+Отзыв1active session, удаление draft/credential/cache, сохранение guest bytes,
+360dp/font130 и валидация подтверждены. Новый XML dump retry в финальном прогоне
+не использовался (0), restoreErrors[]. Скриншоты просмотрены исполнителем.
+Два harness selfcheck PASS: запись false-отчёта при потере device и лимит свежего
+наблюдения после read timeout. Продуктовый код не менялся;228/full build/lint/release
+относятся к прежней проверке2ноября. Дополнительный независимый reviewer не вызывался.
+
+Отдельная находка совместимости: API34 образ/tzdata2023a отвергает согласованный
+MINUTE Алматы; API34_TZDATA.md содержит воспроизведение и источник IANA.
+Валидация/даты не ослаблялись. Старые неудачные прогоны сохранены в history.
 
 ## Rulings и ограничения
 

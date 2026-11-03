@@ -1,12 +1,52 @@
 {
   "source": "Real local B2, disposable DB, synthetic account and DEMO catalogue",
-  "checks": [],
-  "failure": "RuntimeError: ADB shell svc failed: cmd: Can't find service: phone\r\n",
-  "restoreErrors": [
-    "ADB shell svc failed: cmd: Can't find service: phone\r\n"
+  "checks": [
+    {
+      "name": "dirty cancel confirmation, continue-edit and discard without PATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "real PATCH updates six fields, returns actual profile, survives restart and preserves guest bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "nullable fields explicitly clear, interests empty replacement and avatar change confirmed by B2",
+      "status": "PASS"
+    },
+    {
+      "name": "offline save keeps draft and shows honest error; explicit online retry succeeds",
+      "status": "PASS"
+    },
+    {
+      "name": "foreground retains same-owner draft; revoked401 discards it and clears private session/cache",
+      "status": "PASS"
+    },
+    {
+      "name": "360dp/font130 form, keyboard, controls and client validation remain reachable",
+      "status": "PASS"
+    }
   ],
-  "fullAcceptance": false,
+  "failure": null,
+  "restoreErrors": [],
+  "fullAcceptance": true,
   "ios": "Source only; Mac/Xcode required",
   "scope": "full profile smoke",
-  "apkSha256": "e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4"
+  "apkSha256": "e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4",
+  "serial": "emulator-5560",
+  "revocation": {
+    "revokedSessions": 1,
+    "noticeShown": true,
+    "draftAbsent": true,
+    "credentialAbsent": true,
+    "privateCacheAbsent": true,
+    "guestBytesUnchanged": true
+  },
+  "variant": {
+    "widthPx": 1080,
+    "heightPx": 2400,
+    "densityDpi": 480,
+    "widthDp": 360,
+    "fontScale": 1.3
+  },
+  "freshObservationRetries": 0
 }

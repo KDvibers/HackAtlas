@@ -27,6 +27,17 @@ class ProfileSmoke(auth_smoke.AuthSmoke):
         self.backup=ROOT/"mobile/build/m3-profile-edit/device-backup"
         for folder in (self.out/"screenshots",self.backup):folder.mkdir(parents=True,exist_ok=True)
         self.cache_path="no_backup/account-saved/"+hashlib.sha256(BASE.encode()).hexdigest()+".json"
+        self.observation_retries=0
+
+    def tree(self):
+        try:return super().tree()
+        except subprocess.TimeoutExpired:
+            if self.observation_retries>=1:raise
+            self.observation_retries+=1
+            print("INFO One timed-out hierarchy observation retried with a fresh dump",flush=True)
+            # Parent removes the previous XML before dumping again. Never retry
+            # a tap, text input, HTTP call or SQL mutation through this path.
+            return super().tree()
 
     def adb(self,*command,**kwargs):
         # The inherited field helper already selects/deletes the text. Android
@@ -147,7 +158,11 @@ class ProfileSmoke(auth_smoke.AuthSmoke):
         self.adb("shell","input","keyevent","KEYCODE_HOME")
         self.adb("shell","am","start","-W","-n",COMPONENT)
         self.require("Мой профиль");self.require("M3 Unsaved")
-        self.sql("UPDATE hackatlas.auth_session SET revoked_at=now() WHERE user_id IN (SELECT id FROM hackatlas.user_account WHERE email='"+self.email+"');")
+        assert self.exists(self.session_path),"No current credential before revocation"
+        assert re.fullmatch(r"m3-[a-f0-9]+@example\.org",self.email)
+        revoked=int(self.sql("WITH revoked AS (UPDATE hackatlas.auth_session SET revoked_at=now() WHERE revoked_at IS NULL AND user_id IN "
+                            "(SELECT id FROM hackatlas.user_account WHERE email='"+self.email+"') RETURNING id) SELECT count(*) FROM revoked;"))
+        assert revoked>=1,"No active synthetic-user session revoked"
         self.adb("shell","input","keyevent","KEYCODE_HOME")
         self.adb("shell","am","start","-W","-n",COMPONENT)
         self.require("Сессия завершена. Войдите снова.")
@@ -155,10 +170,16 @@ class ProfileSmoke(auth_smoke.AuthSmoke):
         assert not self.exists(self.cache_path) and not self.exists(self.session_path)
         assert self.read(self.stored)==guest_bytes
         self.capture("revoked-draft-cleared")
+        self.revocation=dict(revokedSessions=revoked,noticeShown=True,draftAbsent=True,credentialAbsent=True,privateCacheAbsent=True,guestBytesUnchanged=True)
         self.passed("foreground retains same-owner draft; revoked401 discards it and clears private session/cache")
 
         self.press("Войти");self.fill(self.email);self.press("Войти");self.require(server_name)
         self.adb("shell","wm","density","480");self.adb("shell","settings","put","system","font_scale","1.3")
+        size=self.adb("shell","wm","size");density=self.adb("shell","wm","density")
+        font_scale=self.adb("shell","settings","get","system","font_scale").strip()
+        assert re.findall(r"\d+x\d+",size)[-1]=="1080x2400"
+        assert re.findall(r"\d+",density)[-1]=="480" and float(font_scale)==1.3
+        self.variant=dict(widthPx=1080,heightPx=2400,densityDpi=480,widthDp=360,fontScale=float(font_scale))
         self.launch("profile");self.require(server_name);self.edit();self.capture("editor-360-font130")
         self.fill_profile(name="")
         self.press("Сохранить изменения")
@@ -184,11 +205,17 @@ def main():
         print("TRACE",[(Path(f.filename).name,f.name,f.lineno) for f in traceback.extract_tb(exc.__traceback__)],flush=True)
     finally:
         errors=smoke.restore()
-        if smoke.settings:smoke.adb("shell","run-as",PACKAGE,"rm","-f",smoke.session_path,smoke.cache_path)
+        if smoke.settings:
+            try:smoke.adb("shell","run-as",PACKAGE,"rm","-f",smoke.session_path,smoke.cache_path)
+            except Exception as cleanup:errors.append("Own session/cache cleanup failed: "+type(cleanup).__name__)
         report=dict(source="Real local B2, disposable DB, synthetic account and DEMO catalogue",checks=smoke.results,
                     failure=failure,restoreErrors=errors,fullAcceptance=failure is None and not errors,ios="Source only; Mac/Xcode required")
         report["scope"]="lifecycle and font variants only" if args.tail_only else "full profile smoke"
         report["apkSha256"]=hashlib.sha256((ROOT/"mobile/build/m3-profile-edit/HackAtlas-profile-edit-debug.apk").read_bytes()).hexdigest()
+        report["serial"]=args.serial
+        report["revocation"]=getattr(smoke,"revocation",None)
+        report["variant"]=getattr(smoke,"variant",None)
+        report["freshObservationRetries"]=getattr(smoke,"observation_retries",0)
         name="android-tail-smoke.json" if args.tail_only else "android-smoke.json"
         (smoke.out/name).write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding="utf-8")
     return 1 if failure or errors else 0

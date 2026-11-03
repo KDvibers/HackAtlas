@@ -1,5 +1,43 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## PR24: Android-приёмка — 3 ноября 2026, 6/6 PASS на API36
+
+Пользователь поручил повторить все6сценариев,401 и360dp/font130, обновить отчёт;
+без новых блоков M3, commit/push вручную. Проверен HEAD e06c6d4 и неизменённый APK
+SHA256 e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4.
+
+**Один полный запуск:6/6 PASS**, failure=null, restoreErrors=[], повторов наблюдения0.
+Android16/API36,2GB,4cores,swiftshader,tzdata2025a. Реальные B2:8772/БД:5549,
+одноразовые аккаунты/DEMO events. Отмена; шесть полей/restart; nullable clear;
+offline+retry; same-owner draft/отзыв;360dp/font130 — все выполнены на этом APK.
+
+Отозвана1активная сессия своего synthetic user: сообщение о повторном входе
+видно, draft/credential/private cache отсутствуют, guest bytes прежние. После
+повторного входа проверены1080px/480dpi=360dp,font_scale1.3, достижимость Save
+и ошибка пустого имени без изменения сервера. Screenshot normal/360/validation/
+revoked просмотрены; текст/ошибка читаемы, дизайн не менялся.
+
+Отчёты: mobile/artifacts/m3-profile-edit/{android-acceptance,android-smoke,
+android-device,android-environment,verification}.json, review.html. Неудачные
+попытки сохранены в android-history.json. Исходники приложения/контракт не менялись;
+228unit/build/lint/release PASS относятся к прежней проверке2ноября, не повторялись.
+
+Smoke helper: SQL-подтверждение отзыва, readback360/font130; отчёт сохраняется при
+потере устройства; максимум1повтор свежего XML-наблюдения на весь прогон, без
+повторов input/HTTP/SQL и изменения таймаутов. Device-loss report и retry/global-cap
+selfchecks PASS; в итоговом6/6 повтор не понадобился. Diff проверен исполнителем;
+исходный независимый review приложения не запускался повторно.
+
+**Отдельный открытый вопрос:** старый API34 образ с tzdata2023a отклоняет валидные
+MINUTE для Алматы из-за старогоUTC+6. Подтверждены системное11:00+0600 и правильное
+серверное10:00+0500 для05:00Z. Детали/источник — API34_TZDATA.md. Этот вопрос не
+исправлялся и не скрывается результатом на API36.
+
+Собственные B2/контейнер/private env остановлены/удалены после проверки; временные
+AVD убраны в Корзину, исходные AVD не сбрасывались. Cleanup — android-environment.json.
+Открыты Mac/iPhone/Keychain/native iOS, TalkBack/физический Android и отдельная
+совместимость старых tzdata. Новые блоки M3 не начинались. Пользователь обновляет PR24.
+
 ## M3: редактирование профиля — 2 ноября 2026
 
 Пользователь поручил profile edit, сохранить дизайн, sequential+final review;
@@ -44,14 +82,10 @@ was SignedOut; restore без токена теперь сохраняет SignI
 После исправления full228/build/lint/release PASS; ранние native-попытки сохранены
 в android-history.json. SHA установленного финального APK проверен отдельно.
 
-**Нативная приёмка НЕ завершена:** прежний UI APK прошёл 4/6 групп (cancel, шесть
-полей/restart, nullable clear, offline/retry), затем ADB timeout после перерыва.
-Последняя auth-only правка прошла unit regression, но финальный APK остановился
-на preflight: phone service отсутствовал. Отдельный временный API36 AVD подтвердил
-системные startup ANR com.android.phone/SystemUI, один warm reboot не восстановил
-сервисы. Тесты/таймауты не отключались. Прежние 4 PASS не засчитаны финальному APK:
-android-acceptance.json/verification.json явно INCOMPLETE. На здоровом Android нужно
-повторить все 6 групп, включая401 и360dp/font130; этих финальных screenshot нет.
+**Историческое состояние на2ноября:** прежний UI APK прошёл4/6, затем ADB timeout;
+финальный APK был блокирован отсутствующим phone service и startup ANR на тестовых
+образах. Эти попытки сохранены в android-history.json. 3ноября на финальном APK
+выполнены все6сценариев на API36; актуальный результат и ограничения описаны выше.
 
 **Review:** одно независимое read-only review,0Critical/2Important/0Minor.
 Оба исправлены одним проходом: uncertain result сохраняет sent keys/предупреждение;
@@ -65,7 +99,7 @@ Profile200 валидируется по editable schema перед success. П�
 display восстановлены; при недоступном phone restore-команда вернула ошибку,
 последующий readback всех трёх network settings совпал с исходным. Временные
 B2/БД остановлены, временный AVD убран в Корзину; состояние cleanup — android-environment.json.
-Следующий шаг — закрыть нативную приёмку на исправном Android и затем Mac/iPhone.
+Android-приёмка API36 закрыта3ноября; остаются Mac/iPhone и вопрос старых tzdata.
 Следующие M3 блоки, lifecycle contract rollout,
 production audit/release не разрешены этим этапом.
 
