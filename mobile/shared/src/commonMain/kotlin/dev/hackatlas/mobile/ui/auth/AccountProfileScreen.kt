@@ -31,7 +31,7 @@ import org.jetbrains.compose.resources.stringResource
 fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: List<SavedGuestEvent>, format: DisplayFormat,
     onOpen: (SavedGuestEvent) -> Unit, onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit,
     onSettings: () -> Unit, onRefresh: () -> Unit, onLogout: () -> Unit,
-    accountSaved: Boolean = false, savedRemoveEnabled: Boolean = true, savedStatus: @Composable () -> Unit = {}) {
+    accountSaved: Boolean = false, savedRemoveEnabled: Boolean = true, onEdit:(()->Unit)?=null, savedStatus: @Composable () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
@@ -66,6 +66,10 @@ fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: Lis
                     ProfileStat(profile.stats.savedCount, stringResource(Res.string.saved_stat), Modifier.weight(1f))
                 }
                 Text(stringResource(Res.string.profile_motto), color = AtlasColors.Cyan, style = MaterialTheme.typography.labelSmall)
+                if(onEdit!=null) TextButton(onClick=onEdit,enabled=state.busy==null && state.error==null,modifier=Modifier.fillMaxWidth()) {
+                    OutlineIcon(AtlasIcon.Edit,Modifier.size(20.dp),AtlasColors.Primary)
+                    Spacer(Modifier.width(8.dp));Text(stringResource(Res.string.edit_profile),color=AtlasColors.Primary)
+                }
             }
         }
         item { AuthFeedback(state) }

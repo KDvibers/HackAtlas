@@ -24,6 +24,7 @@ import dev.hackatlas.mobile.resources.*
 import dev.hackatlas.mobile.ui.*
 import dev.hackatlas.mobile.ui.auth.*
 import dev.hackatlas.mobile.ui.saved.*
+import dev.hackatlas.mobile.ui.profile.*
 import dev.hackatlas.mobile.ui.auth.AuthOperation
 import dev.hackatlas.mobile.data.auth.AuthState
 import kotlinx.coroutines.launch
@@ -65,6 +66,9 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val auth = app.auth
     val authState = auth?.state?.collectAsState()?.value
     val account = (authState?.session as? AuthState.Authenticated)?.user
+    val editor=app.profileEditor
+    val editState=editor?.state?.collectAsState()?.value
+    val editRoute=route=="editProfile"
     val accountSaved = ready.accountSaved
     val savedState = accountSaved?.state?.collectAsState()?.value
     val accountMode = accountSaved != null && (savedState?.mode != SavedMode.GUEST || authState?.localIdentity != null || authState?.busy == AuthOperation.LOGOUT)
@@ -91,6 +95,13 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
     val closeAuth: () -> Unit = { route = "profile" }
+    val closeEditor:()->Unit={
+        if(editState?.dirty==true && !editState.busy)dialog="discardProfile"
+        else{editor?.close();route="profile"}
+    }
+    LaunchedEffect(editState?.saved,editState?.draft,route) {
+        if(editRoute && (editState?.saved==true || editState?.draft==null)){editor?.close();route="profile"}
+    }
     val savedStatus: @Composable () -> Unit = {
         if(accountSaved != null && savedState != null) AccountSavedStatus(accountSaved, savedState, guestSnapshots, format,
             onImport = { importCandidates = guestSnapshots.toList(); importOwner = identity })
@@ -148,8 +159,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         ready.catalog.setQuery(it)
         app.ownerScope.launch { catalogueScroll.scrollToItem(0) }
     }
-    BackHandler(enabled = route == "detail" || route == "typography" || authRoute,
-        onBack = if (authRoute) closeAuth else back)
+    BackHandler(enabled = route == "detail" || route == "typography" || authRoute || editRoute,
+        onBack = if(editRoute) closeEditor else if (authRoute) closeAuth else back)
     val content = details as? DetailUiState.Content
     val screenKey = "$activeOwner:" + if (route == "detail") ready.saved.scope.detailStateKey(
         if (!openLocalCopy && content?.detail?.hackathon?.id == selectedId) content.detail.hackathon.savedKey()
@@ -160,6 +171,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         Box(Modifier.weight(1f)) {
             saveableStates.SaveableStateProvider(screenKey) {
                 when (route) {
+                    "editProfile" -> if(editor!=null)ProfileEditScreen(editor,catalog.metadata,catalog.metadataLoading,
+                        ready.catalog::retryMetadata,closeEditor)
                     "login", "register" -> if (auth != null) AuthScreen(auth,
                         if (route == "register") AuthFormMode.REGISTER else AuthFormMode.LOGIN,
                         { route = if (it == AuthFormMode.REGISTER) "register" else "login" }, closeAuth)
@@ -189,7 +202,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                         account, authState, snapshots, format, openSnapshot,
                         { changeBookmark(it.detail.hackathon, true) }, { route = "saved" }, { dialog = "settings" },
                         auth::refresh, { dialog = "logout" }, accountSaved = accountMode,
-                        savedRemoveEnabled = canWrite, savedStatus = savedStatus)
+                        savedRemoveEnabled = canWrite, onEdit=if(editor!=null)({if(editor.open())route="editProfile"})else null,
+                        savedStatus = savedStatus)
                     else if(authState?.localIdentity != null) UnverifiedAccountProfile(auth, authState,
                         { dialog = "logout" }, savedStatus)
                     else if (profile != null) ProfileScreen(profile.copy(savedCount = snapshots.size),
@@ -214,7 +228,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                 }
             }
         }
-        if (route != "detail" && route != "typography" && !authRoute) AtlasTabBar(route) { route = it }
+        if (route != "detail" && route != "typography" && !authRoute && !editRoute) AtlasTabBar(route) { route = it }
     }
     val bookmarkFailure = bookmarks.failures.firstOrNull()
     val accountError = savedState?.error
@@ -254,6 +268,11 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             text = { Text(body, color = AtlasColors.TextSecondary) }, containerColor = AtlasColors.SurfaceRaised,
             titleContentColor = AtlasColors.TextPrimary,
             confirmButton = { TextButton(onClick = acknowledge) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
+    } else if(dialog=="discardProfile") {
+        AlertDialog(onDismissRequest={dialog=null},title={Text(stringResource(Res.string.profile_discard_title))},
+            text={Text(stringResource(Res.string.profile_discard_body))},containerColor=AtlasColors.SurfaceRaised,titleContentColor=AtlasColors.TextPrimary,
+            confirmButton={TextButton(onClick={dialog=null;editor?.close();route="profile"}){Text(stringResource(Res.string.profile_discard))}},
+            dismissButton={TextButton(onClick={dialog=null}){Text(stringResource(Res.string.profile_continue_edit))}})
     } else if (dialog == "logout" && auth != null) {
         AlertDialog(onDismissRequest = { dialog = null },
             title = { Text(stringResource(Res.string.auth_logout_title)) },

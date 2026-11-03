@@ -22,6 +22,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.io.IOException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.*
 
 /** Owns an isolated client and engine; use a dedicated engine, with retries/redirects disabled. */
 class AuthSessionClient(
@@ -47,12 +48,29 @@ class AuthSessionClient(
     }
 
     suspend fun restore(): ProfileDto? = mutex.withLock {
-        val session = readSession() ?: run { mutableState.value = AuthState.SignedOut; return@withLock null }
+        val session = readSession() ?: run {
+            // A route refresh after 401 must retain the reason for signing in again.
+            if (mutableState.value != AuthState.SignInRequired) mutableState.value = AuthState.SignedOut
+            return@withLock null
+        }
         profile(session)
     }
 
     suspend fun profile(): ProfileDto = mutex.withLock {
         profile(readSession() ?: throw AuthException(AuthError.Unauthorized))
+    }
+
+    suspend fun updateProfile(expectedUserId: String, patch: JsonObject): ProfileDto = mutex.withLock {
+        validateProfilePatch(patch)
+        val session = ownedSession(expectedUserId)
+        val response = transport { client.patch(source.baseUrl + "me") {
+            bearerAuth(session.accessToken); contentType(ContentType.Application.Json); setBody(patch)
+        } }
+        requireProtected(response,200)
+        val user=decode<ProfileDto>(response)
+        invalidResponse { validateProfile(user); require(user.id == session.userId) }
+        mutableState.value=AuthState.Authenticated(user)
+        user
     }
 
     suspend fun listSaved(expectedUserId: String, page: Int = 0, size: Int = 50): CatalogPage = mutex.withLock {
@@ -196,6 +214,12 @@ class AuthSessionClient(
 
     private fun validateProfile(user: ProfileDto) {
         require(USER_ID.matches(user.id) && user.displayName.isNotBlank() && user.email.isNotBlank())
+        validateProfilePatch(buildJsonObject {
+            put("displayName",user.displayName);put("city",user.city?.let(::JsonPrimitive)?:JsonNull)
+            put("countryCode",user.countryCode?.let(::JsonPrimitive)?:JsonNull)
+            put("roleLabel",user.roleLabel?.let(::JsonPrimitive)?:JsonNull)
+            put("avatarKey",user.avatarKey);put("interests",JsonArray(user.interests.map(::JsonPrimitive)))
+        })
         require(user.stats.savedCount >= 0 && user.stats.appliedCount >= 0 && user.stats.interestsCount >= 0)
     }
 
