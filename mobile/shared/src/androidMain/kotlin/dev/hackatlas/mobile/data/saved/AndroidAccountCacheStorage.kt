@@ -11,8 +11,9 @@ import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 
 /** App-private, no-backup file; contains event snapshots/membership, never credentials. */
-class AndroidAccountCacheStorage(context: Context, source: CatalogSource.Remote) : AccountCacheStorage {
-    private val directory = File(context.applicationContext.noBackupFilesDir, "account-saved")
+class AndroidAccountCacheStorage(context: Context, source: CatalogSource.Remote,
+    kind: PrivateCacheKind = PrivateCacheKind.SAVED) : AccountCacheStorage {
+    private val directory = File(context.applicationContext.noBackupFilesDir, kind.androidDirectory)
     private val name = storageNamespaceKey(source.baseUrl) + ".json"
     private val file = directory.resolve(name).toPath()
     private val atomic = AtomicGuestFileStorage(directory, name)

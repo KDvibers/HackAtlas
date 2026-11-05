@@ -9,8 +9,8 @@ import kotlinx.coroutines.withContext
 import platform.Foundation.*
 
 /** Source preparation on Windows; native Foundation/protection behavior needs Mac/iPhone. */
-class IosAccountCacheStorage(source: CatalogSource.Remote) : AccountCacheStorage {
-    private val directory = (NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true).first() as String) + "/AccountSaved"
+class IosAccountCacheStorage(source: CatalogSource.Remote, kind: PrivateCacheKind = PrivateCacheKind.SAVED) : AccountCacheStorage {
+    private val directory = (NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true).first() as String) + "/" + kind.iosDirectory
     private val path = "$directory/${storageNamespaceKey(source.baseUrl)}.json"
     override suspend fun read(): String? = withContext(Dispatchers.Default) { memScoped {
         val error = alloc<ObjCObjectVar<NSError?>>()

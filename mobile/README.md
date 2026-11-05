@@ -197,3 +197,8 @@ adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-de
 Совместимость каталога со старой Android tzdata — [TZDATA_COMPAT.md](TZDATA_COMPAT.md):
 правила EventTime выбираются между системной и bundled TZDB; строгая проверка
 точного времени сохранена. API и утверждённый дизайн прежние.
+
+Личная отметка подачи заявки — [APPLICATION_MARKS.md](APPLICATION_MARKS.md):
+явное действие в подробностях, подтверждение сервера, отдельная копия своего
+аккаунта для просмотра без сети. Очередь, список заявок и напоминания не добавлены.
+Native Android-приёмка ожидает свободной памяти; общие проверки выполнены.

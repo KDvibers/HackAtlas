@@ -4,6 +4,7 @@ import android.app.Application
 import dev.hackatlas.mobile.data.AndroidGuestSnapshotStorage
 import dev.hackatlas.mobile.data.auth.AndroidSecureTokenStore
 import dev.hackatlas.mobile.data.saved.AndroidAccountCacheStorage
+import dev.hackatlas.mobile.data.saved.PrivateCacheKind
 import dev.hackatlas.mobile.domain.selectCatalogSource
 import dev.hackatlas.mobile.ui.AppState
 import dev.hackatlas.mobile.ui.CatalogRuntime
@@ -18,6 +19,7 @@ class HackAtlasApplication : Application() {
         { scope -> AndroidGuestSnapshotStorage(this, scope) }, catalogEnabled, BuildConfig.CATALOG_PAGE_SIZE,
         secureStoreFactory = { source -> AndroidSecureTokenStore(this, source) },
         accountCacheFactory = { source -> AndroidAccountCacheStorage(this, source) },
+        applicationCacheFactory = { source -> AndroidAccountCacheStorage(this, source, PrivateCacheKind.APPLICATIONS) },
     ).also { runtime = it }).state
 
     fun onForeground() { runtime?.onForeground() }

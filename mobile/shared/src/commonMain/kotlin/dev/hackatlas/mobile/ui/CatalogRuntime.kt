@@ -7,6 +7,8 @@ import dev.hackatlas.mobile.ui.auth.AuthStore
 import dev.hackatlas.mobile.data.saved.*
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
 import dev.hackatlas.mobile.ui.profile.ProfileEditStore
+import dev.hackatlas.mobile.data.applications.ApplicationCache
+import dev.hackatlas.mobile.ui.applications.ApplicationStore
 import dev.hackatlas.mobile.domain.*
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
@@ -16,7 +18,8 @@ import kotlinx.coroutines.*
 class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -> GuestSnapshotStorage,
     catalogEnabled: Boolean = true, remotePageSize: Int = 20,
     secureStoreFactory: ((CatalogSource.Remote) -> SecureTokenStore)? = null,
-    accountCacheFactory: ((CatalogSource.Remote) -> AccountCacheStorage)? = null) {
+    accountCacheFactory: ((CatalogSource.Remote) -> AccountCacheStorage)? = null,
+    applicationCacheFactory: ((CatalogSource.Remote) -> AccountCacheStorage)? = null) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var engine: HttpClientEngine? = null
     private var client: HttpClient? = null
@@ -32,11 +35,15 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
         accountSavedFactory = if(source is CatalogSource.Remote && auth != null && authClient != null && accountCacheFactory != null)
             { guest, repository, invalidate -> AccountSavedStore(auth, authClient, repository, guest,
                 AccountCache(source.baseUrl, accountCacheFactory(source)), scope,
-                onInvalidated = invalidate, onChanged = auth::refresh) } else null)
+                onInvalidated = invalidate, onChanged = auth::refresh) } else null,
+        applicationsFactory = if(source is CatalogSource.Remote && auth != null && authClient != null && applicationCacheFactory != null)
+            { -> ApplicationStore(auth,authClient,ApplicationCache(source.baseUrl,applicationCacheFactory(source)),scope,
+                onChanged = auth::refresh) } else null)
 
     fun onForeground() {
         auth?.onForeground()
         (state.state.value as? BootstrapState.Ready)?.accountSaved?.refresh()
+        (state.state.value as? BootstrapState.Ready)?.applications?.refresh()
     }
     fun onBackground() { auth?.onBackground() }
 

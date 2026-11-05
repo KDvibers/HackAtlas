@@ -1,0 +1,72 @@
+{
+  "apkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+  "images": [
+    {
+      "file": "screenshots/detail-top.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "5f07b9f543619d71a96ef5e4cc5b26e479d2e3c0b124c3749314f0adce2f2aa2"
+    },
+    {
+      "file": "screenshots/guest-sign-in.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "4ec0ed5af0c52aefc283c4361a408fcedf4a4ea8196e6331509ea1db3240f8a7"
+    },
+    {
+      "file": "screenshots/unmarked.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "1d336241f3e04627ea276b21788ada5ba3240f2c7bd0217d2614b5ea6992883e"
+    },
+    {
+      "file": "screenshots/external-preview.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "c6848fbfa45befb34ea2638015f52bc81b1afa0d31f8e9ae13534f6d9c57bc84"
+    },
+    {
+      "file": "screenshots/applied.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "1d08602eac116ec76dabdcb8a91d7c4d1b30f6842045631c0ed146e665561adf"
+    },
+    {
+      "file": "screenshots/offline.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "75ede462125e105f37ffb0562854e5c95bb7d2b81561532cc90d7a33cb504946"
+    },
+    {
+      "file": "screenshots/removed.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "1cd5927196a82bdbf21916135229447b17870b3e95126d8ee01deb1a793df386"
+    },
+    {
+      "file": "screenshots/account-b.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "2036816533d5f73fd9fa349d86f04f514b054a065a5cfdcd7cd0712212974049"
+    },
+    {
+      "file": "screenshots/applied-360-font130.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "2326a9ebff5216b114795f9954a057439a0f79095e26fe1d98d605574fde8abb"
+    },
+    {
+      "file": "screenshots/revoked.png",
+      "width": 1080,
+      "height": 2400,
+      "sha256": "fcd5476ca5242067446ed2e15fb68023a0f8b49f43e1497391d2832d7a3c6b45"
+    }
+  ],
+  "visuallyInspected": [
+    "detail-top",
+    "applied",
+    "offline",
+    "applied-360-font130",
+    "revoked"
+  ]
+}

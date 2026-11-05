@@ -265,4 +265,25 @@
     <string name="card_gamedev_kicker">PLAY\nCREATE\nREPEAT</string>
     <string name="card_green_kicker">BUILD\nA BETTER\nWORLD</string>
     <string-array name="short_months"><item>янв</item><item>фев</item><item>мар</item><item>апр</item><item>мая</item><item>июн</item><item>июл</item><item>авг</item><item>сен</item><item>окт</item><item>ноя</item><item>дек</item></string-array>
+    <string name="application_title">Моя заявка</string>
+    <string name="application_hint">Личная отметка: она не подтверждает приём заявки организатором.</string>
+    <string name="application_sign_in">Войти, чтобы отметить</string>
+    <string name="application_demo_hint">В демонстрационном режиме личные отметки не изменяются.</string>
+    <string name="application_unavailable">Личные отметки пока недоступны.</string>
+    <string name="application_checking">Проверяем личную отметку…</string>
+    <string name="application_unknown">Личная отметка ещё не загружена.</string>
+    <string name="application_none">Личной отметки пока нет.</string>
+    <string name="application_mark">Я подал(а) заявку</string>
+    <string name="application_remove">Снять отметку</string>
+    <string name="application_confirmed">Отмечено вами: %1$s</string>
+    <string name="application_saving">Сохраняем отметку…</string>
+    <string name="application_removing">Снимаем отметку…</string>
+    <string name="application_copy">Сохранённая копия отметок. Сведения могли измениться.</string>
+    <string name="application_uncertain">Результат изменения не подтверждён. Обновите данные, чтобы проверить отметку.</string>
+    <string name="application_read_only">Для изменения нужна подтверждённая связь с сервером.</string>
+    <string name="application_refresh">Обновить отметку</string>
+    <string name="application_failed">Не удалось изменить или получить отметку. Повторите обновление.</string>
+    <string name="application_not_found">Событие больше недоступно. Обновите каталог.</string>
+    <string name="application_storage_error">Сохранённая копия отметок недоступна. Повторите очистку личных данных.</string>
+    <string name="application_write_error">Данные получены с сервера, но сохранить копию не удалось. Повторите обновление.</string>
 </resources>

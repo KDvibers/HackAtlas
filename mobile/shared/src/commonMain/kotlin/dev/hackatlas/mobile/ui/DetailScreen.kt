@@ -27,10 +27,13 @@ import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.platform.ExternalActions
 import dev.hackatlas.mobile.resources.*
+import dev.hackatlas.mobile.ui.applications.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat, onBack: () -> Unit, onBookmark: () -> Unit, externalActions: ExternalActions, capturedAt: String? = null, bundled: Boolean = true, saving: Boolean = false) {
+fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat, onBack: () -> Unit, onBookmark: () -> Unit, externalActions: ExternalActions, capturedAt: String? = null, bundled: Boolean = true, saving: Boolean = false,
+    applications: ApplicationUiState? = null, onApplicationsRefresh: () -> Unit = {}, onApplicationsRecover: () -> Unit = {},
+    onApplicationChange: (Boolean) -> Unit = {}, onApplicationSignIn: (() -> Unit)? = null) {
     val event = detail.hackathon
     val links = remember(detail, bundled) { eventLinkPolicy(detail, bundled) }
     val demoNotice = stringResource(Res.string.demo_share_notice)
@@ -68,6 +71,8 @@ fun DetailScreen(detail: HackathonDetail, saved: Boolean, format: DisplayFormat,
                 }
             }
             InfoGrid(event, format)
+            Spacer(Modifier.height(16.dp))
+            ApplicationStatus(event.id,applications,format,bundled,onApplicationsRefresh,onApplicationsRecover,onApplicationChange,onApplicationSignIn)
             Spacer(Modifier.height(19.dp))
             SectionTitle(stringResource(Res.string.about_event))
             Spacer(Modifier.height(8.dp))

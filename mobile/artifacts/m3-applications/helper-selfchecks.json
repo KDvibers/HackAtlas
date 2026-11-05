@@ -1,0 +1,14 @@
+{
+  "passed": 9,
+  "checks": [
+    "request method remains callable after inherited constructor",
+    "foreign AVD refused before actor",
+    "foreign DB label refused before actor",
+    "existing private state refused before preparation",
+    "schema failure does not expose response credentials",
+    "real Compose XML disabled: accept expected state",
+    "real Compose XML disabled: reject opposite state",
+    "real Compose XML enabled: accept expected state",
+    "real Compose XML enabled: reject opposite state"
+  ]
+}

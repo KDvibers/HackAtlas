@@ -1,0 +1,254 @@
+[
+  {
+    "date": "2026-11-05",
+    "source": "Real local B2:8774, labelled disposable PostgreSQL:5551, synthetic accounts/DEMO events",
+    "checks": [],
+    "failure": "TypeError: 'list' object is not callable",
+    "restoreErrors": [],
+    "fullAcceptance": false,
+    "apkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "installedApkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "device": {
+      "ro.build.version.sdk": "36",
+      "ro.build.version.release": "16"
+    },
+    "httpChecks": [],
+    "syntheticAccounts": 0,
+    "freshObservationRetries": 0,
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "ios": "Not built/run on Windows",
+    "registrationBrowser": "Official-site DEMO preview tested; real organiser browser/submission not repeated in this block"
+  },
+  {
+    "date": "2026-11-05",
+    "source": "Real local B2:8774, labelled disposable PostgreSQL:5551, synthetic accounts/DEMO events",
+    "checks": [
+      {
+        "name": "guest sign-in returns to the selected event; no automatic application mark",
+        "status": "PASS"
+      },
+      {
+        "name": "official-site DEMO preview leaves personal application membership unchanged; no organiser submission",
+        "status": "PASS"
+      },
+      {
+        "name": "explicit mark has real B2 APPLIED/selfReported/markedAt and server profile count",
+        "status": "PASS"
+      },
+      {
+        "name": "host repeated PUT preserves markedAt; Android restores the same mark after process restart",
+        "status": "PASS"
+      }
+    ],
+    "failure": "RuntimeError: ADB shell uiautomator failed: ",
+    "restoreErrors": [
+      "ADB shell am failed: adb.exe: device offline\r\n",
+      "ADB shell run-as failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell settings failed: adb.exe: device offline\r\n",
+      "ADB shell cmd failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell svc failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell svc failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "Own source private-file cleanup failed"
+    ],
+    "fullAcceptance": false,
+    "apkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "installedApkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "device": {
+      "ro.build.version.sdk": "36",
+      "ro.build.version.release": "16"
+    },
+    "httpChecks": [
+      {
+        "method": "POST",
+        "path": "/auth/register",
+        "status": 201,
+        "schemaChecked": true
+      },
+      {
+        "method": "POST",
+        "path": "/auth/register",
+        "status": 201,
+        "schemaChecked": true
+      },
+      {
+        "method": "GET",
+        "path": "/me/applications",
+        "status": 200,
+        "schemaChecked": true
+      },
+      {
+        "method": "GET",
+        "path": "/me",
+        "status": 200,
+        "schemaChecked": true
+      },
+      {
+        "method": "PUT",
+        "path": "/me/applications/{id}",
+        "status": 200,
+        "schemaChecked": true
+      }
+    ],
+    "syntheticAccounts": 2,
+    "freshObservationRetries": 0,
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "ios": "Not built/run on Windows",
+    "registrationBrowser": "Not reached; organiser browser/submission not tested"
+  },
+  {
+    "date": "2026-11-05",
+    "source": "Real local B2:8774, labelled disposable PostgreSQL:5551, synthetic accounts/DEMO events",
+    "checks": [
+      {
+        "name": "guest sign-in returns to the selected event; no automatic application mark",
+        "status": "PASS"
+      },
+      {
+        "name": "official-site DEMO preview leaves personal application membership unchanged; no organiser submission",
+        "status": "PASS"
+      },
+      {
+        "name": "explicit mark has real B2 APPLIED/selfReported/markedAt and server profile count",
+        "status": "PASS"
+      },
+      {
+        "name": "host repeated PUT preserves markedAt; Android restores the same mark after process restart",
+        "status": "PASS"
+      }
+    ],
+    "failure": "RuntimeError: ADB shell uiautomator failed: ",
+    "restoreErrors": [
+      "ADB shell am failed: adb.exe: device offline\r\n",
+      "ADB shell run-as failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell settings failed: adb.exe: device offline\r\n",
+      "ADB shell cmd failed: adb.exe: device offline\r\n",
+      "ADB shell svc failed: adb.exe: device offline\r\n",
+      "ADB shell svc failed: adb.exe: device offline\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "Own source private-file cleanup failed"
+    ],
+    "fullAcceptance": false,
+    "apkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "installedApkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "device": {
+      "ro.build.version.sdk": "36",
+      "ro.build.version.release": "16"
+    },
+    "httpChecks": [
+      {
+        "method": "POST",
+        "path": "/auth/register",
+        "status": 201,
+        "schemaChecked": true
+      },
+      {
+        "method": "POST",
+        "path": "/auth/register",
+        "status": 201,
+        "schemaChecked": true
+      },
+      {
+        "method": "GET",
+        "path": "/me/applications",
+        "status": 200,
+        "schemaChecked": true
+      },
+      {
+        "method": "GET",
+        "path": "/me",
+        "status": 200,
+        "schemaChecked": true
+      },
+      {
+        "method": "PUT",
+        "path": "/me/applications/{id}",
+        "status": 200,
+        "schemaChecked": true
+      }
+    ],
+    "syntheticAccounts": 2,
+    "freshObservationRetries": 0,
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "ios": "Not built/run on Windows",
+    "registrationBrowser": "Official-site DEMO preview tested; real organiser browser/submission not repeated in this block"
+  },
+  {
+    "date": "2026-11-05",
+    "source": "Real local B2:8774, labelled disposable PostgreSQL:5551, synthetic accounts/DEMO events",
+    "checks": [
+      {
+        "name": "guest sign-in returns to the selected event; no automatic application mark",
+        "status": "PASS"
+      },
+      {
+        "name": "official-site DEMO preview leaves personal application membership unchanged; no organiser submission",
+        "status": "PASS"
+      },
+      {
+        "name": "explicit mark has real B2 APPLIED/selfReported/markedAt and server profile count",
+        "status": "PASS"
+      },
+      {
+        "name": "host repeated PUT preserves markedAt; Android restores the same mark after process restart",
+        "status": "PASS"
+      },
+      {
+        "name": "account bookmark add/remove is independent; original guest bytes remain unchanged",
+        "status": "PASS"
+      }
+    ],
+    "failure": "AssertionError: Button enabled state differs: Снять отметку",
+    "restoreErrors": [],
+    "fullAcceptance": false,
+    "apkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "installedApkSha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "device": {
+      "ro.build.version.sdk": "36",
+      "ro.build.version.release": "16"
+    },
+    "httpChecks": [
+      {
+        "method": "POST",
+        "path": "/auth/register",
+        "status": 201,
+        "schemaChecked": true
+      },
+      {
+        "method": "POST",
+        "path": "/auth/register",
+        "status": 201,
+        "schemaChecked": true
+      },
+      {
+        "method": "GET",
+        "path": "/me/applications",
+        "status": 200,
+        "schemaChecked": true
+      },
+      {
+        "method": "GET",
+        "path": "/me",
+        "status": 200,
+        "schemaChecked": true
+      },
+      {
+        "method": "PUT",
+        "path": "/me/applications/{id}",
+        "status": 200,
+        "schemaChecked": true
+      }
+    ],
+    "syntheticAccounts": 2,
+    "freshObservationRetries": 0,
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "ios": "Not built/run on Windows",
+    "registrationBrowser": "Official-site DEMO preview tested; real organiser browser/submission not repeated in this block"
+  }
+]
