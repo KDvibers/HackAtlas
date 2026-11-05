@@ -1,5 +1,8 @@
 # BACKEND: статус
 
+Актуальная подготовка стенда: [Windows/Android handoff](../infra/lifecycle-test/WINDOWS_ANDROID.md),
+ветка `chore/n2-android-handoff`, 5 ноября2026. Фактические результаты/границы — в конце файла.
+
 Актуальное предложение для совместного review:
 [матрица клиента и N2, 5 ноября 2026](superpowers/specs/2026-11-05-account-lifecycle-client-matrix.md).
 Она ещё не согласована и не принимает strict0.2; результат подготовки — в конце файла.
@@ -1208,3 +1211,47 @@ protected403 refs. Относительные ссылки, docs-only scope2file
 Gitleaks документации и git diff --check PASS. Helper/logs только ignored backend/target.
 Java/mobile сборка и device/E2E не запускались: runtime/source code не менялись.
 Документ готов к совместному review; approval решений и реализация ещё впереди.
+
+## Windows + Android handoff после PR #29 — 5 ноября 2026
+
+Пользователь сообщил review/merge29 и передал среду друга: Windows/Android Studio,
+API36 x86_64 Pixel8 основной, API34 с прежней tzdata regression; iOS отдельно на Mac.
+Основа origin/main fb05a31, её Backend CI42078341280 SUCCESS. От чистого checkout
+создана chore/n2-android-handoff; один исполнитель, без дополнительных агентов.
+
+Небольшая подготовка в пределах закрытого N2:
+
+- local.py: explicit serve --demo для маркированного seed; default off, остальные
+  команды отвергают этот флаг. Clock системный, inherited fixed-clock overrides
+  очищаются: fixed Clock заморозил бы lifecycle cooldown/expiry.
+- Фактический Windows transport RED: Mailpit18025 TCP PASS, backend8081 timeout;
+  WSL health200, tcp6 IPv4-mapped LISTEN, Windows wslrelay без8081. Локальный launcher
+  получил preferIPv4Stack=true; тот же Windows probe прошёл. Bind127.0.0.1 сохранён,
+  WSL/firewall/глобальные Docker privileges не менялись.
+- [Runbook](../infra/lifecycle-test/WINDOWS_ANDROID.md): собственный WSL стенд друга,
+  Windows API127.0.0.1:8081/api/v1, emulator10.0.2.2:8081/api/v1, Mailpit127.0.0.1:18025,
+  debug Gradle properties, optional serial-specific adb reverse, API36/34 evidence,
+  общий recipient cooldown60с, cleanup. Приведены официальные Android/WSL sources.
+
+Свежий Maven verify:47 unit+309 IT,0 failures/errors/skips, BUILD SUCCESS.
+Lifecycle Python11 PASS (новые --demo tests RED→GREEN). Native Windows probe:
+24 HTTP checks PASS — actual CLI --demo, Flyway V9, health/API/Mailpit, pagination,
+pending guard, настоящий SMTP verify/reset, verified saved, неверный delete-password
+401 сохраняет Bearer, grant не Bearer, старые tokens/password отклонены после reset,
+новый login проходит. Квота429 с Retry-After фактически выдержана; asOf продвинулся.
+Каталог5 published seed events; проверенный isDemo ID ff4ed922-d2c6-5e7e-b7f3-c532efe4b34d.
+Не реальная регистрация/данные. Inspect подтвердил non-root containers и loopback ports.
+
+SDK/adb не обнаружены: Android Emulator API36/API34 и mobile cache/UI здесь НЕ
+проверялись. Native iOS НЕ проверен. Хостовый HTTP PASS не заменяет приёмку клиента.
+Own containers/processes/три private state files удалены после теста; только ignored
+target содержит helpers/logs/санитизированный отчёт. Backend/mobile/API0.1.1/auth/SQL
+и fixtures не изменены. Новые launcher flags требуют этой ветки/её merge в main.
+Коммит/push/PR делает пользователь; следующий шаг — прогон нового клиента другом
+на двух AVD и разбор фактических integration failures по матрице.
+
+Дополнительные проверки текущих изменений:11 lifecycle+13 contract Python tests PASS,
+canonical OpenAPI/13fixtures PASS,115 fresh N2 HTTP exports PASS. Scope ровно6files,
+относительные ссылки/Gitleaks/diff whitespace PASS; staging пуст. Java runtime
+источники, mobile, API и SQL не менялись. Готово к пользовательскому PR и передаче
+Windows/Android инструкции другу; его реальные AVD/device результаты ещё ожидаются.
