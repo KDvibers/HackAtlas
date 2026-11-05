@@ -1255,3 +1255,69 @@ canonical OpenAPI/13fixtures PASS,115 fresh N2 HTTP exports PASS. Scope ровн
 относительные ссылки/Gitleaks/diff whitespace PASS; staging пуст. Java runtime
 источники, mobile, API и SQL не менялись. Готово к пользовательскому PR и передаче
 Windows/Android инструкции другу; его реальные AVD/device результаты ещё ожидаются.
+
+## Локальный Android-прогон у пользователя — 6 ноября 2026
+
+По просьбе пользователя проверка перенесена с ноутбука напарника на этот Windows PC.
+GitHub main обновлён до `dec07cc8e015c203aadbbfa5f4473b189b988940` (PR31, до него
+PR30 с Windows handoff). В существующем checkout `C:/Daniyar/MyProjects/HackAtlas`
+создана `chore/local-android-n2-check`, без commit/push/PR. Приложение и контракт
+не менялись; GitHub credential account yergaliuly проверен отдельно от автора
+softache <itsyergaliuly@gmail.com>. Работа одним агентом.
+
+Android Studio открывает `mobile`; Gradle JDK выбран 21. В ignored
+`mobile/local.properties` указан установленный Android SDK. Установлены SDK36,
+build-tools36.0.0 и официальный образ Google APIs x86_64 API36 revision7.
+Command-line tools23.0 загружены с проверкой checksum официального metadata.
+Совместимый вызов установки образа — `android.exe --no-metrics --sdk=... sdk install
+'system-images;android-36;google_apis;x86_64'`: устаревший sdkmanager wrapper
+неверно разделил package ID по `;`; прямой вызов завершился exit0.
+
+Новый AVD `HackAtlas_N2_API36`: Pixel8, Android16/API36, x86_64, tzdata2025a,
+RAM2048MB/2cores. Запущен в Running Devices Android Studio, serial emulator-5554.
+Предыдущий Pixel_8/API37 остановлен штатно с сохранением данных; одновременно
+работает один AVD. Его предварительный smoke также выполнен. API34 со старой
+tzdata и native iOS в этом прогоне НЕ проверялись.
+
+Закрытый N2 dev+lifecycle-test оставлен работающим с PostgreSQL и Mailpit:
+Windows API `http://127.0.0.1:8081/api/v1`, emulator API
+`http://10.0.2.2:8081/api/v1`, Mailpit `http://127.0.0.1:18025`.
+Порты loopback; системный Clock, explicit `serve --demo`, 5 опубликованных DEMO.
+Ключ/settings локального стенда находятся вне Git в WSL user state
+`/home/amateru/.local/share/hackatlas-local-android-20261105`.
+Повторно использован проверенный JAR: backend/src/main и pom.xml идентичны f9ba707;
+новый Maven verify здесь не запускался. Код backend, auth, SQL и API0.1.1 не менялись.
+
+На Windows из `mobile` выполнены (Java21; ограничение памяти для ноутбука):
+
+```powershell
+.\gradlew.bat --no-daemon --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process' :androidApp:assembleDebug '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8081/api/v1' '-Phackatlas.allowDebugHttp=true'
+.\gradlew.bat --no-daemon --max-workers=2 '-Dorg.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process' :shared:testDebugUnitTest
+```
+
+Обе команды BUILD SUCCESSFUL, тесты268/0failures/0errors/0skips. APK установлен
+через serial-specific adb install и запущен явным MainActivity на API37 и API36.
+Логи и реальные screenshots/UI dumps — только ignored `backend/target/android-local-*`
+и `backend/target/android-local-run/`. Обычный IDE Run без REMOTE properties
+пересоберёт default DEMO: текущий установленный APK собран командой выше.
+
+На API36 проверены реальный каталог (включая backend-only Registration Closed Demo),
+фильтр Очно → Fintech Hack, поиск GameDev → GameDev Jam, гостевая закладка/список/
+подробности, login, личная отметка заявки, профиль, восстановление сессии после
+force-stop/start, logout с подтверждённым отзывом и сохранением гостевой закладки.
+API37: каталог, гостевые saved/detail, login/профиль/отметка и logout с сохранением guest.
+Синтетический аккаунт подтверждён реальным SMTP-кодом из Mailpit через HTTP;
+emailVerified не выставлялся SQL. Токены/пароли в отчёт и Git не записаны.
+
+Наблюдение для напарника: при первом login на API36 один раз показан диалог
+«Не удалось синхронизировать» для закладок аккаунта. Снимок `api36-after-login.png`.
+После dismiss синхронизация завершилась; повторное обновление и перезапуск прошли,
+профиль показал2 личные заявки. Root cause не установлен; считать это открытым
+наблюдением, а не исправленным дефектом или полностью чистым E2E.
+
+Текущий mobile main ещё НЕ реализует emailVerified, lifecycle error handling,
+экраны подтверждения почты/recovery. Поэтому native N2 OTP/reset/pending/cache
+матрица этим smoke НЕ принята. Следующий отдельный шаг — реализация клиентской
+части закрытого N2 напарником и её прогон здесь по согласованной матрице;
+принятие строгого0.2 отдельным PR по-прежнему не выполнено. Пока оставлены
+backend/Mailpit/AVD и приложение на главном экране для ручной проверки пользователем.
