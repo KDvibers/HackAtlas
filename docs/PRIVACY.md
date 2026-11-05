@@ -2,6 +2,15 @@
 
 Техническое описание реализации на 26 октября 2026. Это описание поведения backend, а не опубликованная юридическая политика. Контракт — [OpenAPI](../api/openapi.yaml) и [API README](../api/README.md); настройка админки — [MODERATION](../backend/MODERATION.md).
 
+Дополнение 3 ноября 2026, [lifecycle foundation N1](../backend/ACCOUNT_LIFECYCLE.md):
+для новых аккаунтов отдельно сохраняется исходное написание email после strip для
+будущей доставки писем; canonical email/matching остаются прежними. Старым строкам
+адрес доставки не выдумывается. Новые таблицы для hashes ID/token, HMAC code,
+purpose/UUID/version, attempts и timestamps подготовлены, но runtime lifecycle ещё
+не подключён. Plaintext code/token не сохраняются. Если такие строки созданы,
+FK CASCADE удаляет их вместе с аккаунтом. Автоматическая retention cleanup ещё
+не реализована; жёсткий срок удаления таких строк из backup не заявляется.
+
 ## Что делает удаление
 
 `POST /api/v1/me/delete-account` требует действующую opaque Bearer session и текущий пароль. Пароль проверяется без обрезания пробелов. Ошибка подтверждения возвращает 401, превышение лимита — 429. Успех — 204 без тела.

@@ -63,7 +63,8 @@ final class JsonRequests {
 
     Registration registration(HttpServletRequest request) {
         var body = object(request, Set.of("email", "password", "displayName"));
-        return new Registration(email(body), text(body, "password", 12, 256, false, true),
+        email(body); // Validate the canonical form as before; preserve delivery spelling for registration.
+        return new Registration(body.path("email").asString().strip(), text(body, "password", 12, 256, false, true),
                 text(body, "displayName", 1, 60, false, false));
     }
 
