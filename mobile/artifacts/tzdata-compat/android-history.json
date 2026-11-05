@@ -1,0 +1,259 @@
+[
+  {
+    "source": "Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",
+    "checks": [],
+    "failure": "AssertionError: No live app hierarchy from fresh dump",
+    "restoreErrors": [],
+    "fullAcceptance": false,
+    "apkSha256": "9e1d57701fd14348e0aec487500c3ea9434bf388cdd71eef9493a33de11b3984",
+    "device": {
+      "ro.build.version.sdk": "34",
+      "ro.build.version.release": "14",
+      "tzdata": "tzdata2023a"
+    },
+    "installedApkSha256": "9e1d57701fd14348e0aec487500c3ea9434bf388cdd71eef9493a33de11b3984",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "freshObservationRetries": 0,
+    "requests": [
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&size=20",
+        "invalidMinute": false,
+        "client": "host-probe",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&page=0&size=20",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/metadata/filters",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+      }
+    ],
+    "ios": "Not built/run on Windows",
+    "diagnosis": "NoSuchMethodError: java.time.zone.ZoneRulesProvider.getVersions on Android; replaced by public android.icu.util.TimeZone.getTZDataVersion."
+  },
+  {
+    "source": "Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",
+    "checks": [
+      {
+        "name": "REMOTE catalogue accepts all five unchanged canonical DEMO events",
+        "status": "PASS"
+      },
+      {
+        "name": "source deadline18:00 and start10:00 stay exact; canonical instant is not reinterpreted",
+        "status": "PASS"
+      }
+    ],
+    "failure": "AssertionError: Android could not launch app: Starting: Intent { cmp=dev.hackatlas.mobile.debug/dev.hackatlas.mobile.MainActivity (has extras) }\r\nStatus: timeout\r\nLaunchState: UNKNOWN (-1)\r\nActivity: dev.hackatlas.mobile.debug/dev.hackatlas.mobile.MainActivity\r\nWaitTime: 10850\r\nComplete\r\n",
+    "restoreErrors": [],
+    "fullAcceptance": false,
+    "apkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+    "device": {
+      "ro.build.version.sdk": "34",
+      "ro.build.version.release": "14",
+      "tzdata": "tzdata2023a"
+    },
+    "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "freshObservationRetries": 0,
+    "requests": [
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&size=20",
+        "invalidMinute": false,
+        "client": "host-probe",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/metadata/filters",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+      },
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&page=0&size=20",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+      },
+      {
+        "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+      }
+    ],
+    "ios": "Not built/run on Windows",
+    "diagnosis": "2/4 passed; am start -W timed out on offline force-stop/relaunch. Emulator process later absent after interrupted turn. Not counted as full pass."
+  },
+  {
+    "source": "Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",
+    "checks": [
+      {
+        "name": "REMOTE catalogue accepts all five unchanged canonical DEMO events",
+        "status": "PASS"
+      }
+    ],
+    "failure": "RuntimeError: ADB shell uiautomator failed: ",
+    "restoreErrors": [
+      "ADB shell am failed: adb.exe: device offline\r\n",
+      "ADB shell run-as failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell settings failed: adb.exe: device offline\r\n",
+      "ADB shell cmd failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell svc failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell svc failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n"
+    ],
+    "fullAcceptance": false,
+    "apkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+    "device": {
+      "ro.build.version.sdk": "34",
+      "ro.build.version.release": "14",
+      "tzdata": "tzdata2023a"
+    },
+    "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "freshObservationRetries": 0,
+    "requests": [
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&size=20",
+        "invalidMinute": false,
+        "client": "host-probe",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/metadata/filters",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+      },
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&page=0&size=20",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+      }
+    ],
+    "ios": "Not built/run on Windows",
+    "diagnosis": "Host Windows Application Error1000: qemu-system-x86_64-headless.exe exception0xc0000005. Device disappeared; restore errors preserved. Not an application PASS."
+  },
+  {
+    "source": "Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",
+    "checks": [
+      {
+        "name": "REMOTE catalogue accepts all five unchanged canonical DEMO events",
+        "status": "PASS"
+      }
+    ],
+    "failure": "RuntimeError: ADB exec-out run-as failed: error: closed\r\n",
+    "restoreErrors": [
+      "ADB shell am failed: adb.exe: device offline\r\n",
+      "ADB shell run-as failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell wm failed: adb.exe: device offline\r\n",
+      "ADB shell settings failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell cmd failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell svc failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell svc failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n",
+      "ADB shell run-as failed: adb.exe: device 'emulator-5560' not found\r\n"
+    ],
+    "fullAcceptance": false,
+    "apkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+    "device": {
+      "ro.build.version.sdk": "36",
+      "ro.build.version.release": "16",
+      "tzdata": "tzdata2025a"
+    },
+    "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "freshObservationRetries": 0,
+    "requests": [
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&size=20",
+        "invalidMinute": false,
+        "client": "host-probe",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/metadata/filters",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+      },
+      {
+        "path": "/api/v1/hackathons",
+        "query": "sort=DEADLINE_ASC&page=0&size=20",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+      },
+      {
+        "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+      },
+      {
+        "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "query": "",
+        "invalidMinute": false,
+        "client": "android",
+        "status": 200,
+        "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+      }
+    ],
+    "ios": "Not built/run on Windows",
+    "diagnosis": "API36 valid catalogue passed; Windows Event1000 confirms host QEMU exception0xc0000005, device lost during guest readback. No full acceptance."
+  }
+]

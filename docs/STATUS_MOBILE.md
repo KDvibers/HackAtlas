@@ -1,5 +1,67 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## PR27: Gitleaks — 5 ноября2026
+
+Ветка fix/mobile-tzdata-compat, HEAD392c37d; пользователь сообщил о CI failures.
+Прочитаны реальные GitHub job logs: Gitleaks8.30.1 на push/PR даёт8находок;
+Backend verify/Contract check завершились success. Локально воспроизведены те же
+32коммита/8generic-api-key. Все находки — SHA-256 публичного OpenAPI в старом поле
+отчётов, не credentials. Сверены исходные8строк/commit blob и canonical file hash.
+
+Поле renamed contractSha256 в helper и5JSON evidence files (8values). Root
+.gitleaksignore содержит ровно8commit:file:rule:line fingerprint исторического
+392c37d. Ничего не исключено по целому пути/коммиту/правилу; history не переписана.
+Локальный --all:0findings,4контроля подтвердили сохранение обнаружения новых
+токенов и новых совпадений на том же report path/line. Helper syntax PASS.
+
+App/API/backend/workflow/dependencies прежние;236unit/native8сценариев повторно
+не запускались, их прежнее подтверждение относится к3ноября. Отчёт/команды:
+mobile/artifacts/tzdata-compat/CI_FIX.md, ci-gitleaks-verification.json.
+Пользователь делает commit/push в ту же ветку для PR27; agent не коммитил/не пушил.
+Remote CI для исправления ещё не запускался. Новые M3 не начинались.
+
+## Android tzdata compatibility — 3 ноября 2026
+
+Пользователь поручил исправить открытие каталога на старой Android tzdata;
+API не менять, последовательно + итоговое ревью, commit/push вручную, без новых M3.
+Ветка `fix/mobile-tzdata-compat` от `origin/main=f72e248`. Старый открытый вопрос
+API34/2023a ниже относится к исторической приёмке PR24; исправление находится
+в этой отдельной ветке.
+
+Android-only ThreeTenBP1.7.5/TZDB2026egtz + внутренний expect/actual EventTime
+resolver. Более новые системные правила сохраняют приоритет; версия Android
+читается через публичный ICU API24+. Строгое равенство MINUTE сохраняет секунды,
+наносекунды/DST; DATE, iOS resolver, API0.1.1, guest bytes/schema и UI прежние.
+Полная BSD-3-Clause лицензия упакована asset в debug/release.
+
+После native linkage correction: full shared236 PASS,0 failures/errors/skipped;
+assembleDebug/lintDebug0/release gate и contract validator PASS. APK SHA256
+73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6.
+Baseline E95 отвергает валидные данные на API34/2023a, этот APK проходит4/4:
+каталог5событий,10:00/18:00 Asia/Almaty, guest bookmark/restart/offline и отказ
+на действительно несогласованном MINUTE. Установленный SHA и байты HTTP
+before/after сверены; OS сохраняет05Z->11:00+0600. API36/2025a: также4/4 PASS, тот же установленный APK; failure=null,
+restoreErrors=[],0повторов наблюдения на обоих успешных прогонах.
+
+Native источник — read-only loopback HTTP replay Starter DEMO fixtures,
+это не новая B2-приёмка. Ранние ошибки приложения/host QEMU/boot setup сохраняются
+в android-history.json и android-environment.json, не засчитываются в PASS.
+Независимое fresh read-only review:0 Critical/Important/Minor, новых исправлений
+не потребовалось. Рецензент не запускал native тесты, API36 завершает исполнитель.
+
+Пути: mobile/TZDATA_COMPAT.md; shared data/EventTimeRules actuals и tests;
+mobile/artifacts/tzdata-compat/{REVIEW.md,final-review.json,android-history.json}.
+Native iOS/Mac, физический Android/API26–33/35 не проверялись; старая iOS tzdata
+не исправляется. Если обе базы устареют после новых законов, нужен выпуск с
+обновлёнными правилами. UI-код, auth/backend/контракт не менялись.
+
+Отчёт/скриншоты/команды и PR body: mobile/artifacts/tzdata-compat/review.html,
+verification.json, COMMIT_PR.md, PR_DESCRIPTION.md. Скриншоты API34/API36 просмотрены.
+Собственные AVD остановлены/перенесены в Корзину, их registry удалены; исходные
+AVD не сбрасывались. Loopback server завершён, backend/БД не запускались.
+Следующий шаг: пользователь делает commit/push/PR этой правки; ветка и worktree
+сохранены, индекс пуст. Следующие блоки M3 не начинать автоматически.
+
 ## PR24: Android-приёмка — 3 ноября 2026, 6/6 PASS на API36
 
 Пользователь поручил повторить все6сценариев,401 и360dp/font130, обновить отчёт;

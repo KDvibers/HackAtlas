@@ -4,8 +4,6 @@ import dev.hackatlas.mobile.domain.*
 import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 private inline fun <reified T : Enum<T>> enumOrFallback(
     raw: String,
@@ -22,7 +20,7 @@ private fun EventTimeDto.toDomain(field: String, warnings: MutableList<String>):
         TimePrecision.DATE -> require(time == null && instant == null) { "$field DATE has invented time" }
         TimePrecision.MINUTE -> {
             require(time != null && timeZone != null && instant != null) { "$field MINUTE is incomplete" }
-            val local = Instant.parse(instant).toLocalDateTime(TimeZone.of(timeZone))
+            val local = localEventTime(Instant.parse(instant), timeZone)
             require(local.date == LocalDate.parse(date) && local.time == LocalTime.parse(time)) {
                 "$field local time and instant disagree"
             }

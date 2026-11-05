@@ -1,0 +1,43 @@
+{
+  "source": "Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",
+  "checks": [],
+  "failure": "AssertionError: Missing text: Registration Closed Demo; visible: ['EXPLORE\\nLEARN\\nBUILD_', 'IDEAS\\nPEOPLE\\nOPPORTUNITIES', 'Хакатоны', 'Находи. Участвуй. Создавай будущее.', 'Поиск хакатонов, тем или организаторов…', 'Все', 'Онлайн', 'Очно', 'Открыта регистрация', 'Казахстан', 'Каталог недоступен', 'Данные источника изменились или не удалось их прочитать. Обновите каталог и повторите действие.', 'Повторить', 'Главная', 'Календарь', 'Сохранённое', 'Профиль']",
+  "restoreErrors": [],
+  "fullAcceptance": false,
+  "apkSha256": "e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4",
+  "device": {
+    "ro.build.version.sdk": "34",
+    "ro.build.version.release": "14",
+    "tzdata": "tzdata2023a"
+  },
+  "installedApkSha256": "e95ba0373662b5172f98953b68cadd961fa386170e6ec0d95ea66a2d4a1cd6e4",
+  "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+  "freshObservationRetries": 0,
+  "requests": [
+    {
+      "path": "/api/v1/hackathons",
+      "query": "sort=DEADLINE_ASC&size=20",
+      "invalidMinute": false,
+      "client": "host-probe",
+      "status": 200,
+      "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "query": "sort=DEADLINE_ASC&page=0&size=20",
+      "invalidMinute": false,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "query": "",
+      "invalidMinute": false,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+    }
+  ],
+  "ios": "Not built/run on Windows"
+}

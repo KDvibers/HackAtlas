@@ -193,3 +193,7 @@ adb -s emulator-5554 install -r androidApp/build/outputs/apk/debug/androidApp-de
 частичный PATCH /me, подтверждаемый успех, черновик в памяти/отмена, безопасный
 повтор после неоднозначного ответа. Без application marks/reminders/email lifecycle.
 Оценка присланного backend draft отделена от реализации; Starter не менялся.
+
+Совместимость каталога со старой Android tzdata — [TZDATA_COMPAT.md](TZDATA_COMPAT.md):
+правила EventTime выбираются между системной и bundled TZDB; строгая проверка
+точного времени сохранена. API и утверждённый дизайн прежние.
