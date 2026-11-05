@@ -1,0 +1,12 @@
+# PR27: eight reviewed false positives, all the SHA-256 of public api/openapi.yaml.
+# Historical report field name triggered generic-api-key. Each exception is one
+# immutable commit + file + rule + line; no paths, commits or rules are excluded.
+# New evidence uses contractSha256. New or changed findings still fail the scan.
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/android-history.json:generic-api-key:144
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/android-history.json:generic-api-key:15
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/android-history.json:generic-api-key:212
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/android-history.json:generic-api-key:68
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/api34-before/android-smoke.json:generic-api-key:14
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/api34/android-smoke.json:generic-api-key:31
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/api36/android-smoke.json:generic-api-key:31
+392c37d2a83bad134a5554891fb1278cf5f8cdca:mobile/artifacts/tzdata-compat/verification.json:generic-api-key:37

@@ -1130,3 +1130,31 @@ Git HTTPS credential login проверен: yergaliuly; author softache <itsyer
 Свежая загрузка restic здесь не завершилась за шесть минут и была остановлена;
 процесс завершён. Локальный B4 использовал уже имеющийся binary0.19.1 с проверкой
 закреплённого SHA256. Повторное скачивание и удалённый CI не подтверждены.
+
+## PR #28 — Gitleaks в push workflow, 5 ноября 2026
+
+Пользователь попросил исправить ошибку PR28. Ветка N2 содержит пользовательский
+commit5a74ada; рабочее дерево перед исправлением чистое. Push run42062085570/job127366268789
+упал на Gitleaks: 8 findings, тогда как PR run42062133780 Gitleaks уже прошёл.
+
+Причина: scan --all проверяет также историю mobile commit392c37d. Все восемь matches
+побайтово сверены с SHA256 публичного api/openapi.yaml в том же commit — credentials
+среди них нет. Main уже содержит fix4421726 с точными fingerprint exceptions,
+но feature branch N2 создана раньше и не содержит .gitleaksignore. PR merge checkout
+включает этот файл из main; push checkout нет, поэтому результаты расходились.
+
+В N2 перенесён .gitleaksignore, идентичный main после нормализации перевода строк.
+Не добавлялись исключения для правил, каталогов или всей истории; мобильные файлы,
+канонический контракт, workflow и код приложения не изменялись.
+
+Проверки Linux UID1000: тот же полный history scan34commits/6.58MB дал RED8 →GREEN0;
+все 8 fingerprints точно совпали с config. Новый синтетический generic-api-key в
+той же mobile папке всё ещё приводит к exit1 — обнаружение новых значений работает.
+Diff whitespace PASS. Оба GitHub Backend verify завершились SUCCESS: 47 unit+309 IT,
+legacy HTTP593/N2 HTTP115, OSV111 affected0, packaged checks и B4 V6→V9 restore.
+Свежая загрузка restic0.19.1 на GitHub в этом прогоне прошла с проверкой двух SHA256;
+предыдущая HTTP-ошибка не повторилась. PR run42062133780 целиком SUCCESS; push
+run42062085570 отличается только указанным Gitleaks failure. Эти прогоны относятся
+к пользовательскому commit5a74ada до текущего исправления.
+Повторная локальная Java-сборка для config/docs изменения не запускалась.
+Исправление оставлено без staging/commit/push; отправка в тот же PR пользователем.
