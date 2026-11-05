@@ -29,7 +29,7 @@ def load(state):
     return json.loads((state / 'settings.json').read_text(encoding='utf-8'))
 
 
-def server_environment(state, inherited):
+def server_environment(state, inherited, *, demo=False):
     settings = load(state)
     # Avoid unrelated deployment overrides/config imports in the closed launcher.
     env = {key: value for key, value in inherited.items() if not key.startswith(
@@ -40,7 +40,7 @@ def server_environment(state, inherited):
                HACKATLAS_DB_USERNAME='lifecycle_test_owner', HACKATLAS_DB_PASSWORD=settings['LIFECYCLE_DB_PASSWORD'],
                HACKATLAS_LIFECYCLE_KEY_FILE=str(state / 'hmac.key'), HACKATLAS_LIFECYCLE_SMTP_PORT='11025',
                HACKATLAS_REGISTRATION_ENABLED='true', SPRING_CONFIG_IMPORT='',
-               HACKATLAS_DEMO_ENABLED='false')
+               HACKATLAS_DEMO_ENABLED='true' if demo else 'false')
     return env
 
 
@@ -49,7 +49,10 @@ def main():
     parser.add_argument('command', choices=['prepare', 'up', 'serve', 'down'])
     parser.add_argument('--state-dir', type=Path, required=True)
     parser.add_argument('--jar', type=Path, default=ROOT / 'backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar')
+    parser.add_argument('--demo', action='store_true', help='Seed marked DEMO events with the real clock (serve only)')
     args = parser.parse_args()
+    if args.demo and args.command != 'serve':
+        parser.error('--demo is only supported by serve')
     state = args.state_dir.resolve()
     if args.command == 'prepare':
         prepare(state)
@@ -58,8 +61,9 @@ def main():
     load(state)
     if args.command == 'serve':
         jar = args.jar.resolve(strict=True)
-        raise SystemExit(subprocess.call(['java', '-jar', str(jar)], cwd=ROOT / 'backend',
-                                        env=server_environment(state, os.environ)))
+        # WSL localhost forwarding must see an IPv4 listener, not an IPv4-mapped IPv6 socket.
+        raise SystemExit(subprocess.call(['java', '-Djava.net.preferIPv4Stack=true', '-jar', str(jar)], cwd=ROOT / 'backend',
+                                        env=server_environment(state, os.environ, demo=args.demo)))
     name = 'hackatlas-lifecycle-' + hashlib.sha256(str(state).encode()).hexdigest()[:12]
     command = ['docker', 'compose', '--project-name', name, '--env-file', str(state / 'compose.env'),
                '-f', str(ROOT / 'infra/lifecycle-test/compose.yaml')]
