@@ -25,7 +25,7 @@ final class AdminSessionValidityFilter extends OncePerRequestFilter {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof AdminPrincipal principal) {
             try {
-                if (!access.allowed(principal.userId())) {
+                if (!access.allowed(principal)) {
                     SecurityContextHolder.clearContext();
                     if (request.getSession(false) != null) { request.getSession(false).invalidate(); }
                     problems.forbidden(request, response);

@@ -1,3 +1,17 @@
+# N2: закрытый lifecycle runtime
+
+5 ноября 2026. HTTP/mail facade доступен только в явно включённом локальном
+`dev/test + lifecycle-test` профиле. Обычный API0.1.1 прежний; strict0.2 не принят.
+[Запуск/остановка](../infra/lifecycle-test/README.md),
+[матрица, restore и ограничения](../docs/research/2026-11-05-account-lifecycle-n2.md).
+
+V9 добавляет session version, credential_changed_at, source marker и owner-only
+prepare/require restore functions. V1–V8 не изменяются. Активированная БД не стартует
+в legacy mode. Старый snapshot требует явного --require-lifecycle-recovery, active
+snapshot распознаётся автоматически. Quarantine/deletion review/approval обязательны.
+Ниже сохранены сведения N1; её утверждения о неактивности относятся к default legacy,
+а не к N2 test profile. Внешний rollout не входит в N2.
+
 # Account lifecycle foundation N1
 
 3 ноября 2026. Внутренняя основа после canonical PR #23; **lifecycle не включён**.

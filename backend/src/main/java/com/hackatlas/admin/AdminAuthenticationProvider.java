@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 import com.hackatlas.auth.AuthRateLimiter;
 import com.hackatlas.auth.AuthService;
+import com.hackatlas.auth.lifecycle.LifecycleSettings;
 import com.hackatlas.web.ApiFailure;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.dao.DataAccessResourceFailureException;
@@ -23,11 +24,13 @@ public class AdminAuthenticationProvider implements AuthenticationProvider {
     private final PasswordEncoder passwords;
     private final AuthRateLimiter limiter;
     private final String dummyHash;
+    private final LifecycleSettings lifecycle;
 
-    public AdminAuthenticationProvider(JdbcClient jdbc, PasswordEncoder passwords, AuthRateLimiter limiter) {
+    public AdminAuthenticationProvider(JdbcClient jdbc, PasswordEncoder passwords, AuthRateLimiter limiter, LifecycleSettings lifecycle) {
         this.jdbc = jdbc;
         this.passwords = passwords;
         this.limiter = limiter;
+        this.lifecycle = lifecycle;
         this.dummyHash = passwords.encode(UUID.randomUUID().toString());
     }
 
@@ -44,14 +47,17 @@ public class AdminAuthenticationProvider implements AuthenticationProvider {
             limiter.checkAccount(email);
             var rows = jdbc.sql("""
                     SELECT u.id, u.password_hash,
-                        EXISTS(SELECT 1 FROM hackatlas.admin_access a WHERE a.user_id = u.id) is_admin
+                        EXISTS(SELECT 1 FROM hackatlas.admin_access a WHERE a.user_id = u.id) is_admin,
+                        u.credential_version,u.email_verified,u.password_reset_required
                     FROM hackatlas.user_account u WHERE u.email = :email FOR UPDATE OF u
                     """).param("email", email).query((rs, row) -> new Credential(rs.getObject(1, UUID.class),
-                    rs.getString(2), rs.getBoolean(3))).list();
+                    rs.getString(2), rs.getBoolean(3), rs.getLong(4), rs.getBoolean(5), rs.getBoolean(6))).list();
             Credential user = rows.isEmpty() ? null : rows.getFirst();
             boolean matches = passwords.matches(password, user == null ? dummyHash : user.hash);
-            if (user == null || !matches || !user.admin) { throw new BadCredentialsException("Invalid credentials"); }
-            return UsernamePasswordAuthenticationToken.authenticated(new AdminPrincipal(user.id), null,
+            if (user == null || !matches || !user.admin || user.resetRequired || lifecycle.enabled() && !user.verified) {
+                throw new BadCredentialsException("Invalid credentials");
+            }
+            return UsernamePasswordAuthenticationToken.authenticated(new AdminPrincipal(user.id, user.version), null,
                     List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
         } catch (ApiFailure failure) {
             if (failure.status() == 429) { throw new AdminLoginException(failure.retryAfter()); }
@@ -85,6 +91,12 @@ public class AdminAuthenticationProvider implements AuthenticationProvider {
         private final UUID id;
         private final String hash;
         private final boolean admin;
-        private Credential(UUID id, String hash, boolean admin) { this.id = id; this.hash = hash; this.admin = admin; }
+        private final long version;
+        private final boolean verified;
+        private final boolean resetRequired;
+        private Credential(UUID id, String hash, boolean admin, long version, boolean verified, boolean resetRequired) {
+            this.id = id; this.hash = hash; this.admin = admin; this.version = version;
+            this.verified = verified; this.resetRequired = resetRequired;
+        }
     }
 }

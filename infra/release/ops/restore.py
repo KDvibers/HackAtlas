@@ -23,6 +23,8 @@ def main():
     parser.add_argument("--project", required=True)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--database", required=True, help="New name beginning with hackatlas_restore_")
+    parser.add_argument("--require-lifecycle-recovery", action="store_true",
+                        help="Opt an old snapshot into forced recovery; activated snapshots require it automatically")
     args = parser.parse_args()
     if os.name != "posix":
         raise ValueError("Run inside Linux/WSL with access to the intended Docker daemon.")
@@ -68,11 +70,16 @@ def main():
         if restored.returncode:
             raise RuntimeError("pg_restore failed. The new target is retained for diagnosis with runtime CONNECT still denied; source DB is untouched.")
     grants = (Path(__file__).resolve().parents[1] / "database/flyway/afterMigrate.sql").read_text(encoding="utf-8")
-    state = quarantine_state(args.project, target, actual, now=datetime.now(timezone.utc))
+    activated = False
+    if sql(container, target, "SELECT to_regclass('hackatlas.account_security_state') IS NOT NULL;", role="migrator") == "t":
+        activated = sql(container, target, "SELECT lifecycle_activated FROM hackatlas.account_security_state WHERE singleton;", role="migrator") == "t"
+    state = quarantine_state(args.project, target, actual, now=datetime.now(timezone.utc),
+                             lifecycle_required=args.require_lifecycle_recovery or activated)
     revoked = sql(container, target,
                   f'BEGIN;\nREVOKE CONNECT ON DATABASE "{target}" FROM PUBLIC, hackatlas_runtime;\n'
                   "SELECT count(*) FROM hackatlas.auth_session;\nDELETE FROM hackatlas.auth_session;\n"
-                  + grants + f'\nCOMMENT ON DATABASE "{target}" IS {literal(json.dumps(state))};\nCOMMIT;', role="migrator")
+                  + f'\nCOMMENT ON DATABASE "{target}" IS {literal(json.dumps(state))};\n'
+                  + grants + '\nCOMMIT;', role="migrator")
     print(json.dumps({"database": target, "sourceArchive": str(source), "sha256": actual,
                       "project": args.project, "restoreId": state["restoreId"], "restoredAt": state["restoredAt"],
                       "state": "QUARANTINED", "runtimeAccessGranted": False,

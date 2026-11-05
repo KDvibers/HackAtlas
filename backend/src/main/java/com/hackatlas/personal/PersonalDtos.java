@@ -11,7 +11,8 @@ public final class PersonalDtos {
 
     @JsonInclude(JsonInclude.Include.ALWAYS)
     public record Profile(UUID id, String email, String displayName, String city, String countryCode,
-            String roleLabel, String avatarKey, List<String> interests, Stats stats) { }
+            String roleLabel, String avatarKey, List<String> interests, Stats stats,
+            @JsonInclude(JsonInclude.Include.NON_NULL) Boolean emailVerified) { }
 
     public record Stats(long savedCount, long appliedCount, long interestsCount) { }
 

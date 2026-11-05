@@ -1,0 +1,39 @@
+# Disposable closed-test services. Never load this file for staging/production.
+services:
+  postgres:
+    image: postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+    user: "999:999"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      POSTGRES_DB: hackatlas_lifecycle_test
+      POSTGRES_USER: lifecycle_test_owner
+      POSTGRES_PASSWORD: ${LIFECYCLE_DB_PASSWORD:?Use scripts/lifecycle/local.py prepare}
+    ports: ["127.0.0.1:55432:5432"]
+    tmpfs:
+      - /var/lib/postgresql/data:rw,nosuid,noexec,size=256m,uid=999,gid=999,mode=0700
+      - /var/run/postgresql:rw,nosuid,noexec,size=8m,uid=999,gid=999,mode=3775
+      - /tmp:rw,nosuid,noexec,size=16m,mode=1777
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U lifecycle_test_owner -d hackatlas_lifecycle_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    logging:
+      driver: none
+  mailpit:
+    image: axllent/mailpit@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      MP_DATABASE: /tmp/mailpit.db
+      MP_MAX_MESSAGES: "100"
+      MP_SMTP_DISABLE_RDNS: "true"
+    ports: ["127.0.0.1:11025:1025", "127.0.0.1:18025:8025"]
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=32m,mode=1777
+    logging:
+      driver: none

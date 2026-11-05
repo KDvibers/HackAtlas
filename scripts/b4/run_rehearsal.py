@@ -215,6 +215,25 @@ class Rehearsal:
         self.dc("Export disposable Caddy root certificate", "cp", "proxy:/data/caddy/pki/authorities/local/root.crt", str(self.temp / "root.crt"))
         self.http = Http(f"https://localhost:{self.https_port}", self.temp / "root.crt")
         self.passed("separate migration process exits successfully and runtime/proxy health checks pass")
+        self.check_repeated_volume_initialization()
+
+    def check_repeated_volume_initialization(self):
+        # This marker belongs only to this disposable project; existing DB files must not be touched.
+        marker = "/var/lib/postgresql/data/.hackatlas-volume-init-regression"
+        self.dc("Create disposable initializer regression marker", "exec", "-T", "postgres", "sh", "-ec",
+                "printf volume-initialization-regression > " + marker)
+        try:
+            before = self.dc("Inspect existing volume marker metadata", "exec", "-T", "postgres",
+                             "stat", "-c", "%u:%g:%a:%z", marker).stdout.strip()
+            self.dc("Repeat volume initialization while services are running", "run", "--rm", "--no-deps", "init-volumes")
+            after = self.dc("Recheck existing volume marker metadata", "exec", "-T", "postgres",
+                            "stat", "-c", "%u:%g:%a:%z", marker).stdout.strip()
+            require(before == after, "Repeated volume initialization must preserve existing file metadata")
+        finally:
+            self.dc("Remove only disposable initializer regression marker", "exec", "-T", "postgres",
+                    "rm", "-f", marker, allow_failure=True)
+        self.report["volumeInitialization"] = {"repeatSafe": True, "existingFileMetadataPreserved": True}
+        self.passed("repeated volume initialization preserves existing files while PostgreSQL and proxy are running")
 
     def sql(self, statements, database="hackatlas", role="hackatlas_admin", allow_failure=False):
         result = self.dc("PostgreSQL rehearsal statement (input/output withheld)", "exec", "-T", "postgres", "psql",
@@ -498,12 +517,12 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
             require(self.sql("SELECT count(*) FROM public.flyway_schema_history WHERE version='7' AND success;", target) == "1",
                     "V7 must apply to a V6 restored database")
             current_version = self.sql("SELECT version FROM public.flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;", target)
-            require(current_version == "8", "Lifecycle foundation V8 must also apply to the legacy restore")
+            require(current_version == "9", "Lifecycle runtime V9 must also apply to the legacy restore")
             require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
                     "Legacy migration callback must preserve quarantine")
             self.report["legacyRestore"] = {"backupSchemaVersion": 6, "migratedToVersion": int(current_version),
                                             "quarantinePreserved": True, "historicalReceiptsBackfilled": False}
-            self.passed("genuine V6 backup restores through V7 to V8 without opening quarantine or inventing history")
+            self.passed("genuine V6 backup restores through V7/V8 to V9 without opening quarantine or inventing history")
         finally:
             self.env["HACKATLAS_DB_NAME"] = previous
 

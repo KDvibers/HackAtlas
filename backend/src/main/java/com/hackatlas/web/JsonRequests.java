@@ -37,6 +37,36 @@ final class JsonRequests {
     record Login(String email, String password) {
         @Override public String toString() { return "Login[redacted]"; }
     }
+    record EmailCode(String challengeId, String code) {
+        @Override public String toString() { return "EmailCode[redacted]"; }
+    }
+    record ResetPassword(String resetToken, String newPassword) {
+        @Override public String toString() { return "ResetPassword[redacted]"; }
+    }
+
+    void noBody(HttpServletRequest request) {
+        try {
+            if (request.getContentLengthLong() > 0 || request.getInputStream().read() != -1) throw invalid("body");
+        } catch (java.io.IOException exception) { throw invalid("body"); }
+    }
+
+    String resetEmail(HttpServletRequest request) { return email(object(request, Set.of("email"))); }
+
+    EmailCode emailCode(HttpServletRequest request) {
+        var body = object(request, Set.of("challengeId", "code"));
+        String id = text(body, "challengeId", 43, 43, false, true);
+        String code = text(body, "code", 8, 8, false, true);
+        if (!id.matches("[A-Za-z0-9_-]{43}")) throw invalid("challengeId");
+        if (!code.matches("[0-9]{8}")) throw invalid("code");
+        return new EmailCode(id, code);
+    }
+
+    ResetPassword resetPassword(HttpServletRequest request) {
+        var body = object(request, Set.of("resetToken", "newPassword"));
+        String token = text(body, "resetToken", 43, 43, false, true);
+        if (!token.matches("[A-Za-z0-9_-]{43}")) throw invalid("resetToken");
+        return new ResetPassword(token, text(body, "newPassword", 12, 256, false, true));
+    }
     private record EmailValue(@Email String value) { }
 
     record Suggestion(String url, String comment) { }

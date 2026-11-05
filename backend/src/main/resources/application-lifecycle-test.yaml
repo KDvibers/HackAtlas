@@ -1,0 +1,7 @@
+# Explicitly isolated development/testing only; never combine with prod/release.
+hackatlas:
+  lifecycle:
+    enabled: true
+    key-file: ${HACKATLAS_LIFECYCLE_KEY_FILE:}
+    smtp-host: 127.0.0.1
+    smtp-port: ${HACKATLAS_LIFECYCLE_SMTP_PORT:1025}

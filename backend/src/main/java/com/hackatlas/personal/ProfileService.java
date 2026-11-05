@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import com.hackatlas.web.ApiFailure;
+import com.hackatlas.auth.lifecycle.LifecycleSettings;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -19,10 +20,12 @@ public class ProfileService {
             "roleLabel", "role_label", "avatarKey", "avatar_key");
     private final JdbcClient jdbc;
     private final Clock clock;
+    private final LifecycleSettings lifecycle;
 
-    public ProfileService(JdbcClient jdbc, Clock clock) {
+    public ProfileService(JdbcClient jdbc, Clock clock, LifecycleSettings lifecycle) {
         this.jdbc = jdbc;
         this.clock = clock;
+        this.lifecycle = lifecycle;
     }
 
     public PersonalDtos.Profile get(UUID userId) {
@@ -40,7 +43,8 @@ public class ProfileService {
                 """).param("user", userId).query((rs, row) -> new PersonalDtos.Profile(
                         userId, rs.getString("email"), rs.getString("display_name"), rs.getString("city"),
                         rs.getString("country_code"), rs.getString("role_label"), rs.getString("avatar_key"), interests,
-                        new PersonalDtos.Stats(rs.getLong("saved_count"), rs.getLong("applied_count"), interests.size())))
+                        new PersonalDtos.Stats(rs.getLong("saved_count"), rs.getLong("applied_count"), interests.size()),
+                        lifecycle.enabled() ? rs.getBoolean("email_verified") : null))
                 .optional().orElseThrow(() -> new ApiFailure(401, "AUTH_REQUIRED", "Требуется вход в аккаунт."));
     }
 

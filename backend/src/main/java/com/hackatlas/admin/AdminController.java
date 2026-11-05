@@ -59,7 +59,7 @@ public class AdminController {
     String create(@AuthenticationPrincipal AdminPrincipal principal,
                   @RequestParam MultiValueMap<String,String> parameters, Model model, HttpServletResponse response) {
         try {
-            UUID id = catalogue.create(principal.userId(), AdminEventForm.parse(parameters));
+            UUID id = catalogue.create(principal, AdminEventForm.parse(parameters));
             return "redirect:/admin/events/" + id + "/edit";
         } catch (ApiFailure failure) {
             if (failure.status() != 400) { throw failure; }
@@ -72,7 +72,7 @@ public class AdminController {
                   @RequestParam MultiValueMap<String,String> parameters, Model model, HttpServletResponse response) {
         UUID eventId = id(id);
         try {
-            catalogue.edit(principal.userId(), eventId, AdminEventForm.parse(parameters));
+            catalogue.edit(principal, eventId, AdminEventForm.parse(parameters));
             return "redirect:/admin/events/" + eventId + "/edit";
         } catch (ApiFailure failure) {
             if (failure.status() != 400) { throw failure; }
@@ -84,20 +84,20 @@ public class AdminController {
     @PostMapping("/events/{id}/publish")
     String publish(@AuthenticationPrincipal AdminPrincipal principal,@PathVariable String id,
                    @RequestParam(defaultValue="false") boolean reviewConfirmed) {
-        catalogue.publish(principal.userId(), id(id), reviewConfirmed);
+        catalogue.publish(principal, id(id), reviewConfirmed);
         return "redirect:/admin/events/" + id(id) + "/edit";
     }
 
     @PostMapping("/events/{id}/archive")
     String archive(@AuthenticationPrincipal AdminPrincipal principal,@PathVariable String id) {
-        catalogue.archive(principal.userId(), id(id));
+        catalogue.archive(principal, id(id));
         return "redirect:/admin/events/" + id(id) + "/edit";
     }
 
     @PostMapping("/events/{id}/verify")
     String verify(@AuthenticationPrincipal AdminPrincipal principal,@PathVariable String id,
                   @RequestParam(defaultValue="false") boolean sourceChecked) {
-        catalogue.verify(principal.userId(), id(id), sourceChecked);
+        catalogue.verify(principal, id(id), sourceChecked);
         return "redirect:/admin/events/" + id(id) + "/edit";
     }
 
@@ -110,7 +110,7 @@ public class AdminController {
     @PostMapping("/queue/{id}/review")
     String review(@AuthenticationPrincipal AdminPrincipal principal,@PathVariable String id,
                   @RequestParam String decision) {
-        catalogue.review(principal.userId(),id(id),decision);
+        catalogue.review(principal,id(id),decision);
         return "redirect:/admin/queue";
     }
 

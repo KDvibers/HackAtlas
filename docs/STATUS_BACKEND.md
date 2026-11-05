@@ -1,5 +1,7 @@
 # BACKEND: статус
 
+Актуальный результат: [N2, 5 ноября 2026](#n2--закрытый-lifecycle-runtime-5-ноября-2026).
+
 Дата актуального дополнения: 3 ноября 2026.
 
 ## Account lifecycle N1 — неактивная серверная основа
@@ -1062,3 +1064,69 @@ JDK 21 и Git доступны. `mvn`, `docker`, `gh` не найдены в PAT
 ## Следующий отдельный этап
 
 **B0:** обеспечить Docker/Compose, проверить совместимые стабильные версии Spring Boot 4.x и PostgreSQL 17, создать Java 21 skeleton, Maven Wrapper, окружения, Flyway и базовые проверки. Не реализовывать B2/auth заранее.
+
+
+## N2 — закрытый lifecycle runtime, 5 ноября 2026
+
+Этап реализован и проверен в C:/Daniyar/MyProjects/HackAtlas, ветка
+`feat/account-lifecycle-test-runtime`, база N1 `98f1cbe`. PR25 с fix b394829 уже
+merged в main090935b; branch/base не переписывались, WIP сохранён без staging/commit/push/PR.
+Текущая app worktree pr25-volume-init-fix остаётся отдельной чистой копией N1.
+
+Обязательная граница друга: strict0.2 НЕ согласован. Canonical `api/openapi.yaml`,
+`api/README.md`, fixtures и mobile не менялись. Candidate0.2.0-test.1 генерируется
+только в ignored target. PASSWORD_RESET_REQUIRED только API login;
+protected revoked/version-mismatch401, pending403EMAIL_NOT_VERIFIED.
+
+Реализованы:
+
+- dev/test+lifecycle-test guard, explicit loopback SMTP/server и отдельная test DB;
+  source marker запрещает downgrade активированной БД в legacy.
+- Spring Mail adapter (Boot BOM), Mailpit1.33.0 по digest, bounded memory queue16,
+  отдельные quotas/cooldown, отсутствие account lookup на HTTP-потоке public reset.
+- Пять закрытых HTTP operations, truthful emailVerified, pending TTL30мин,
+  atomic password/proof update и отзыв native/admin access по credential version.
+  Admin mutations повторно проверяют version после ожидания user lock.
+- Отмена устаревших jobs после reset/delete, uniform202 и503 при queue overflow;
+  best-effort notification не отменяет committed reset. Логи/exports без секретов.
+- V9 source state + owner-only prepare/require restore functions, automatic active
+  snapshot detection и explicit opt-in legacy snapshot; approval остаётся fail closed.
+  После pg_restore --no-acl callback снова закрывает function EXECUTE для PUBLIC/runtime.
+- Renderer отдельного контракта, negative matrix tests, fresh N2 exports validator,
+  CI steps с сохранением прежних B1/B2/B3 gates; воспроизводимый local launcher.
+
+Проверено 5 ноября обычным Linux UID1000 (Docker group106):
+
+- Maven verify +dependency:list: 47 unit +309 IT, 0 failures/errors/skipped.
+- Actual HTTP: B1 139 +B2 348 +B3 106 =593; отдельно N2 115, schemas/headers/matrix/redaction PASS.
+- Python: contract13 +lifecycle9 +B4 51 +security27 =100 PASS; fixtures13 PASS.
+- Packaged B1/B2/B3 с PostgreSQL/Bruno/Schemathesis PASS; full B4 HTTPS/roles/backup,
+  quarantine/deletion review/V6→V9/restic rehearsal PASS. PR25 initializer regression PASS.
+- Документированный local compose +Java +V9 +pending registration +real SMTP PASS.
+- OSV111 runtime packages, affected0; Gitleaks changed/new files и diff --check PASS.
+- Один read-only final security review: Important/Critical в закрытом N2 не найдено.
+
+Наблюдавшиеся RED исправлены: host ports0.0.0.0 →127.0.0.1; queued anonymous proof
+при createdAt==credential_changed_at теперь отбрасывается; drain test barrier ждёт
+свободное место; sink rDNS больше не блокирует SMTP greeting. SMTP timeout2с сохранён.
+Проверялись synthetic accounts/owned disposable PostgreSQL, не реальные данные.
+
+Ограничения: нет внешнего staging/писем/проверки мобильного устройства, queue недолговечна,
+retention cleanup не реализован, legacy NULL delivery address не восстанавливается
+автоматически. До public rollout отдельно оценить timing privacy reset verify;
+review отметил разное число locks/HMAC для known/unknown proof без измерения эксплуатации.
+
+GitHub main090935b: run42055842739 FAILED при скачивании restic (HTTPError, status
+в installer не сохранён). Предшествующие Java/API/contract/Gitleaks прошли.
+Это не remote N2 run; после пользовательского push нужно отдельно проверить его CI.
+Git HTTPS credential login проверен: yergaliuly; author softache <itsyergaliuly@gmail.com>.
+
+[Отчёт и матрица для друга](research/2026-11-05-account-lifecycle-n2.md),
+[закрытый запуск](../infra/lifecycle-test/README.md),
+[план](superpowers/plans/2026-11-03-account-lifecycle-n2.md).
+Следующий отдельный шаг — совместное согласование strict matrix, private cache и
+перехода старых клиентов. Внешний SMTP/public signup/rollout этим этапом не разрешены.
+
+Свежая загрузка restic здесь не завершилась за шесть минут и была остановлена;
+процесс завершён. Локальный B4 использовал уже имеющийся binary0.19.1 с проверкой
+закреплённого SHA256. Повторное скачивание и удалённый CI не подтверждены.
