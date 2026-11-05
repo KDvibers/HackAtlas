@@ -6,6 +6,7 @@ import dev.hackatlas.mobile.resources.Res
 import dev.hackatlas.mobile.ui.auth.AuthStore
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
 import dev.hackatlas.mobile.ui.profile.ProfileEditStore
+import dev.hackatlas.mobile.ui.applications.ApplicationStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,7 @@ sealed interface BootstrapState {
         val details: DetailStore,
         val bookmarks: BookmarkStore,
         val accountSaved: AccountSavedStore? = null,
+        val applications: ApplicationStore? = null,
     ) : BootstrapState
     data object StorageFailed : BootstrapState
     data object ConfigurationUnavailable : BootstrapState
@@ -41,6 +43,7 @@ class AppState(
     val auth: AuthStore? = null,
     val profileEditor: ProfileEditStore? = null,
     private val accountSavedFactory: ((GuestSavedRepository, CatalogRepository, () -> Unit) -> AccountSavedStore)? = null,
+    private val applicationsFactory: (() -> ApplicationStore)? = null,
 ) {
     private val mutableState = MutableStateFlow<BootstrapState>(BootstrapState.Loading)
     val state = mutableState.asStateFlow()
@@ -78,7 +81,7 @@ class AppState(
                 CatalogStore(repository, ownerScope,
                     initialSort = if (selected == CatalogSource.BundledDemo) CatalogSort.NEWEST else CatalogSort.DEADLINE_ASC,
                     initialPageSize = if (selected is CatalogSource.Remote) remotePageSize else 20), details,
-                BookmarkStore(RemoteSaveCoordinator(repository, saved), ownerScope), accountSaved)
+                BookmarkStore(RemoteSaveCoordinator(repository, saved), ownerScope), accountSaved, applicationsFactory?.invoke())
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: GuestStorageException) {

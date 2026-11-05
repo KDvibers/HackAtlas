@@ -1,0 +1,86 @@
+{
+  "date": "2026-11-05",
+  "branch": "feat/mobile-application-marks",
+  "base": "c1c371816dba3b7fb0a317a7237ae033f6178cec",
+  "shared": {
+    "tests": 268,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "androidBuild": "PASS",
+  "lint": "0 issues",
+  "releaseNoDemoFixtures": "PASS",
+  "contractValidator": "PASS",
+  "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+  "backendPackage": {
+    "result": "PASS",
+    "unitTests": 31,
+    "integrationVerifyRepeated": false
+  },
+  "apk": {
+    "path": "mobile/build/m3-applications/HackAtlas-applications-debug.apk",
+    "sha256": "015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156",
+    "source": "REMOTE",
+    "apiBaseUrl": "http://10.0.2.2:8774/api/v1/"
+  },
+  "sourceReview": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "native": {
+    "status": "PASS",
+    "cases": 10,
+    "failure": null,
+    "restoreErrors": [],
+    "freshObservationRetries": 0,
+    "device": {
+      "ro.build.version.sdk": "36",
+      "ro.build.version.release": "16"
+    },
+    "displayCheck": {
+      "widthPx": 1080,
+      "densityDpi": 480,
+      "widthDp": 360,
+      "fontScale": 1.3
+    },
+    "gpu": "host NVIDIA RTX4050",
+    "vulkan": false,
+    "previousFailedAttempts": 4,
+    "screenshotsTaken": true,
+    "ios": "Not built/run on Windows"
+  },
+  "fullAcceptance": true,
+  "agentCommitted": false,
+  "agentPushed": false,
+  "helperSelfchecks": {
+    "passed": 9,
+    "checks": [
+      "request method remains callable after inherited constructor",
+      "foreign AVD refused before actor",
+      "foreign DB label refused before actor",
+      "existing private state refused before preparation",
+      "schema failure does not expose response credentials",
+      "real Compose XML disabled: accept expected state",
+      "real Compose XML disabled: reject opposite state",
+      "real Compose XML enabled: accept expected state",
+      "real Compose XML enabled: reject opposite state"
+    ]
+  },
+  "gitAudit": {
+    "headUnchanged": true,
+    "indexEmpty": true,
+    "unmergedPaths": [],
+    "apiBackendInfraCiUnchanged": true,
+    "diffCheck": "PASS"
+  },
+  "cleanup": {
+    "processesStopped": true,
+    "postgresRemoved": true,
+    "dockerDesktopStopped": true,
+    "ignoredAvdEnvRetainedDueToAutomaticReview": true
+  },
+  "gitleaksHistoryFindings": 0,
+  "gitleaksWorktreeFindings": 0
+}

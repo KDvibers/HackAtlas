@@ -94,6 +94,31 @@ class AuthSessionClient(
     suspend fun save(expectedUserId: String, id: String) = mutateSaved(expectedUserId, id, HttpMethod.Put)
     suspend fun unsave(expectedUserId: String, id: String) = mutateSaved(expectedUserId, id, HttpMethod.Delete)
 
+    suspend fun listApplications(expectedUserId: String, page: Int = 0, size: Int = 50): ApplicationPage = mutex.withLock {
+        require(page >= 0 && size in 1..50)
+        val session = ownedSession(expectedUserId)
+        val response = transport { client.get(source.baseUrl + "me/applications") {
+            bearerAuth(session.accessToken); parameter("page", page); parameter("size", size)
+        } }
+        requireProtected(response, 200)
+        decode<ApplicationPage>(response).also { dto -> invalidResponse { dto.validate(page, size) } }
+    }
+
+    suspend fun markApplied(expectedUserId: String, id: String): ApplicationMark = mutex.withLock {
+        require(USER_ID.matches(id))
+        val session = ownedSession(expectedUserId)
+        val response = transport { client.put(source.baseUrl + "me/applications/$id") { bearerAuth(session.accessToken) } }
+        requireProtected(response, 200)
+        decode<ApplicationMark>(response).also { dto -> invalidResponse { dto.validate(id) } }
+    }
+
+    suspend fun removeApplication(expectedUserId: String, id: String) = mutex.withLock {
+        require(USER_ID.matches(id))
+        val session = ownedSession(expectedUserId)
+        val response = transport { client.delete(source.baseUrl + "me/applications/$id") { bearerAuth(session.accessToken) } }
+        requireProtected(response, 204)
+    }
+
     private suspend fun mutateSaved(expectedUserId: String, id: String, verb: HttpMethod) = mutex.withLock {
         require(USER_ID.matches(id))
         val session = ownedSession(expectedUserId)

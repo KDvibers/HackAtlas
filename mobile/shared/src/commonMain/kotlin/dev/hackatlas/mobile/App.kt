@@ -25,6 +25,7 @@ import dev.hackatlas.mobile.ui.*
 import dev.hackatlas.mobile.ui.auth.*
 import dev.hackatlas.mobile.ui.saved.*
 import dev.hackatlas.mobile.ui.profile.*
+import dev.hackatlas.mobile.ui.applications.*
 import dev.hackatlas.mobile.ui.auth.AuthOperation
 import dev.hackatlas.mobile.data.auth.AuthState
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     var selectedId by rememberSaveable { mutableStateOf("") }
     var selectedDemo by rememberSaveable { mutableStateOf(false) }
     var openLocalCopy by rememberSaveable { mutableStateOf(false) }
+    var applicationReturnId by rememberSaveable { mutableStateOf<String?>(null) }
     var dialog by remember { mutableStateOf<String?>(null) }
     val bookmarks by ready.bookmarks.state.collectAsState()
     val guestSnapshots by ready.saved.entries.collectAsState()
@@ -73,6 +75,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val savedState = accountSaved?.state?.collectAsState()?.value
     val accountMode = accountSaved != null && (savedState?.mode != SavedMode.GUEST || authState?.localIdentity != null || authState?.busy == AuthOperation.LOGOUT)
     val identity = authState?.localIdentity?.userId
+    val applications = ready.applications
+    val applicationState = applications?.state?.collectAsState()?.value?.visibleFor(identity,authState?.busy == AuthOperation.LOGOUT)
     val cacheVisible = savedState?.mode == SavedMode.ACCOUNT && savedState.ownerId == identity && authState?.busy != AuthOperation.LOGOUT
     val snapshots = if(accountMode) savedState?.entries?.takeIf { cacheVisible }.orEmpty() else guestSnapshots
     val activeOwner = if(accountMode) identity ?: "pending" else "guest"
@@ -94,7 +98,10 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val bundled = app.source == CatalogSource.BundledDemo
     val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
-    val closeAuth: () -> Unit = { route = "profile" }
+    val closeAuth: () -> Unit = {
+        route = if(applicationReturnId != null) "detail" else "profile"
+        applicationReturnId = null
+    }
     val closeEditor:()->Unit={
         if(editState?.dirty==true && !editState.busy)dialog="discardProfile"
         else{editor?.close();route="profile"}
@@ -118,7 +125,13 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     }
     LaunchedEffect(route) { if (route == "profile") auth?.refresh() }
     LaunchedEffect(authState?.session) {
-        if (authRoute && authState?.session is AuthState.Authenticated) route = "profile"
+        if (authRoute && authState?.session is AuthState.Authenticated) {
+            val returnId = applicationReturnId;applicationReturnId = null
+            if(returnId != null) {
+                selectedId = returnId;openLocalCopy = false;selectedSavedOwner = null
+                ready.details.open(returnId);route = "detail"
+            } else route = "profile"
+        }
     }
 
     val openEvent: (Hackathon) -> Unit = { event ->
@@ -187,7 +200,12 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                             DetailScreen(content.detail, event.savedKey() in savedKeys, format, back,
                                 { changeBookmark(event, event.savedKey() in savedKeys, content.snapshot) },
                                 externalActions,
-                                content.snapshot?.savedAt, bundled, event.savedKey() in pendingKeys)
+                                content.snapshot?.savedAt, bundled, event.savedKey() in pendingKeys,
+                                applications = applicationState,
+                                onApplicationsRefresh = { applications?.refresh() },
+                                onApplicationsRecover = { applications?.retryCleanup();auth?.refresh() },
+                                onApplicationChange = { remove -> applications?.change(event.id,remove) },
+                                onApplicationSignIn = if(auth != null) ({ applicationReturnId = event.id;route = "login" }) else null)
                         } else Column {
                             IconAction(AtlasIcon.Back, stringResource(Res.string.back), back)
                             when {

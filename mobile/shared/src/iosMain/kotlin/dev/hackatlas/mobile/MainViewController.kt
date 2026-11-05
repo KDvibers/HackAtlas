@@ -4,6 +4,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 import dev.hackatlas.mobile.data.IosGuestSnapshotStorage
 import dev.hackatlas.mobile.data.auth.IosSecureTokenStore
 import dev.hackatlas.mobile.data.saved.IosAccountCacheStorage
+import dev.hackatlas.mobile.data.saved.PrivateCacheKind
 import dev.hackatlas.mobile.domain.selectCatalogSource
 import dev.hackatlas.mobile.ui.CatalogRuntime
 
@@ -15,7 +16,8 @@ fun MainViewController(isDebug: Boolean, sourceMode: String, apiBaseUrl: String)
     val runtime = processRuntime ?: CatalogRuntime(selectCatalogSource(isDebug, sourceMode, apiBaseUrl),
         { scope -> IosGuestSnapshotStorage(scope) },
         secureStoreFactory = { source -> IosSecureTokenStore(source) },
-        accountCacheFactory = { source -> IosAccountCacheStorage(source) }).also { processRuntime = it }
+        accountCacheFactory = { source -> IosAccountCacheStorage(source) },
+        applicationCacheFactory = { source -> IosAccountCacheStorage(source, PrivateCacheKind.APPLICATIONS) }).also { processRuntime = it }
     return ComposeUIViewController { App(runtime.state) }
 }
 

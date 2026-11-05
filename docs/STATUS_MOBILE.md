@@ -1,5 +1,46 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## M3: личные отметки — Android принято, 5 ноября 2026
+
+Утверждённый вариант: серверные изменения + offline read-only копия, без очереди,
+отдельного списка/напоминаний. Ветка feat/mobile-application-marks, base c1c3718(PR27).
+Commit/push/PR выполняет пользователь; новых коммитов агент не создавал.
+
+Реализованы strict DTO/owned GET/PUT/DELETE в текущем AuthSessionClient,
+ApplicationCache/ApplicationStore с owner/source isolation, полной пагинацией,
+проверкой drift, защитой от поздних ответов/записей и неизвестного результата.
+Подтверждённый результат не откатывается при сбое диска/обновления профиля.
+PrivateCacheKind.APPLICATIONS отделяет private paths; saved/guest schema прежние.
+Общий Compose control в DetailScreen; вход гостя возвращает событие. Registration/
+share/bookmark сами отметку не создают. Android/iOS hosts подключены, дизайн M1 прежний.
+Starter API0.1.1/backend/infra/CI/зависимости не менялись, opaque sessions сохранены.
+
+Проверки:268shared,0fail/error/skip(32новых); debug/lint0/release gate/contract PASS.
+Backend package31unit PASS для локального стенда, не повторный backend verify/IT.
+Один независимый source review:0Critical/0Important/0Minor.9helper checks PASS.
+
+Android16/API36:10/10 PASS в одном полном прогоне на настоящем localB2:8774,
+одноразовой PostgreSQL:5551,2synthetic accounts/5DEMO events,2GB/4cores/hostNVIDIA/
+Vulkan disabled. Guest login return, mark/date/repeatPUT/restart, bookmark independence,
+cold offline read-only, DELETE, account switch,360dp/font130, real revoked401 с очисткой
+credential/обоихprivatecaches и неизменнымиguestbytes. failure=null,restoreErrors=[],
+observation retries0. Settings/guest/private absence отдельно перечитаны после restore.
+Ключевые screenshots просмотрены; галерея mobile/artifacts/m3-applications/review.html.
+4предыдущих failure сохранены:2helper defects исправлены,2host emulator crashes;
+в успешной попытке APK/app source прежние. Software renderer не принят.
+
+APK: mobile/build/m3-applications/HackAtlas-applications-debug.apk,
+SHA256015395af1dc7b092b915d7203bcc908ba575feabb91dcb25964fd6628ec9f156;
+installed SHA совпал. REMOTE URL8774 требует повторного запуска своего backend.
+Временные backend/AVD остановлены, task PostgreSQL удалена. Очистку AVD/env отклонила
+автопроверка без причины; ignored файлы/registry оставлены, чужие AVD не менялись.
+Логи/ledger: mobile/build/m3-applications, .superpowers/sdd/2026-11-05-mobile-application-marks.
+
+Отчёт/PR/команды: mobile/artifacts/m3-applications/{REVIEW.md,PR_DESCRIPTION.md,COMMIT_PR.md}.
+Спецификация/план: docs/superpowers/{specs,plans}/2026-11-05-mobile-application-marks*.
+iOS native на Windows не выполнялся; Mac/iPhone, физическое Android/TalkBack отдельно.
+Следующий шаг: ручные commit/push/PR и review напарника. Новые блоки M3 не начинать.
+
 ## PR27: Gitleaks — 5 ноября2026
 
 Ветка fix/mobile-tzdata-compat, HEAD392c37d; пользователь сообщил о CI failures.

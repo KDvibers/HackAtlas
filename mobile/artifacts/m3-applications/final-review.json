@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-05",
+  "reviewer": "application_marks_final_review",
+  "mode": "independent read-only source review",
+  "base": "c1c371816dba3b7fb0a317a7237ae033f6178cec",
+  "findings": {
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "scope": [
+    "protected client",
+    "cache isolation",
+    "store races",
+    "shared UI and hosts",
+    "tests",
+    "native helper guards"
+  ],
+  "limits": [
+    "Native acceptance was pending during source review; later Android10/10 is separate evidence in android-smoke.json",
+    "iOS native build not run on Windows",
+    "Canonical paginated API has no transactional snapshot revision; repeated scans reduce drift but do not guarantee a serializable snapshot",
+    "Offline queue, reminders, application list and email lifecycle excluded"
+  ],
+  "repeatReviewRun": false
+}
