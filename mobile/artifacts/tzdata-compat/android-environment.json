@@ -1,0 +1,30 @@
+{
+  "api36FirstBoot": {
+    "completed": false,
+    "appTestStarted": false,
+    "configuration": "swiftshader, Vulkan disabled; emulator raised RAM to2048MB",
+    "failure": "Boot deadline elapsed, ADB stayed offline; no app assertions executed"
+  },
+  "api34FullRun": {
+    "completed": true,
+    "checks": 4,
+    "configuration": "swiftshader, Vulkan disabled;1536MB/4cores"
+  },
+  "nextApi36": "Use previously proven profile-acceptance configuration:2048MB/4cores/swiftshader, default Vulkan; capture kernel log",
+  "api36SetupDiagnosis": "First boot slow; reached home/USB-debugging RSA dialog. Verified displayed fingerprint equals host adbkey.pub MD5, clicked one-time Allow via emulator console. No auth/security checks disabled.",
+  "api36SwiftshaderAttempt": {
+    "catalogue": "PASS",
+    "fullAcceptance": false,
+    "hostFailure": "QEMU0xc0000005 Windows Event1000; lost guest readback",
+    "apkChanged": false
+  },
+  "api36FinalConfiguration": "2048MB/4cores/lavapipe, default Vulkan; actual installed final APK unchanged",
+  "api36AdbAuthorization": "Observed standard RSA dialog, matched host public-key fingerprint, authorized only disposable task AVD; no security setting disabled",
+  "cleanup": {
+    "taskAvdDirectoriesRecycled": true,
+    "taskRegistriesRemoved": true,
+    "originalAvdsNotModifiedOrWiped": true,
+    "liveBackendOrDatabaseStartedForThisTask": false,
+    "fixtureServerStopped": true
+  }
+}

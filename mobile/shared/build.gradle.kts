@@ -56,7 +56,10 @@ kotlin {
         }
     }
     sourceSets {
-        androidMain.dependencies { implementation(libs.ktor.client.okhttp) }
+        androidMain.dependencies {
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.threetenbp)
+        }
         iosMain.dependencies { implementation(libs.ktor.client.darwin) }
         commonMain.dependencies {
             implementation(compose.runtime)

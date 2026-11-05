@@ -1,0 +1,71 @@
+{
+  "date": "2026-11-03",
+  "branch": "fix/mobile-tzdata-compat",
+  "base": "f72e2484c00b2b7999b92c54104d732381225d0d",
+  "source": "Read-only HTTP replay of canonical Starter DEMO fixtures; not live backend acceptance",
+  "tests": {
+    "tests": 236,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "build": "assembleDebug/lintDebug/verifyReleaseNoDemoFixtures PASS",
+  "contract": "validate_contract.py PASS API0.1.1",
+  "packageAudit": {
+    "mobile/build/tzdata-compat/HackAtlas-tzdata-debug.apk": {
+      "bytes": 27484251,
+      "sha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+      "tzdbVersions": [
+        "2026egtz"
+      ],
+      "licenseAssetExact": true
+    },
+    "mobile/androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk": {
+      "bytes": 21073719,
+      "sha256": "99695859218d3b24cd1dbd07c70e9b6444bd9de4405161679f571e7c0b3f7ac4",
+      "tzdbVersions": [
+        "2026egtz"
+      ],
+      "licenseAssetExact": true
+    },
+    "tests": {
+      "tests": 236,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52"
+  },
+  "native": {
+    "api34Before": "Expected invalid-response rejection",
+    "api34": "4/4 PASS",
+    "api36": "4/4 PASS"
+  },
+  "unchangedValidHttpPageSha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77",
+  "systemConversionUnchanged": {
+    "api34": "2026-11-12T11:00+0600",
+    "api36": "2026-11-12T10:00+0500"
+  },
+  "finalReview": "PASS:0 Critical/Important/Minor (fresh read-only reviewer)",
+  "ios": "Source-only existing native resolver; no native build on Windows",
+  "limitations": [
+    "No physical device or API26-33/35 run",
+    "Bundled rules require release maintenance after future timezone laws",
+    "No new backend acceptance; no API/backend changes"
+  ],
+  "cleanup": "Task AVDs recycled, registries removed, original AVDs retained; fixture server stopped",
+  "nativeGraphics": {
+    "api34": "1536MB/4cores/swiftshader/Vulkanoff",
+    "api36": "2048MB/4cores/lavapipe"
+  },
+  "finalAudit": {
+    "jsonAndGalleryLinks": "PASS",
+    "nativeInstalledApkAndHttpByteComparison": "PASS",
+    "gitDiffCheck": "PASS",
+    "apiBackendInfraDesignUnchanged": true,
+    "headUnchanged": true,
+    "indexEmpty": true,
+    "fixturePortClosed": true,
+    "ownedEmulatorsStopped": true
+  }
+}

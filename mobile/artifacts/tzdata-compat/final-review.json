@@ -1,0 +1,18 @@
+{
+  "date": "2026-11-03",
+  "reviewer": "tzdata_final_review",
+  "mode": "Fresh context, read-only, no further subagents or heavy/live checks",
+  "base": "f72e2484c00b2b7999b92c54104d732381225d0d",
+  "critical": 0,
+  "important": 0,
+  "minor": 0,
+  "verdict": "No actionable defects within Android tzdata bugfix scope",
+  "evidenceAtReview": "236 tests/build/lint/release/package/contract PASS, API34 full4/4 PASS; API36 pending owner verification",
+  "outsideScope": [
+    "Old iOS tzdata/native Mac build",
+    "Physical Android and API26-33/35",
+    "Global provider/device clock/Calendar.today",
+    "UI/backend/auth/new M3 blocks"
+  ],
+  "ownerRuling": "All exclusions match user-authorized bugfix scope and are documented"
+}

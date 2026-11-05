@@ -1,0 +1,92 @@
+{
+  "source": "Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",
+  "checks": [
+    {
+      "name": "REMOTE catalogue accepts all five unchanged canonical DEMO events",
+      "status": "PASS"
+    },
+    {
+      "name": "source deadline18:00 and start10:00 stay exact; canonical instant is not reinterpreted",
+      "status": "PASS"
+    },
+    {
+      "name": "saved EventTime snapshot remains readable after restart offline without changing guest bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "genuinely inconsistent MINUTE still fails closed; no DEMO fallback",
+      "status": "PASS"
+    }
+  ],
+  "failure": null,
+  "restoreErrors": [],
+  "fullAcceptance": true,
+  "apkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+  "device": {
+    "ro.build.version.sdk": "36",
+    "ro.build.version.release": "16",
+    "tzdata": "tzdata2025a"
+  },
+  "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
+  "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+  "freshObservationRetries": 0,
+  "requests": [
+    {
+      "path": "/api/v1/hackathons",
+      "query": "sort=DEADLINE_ASC&size=20",
+      "invalidMinute": false,
+      "client": "host-probe",
+      "status": 200,
+      "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "query": "",
+      "invalidMinute": false,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "query": "sort=DEADLINE_ASC&page=0&size=20",
+      "invalidMinute": false,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "faa7788e213d05f1d2c1bafa82adb3fa1465be9a577e579ad2e564da1edbed77"
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "query": "",
+      "invalidMinute": false,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+    },
+    {
+      "path": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e",
+      "query": "",
+      "invalidMinute": false,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "643856c726f743939c26476a4edbeb58e0ca40dd4163c6607236304eef3d694d"
+    },
+    {
+      "path": "/api/v1/hackathons",
+      "query": "sort=DEADLINE_ASC&page=0&size=20",
+      "invalidMinute": true,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "c6d0746a636c52f92a8ac95bfce424b8b60aa2650d64fb16c236a91b1863442b"
+    },
+    {
+      "path": "/api/v1/metadata/filters",
+      "query": "",
+      "invalidMinute": true,
+      "client": "android",
+      "status": 200,
+      "bodySha256": "557cc67017e07426bb0b22681b8e96f29e37ac2b689fddf411b6595d4c1826b4"
+    }
+  ],
+  "ios": "Not built/run on Windows"
+}
