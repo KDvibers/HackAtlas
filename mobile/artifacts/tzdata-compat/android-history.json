@@ -12,7 +12,7 @@
       "tzdata": "tzdata2023a"
     },
     "installedApkSha256": "9e1d57701fd14348e0aec487500c3ea9434bf388cdd71eef9493a33de11b3984",
-    "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
     "freshObservationRetries": 0,
     "requests": [
       {
@@ -65,7 +65,7 @@
       "tzdata": "tzdata2023a"
     },
     "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
-    "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
     "freshObservationRetries": 0,
     "requests": [
       {
@@ -141,7 +141,7 @@
       "tzdata": "tzdata2023a"
     },
     "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
-    "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
     "freshObservationRetries": 0,
     "requests": [
       {
@@ -209,7 +209,7 @@
       "tzdata": "tzdata2025a"
     },
     "installedApkSha256": "73916988b332bfbba0260e5921b8287ebe73176521df486b8c9cc3fbbe6efef6",
-    "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
     "freshObservationRetries": 0,
     "requests": [
       {

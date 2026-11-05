@@ -1,5 +1,25 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## PR27: Gitleaks — 5 ноября2026
+
+Ветка fix/mobile-tzdata-compat, HEAD392c37d; пользователь сообщил о CI failures.
+Прочитаны реальные GitHub job logs: Gitleaks8.30.1 на push/PR даёт8находок;
+Backend verify/Contract check завершились success. Локально воспроизведены те же
+32коммита/8generic-api-key. Все находки — SHA-256 публичного OpenAPI в старом поле
+отчётов, не credentials. Сверены исходные8строк/commit blob и canonical file hash.
+
+Поле renamed contractSha256 в helper и5JSON evidence files (8values). Root
+.gitleaksignore содержит ровно8commit:file:rule:line fingerprint исторического
+392c37d. Ничего не исключено по целому пути/коммиту/правилу; history не переписана.
+Локальный --all:0findings,4контроля подтвердили сохранение обнаружения новых
+токенов и новых совпадений на том же report path/line. Helper syntax PASS.
+
+App/API/backend/workflow/dependencies прежние;236unit/native8сценариев повторно
+не запускались, их прежнее подтверждение относится к3ноября. Отчёт/команды:
+mobile/artifacts/tzdata-compat/CI_FIX.md, ci-gitleaks-verification.json.
+Пользователь делает commit/push в ту же ветку для PR27; agent не коммитил/не пушил.
+Remote CI для исправления ещё не запускался. Новые M3 не начинались.
+
 ## Android tzdata compatibility — 3 ноября 2026
 
 Пользователь поручил исправить открытие каталога на старой Android tzdata;

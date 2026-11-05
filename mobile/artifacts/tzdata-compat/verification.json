@@ -34,7 +34,7 @@
       "errors": 0,
       "skipped": 0
     },
-    "apiSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52"
+    "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52"
   },
   "native": {
     "api34Before": "Expected invalid-response rejection",

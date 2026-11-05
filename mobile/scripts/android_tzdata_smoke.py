@@ -135,7 +135,7 @@ def main():
         report=dict(source="Loopback HTTP replay of Starter canonical DEMO fixtures; not a live backend acceptance",checks=smoke.results,
                     failure=failure,restoreErrors=errors,fullAcceptance=failure is None and not errors,
                     apkSha256=hashlib.sha256(Path(args.apk).read_bytes()).hexdigest(),device=properties,
-                    installedApkSha256=installed_sha,apiSha256=hashlib.sha256((ROOT/"api/openapi.yaml").read_bytes()).hexdigest(),
+                    installedApkSha256=installed_sha,contractSha256=hashlib.sha256((ROOT/"api/openapi.yaml").read_bytes()).hexdigest(),
                     freshObservationRetries=smoke.observation_retries,requests=fixture.requests,ios="Not built/run on Windows")
         (smoke.out/"android-smoke.json").write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     return 1 if failure or errors else 0

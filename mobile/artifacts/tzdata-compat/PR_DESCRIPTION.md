@@ -16,6 +16,9 @@ Android-only ThreeTenBP1.7.5 с TZDB2026egtz даёт независимые п�
 - Совпадают SHA установленного APK и байты валидного HTTP каталога before/after.
 - Bundled TZDB и полный BSD license asset присутствуют в debug/release.
 - Один fresh read-only final review:0 Critical/Important/Minor.
+- CI follow-up5ноября: Gitleaks8.30.1 --all32коммита,0находок;8исторических
+  false positives публичного OpenAPI digest отмечены точными fingerprints,
+  новое поле отчётов contractSha256. Четыре контроля обнаружения PASS.
 
 Native проверка использует read-only HTTP replay Starter DEMO fixtures, не живой B2.
 Неудачные попытки сохранены в android-history.json; они не засчитаны как PASS.
