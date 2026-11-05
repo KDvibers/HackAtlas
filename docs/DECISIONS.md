@@ -191,3 +191,19 @@ Mobile API, fixtures и opaque auth protocol не изменены; API PR и oa
 V2 содержит только схему. DEMO включается отдельным флагом в dev/test и запрещён при активном prod, даже вместе с test. Seed использует общие fixture IDs, добавляет отсутствующее и не перезаписывает существующие данные. Внутренний `publishedAt` для новых DEMO-событий следует порядку fixture; `updatedAt` сохраняется. Для четырёх карточек без detail-fixture неизвестные правила остаются null/пустыми; технически обязательные официальные ссылки берутся из их канонических DEMO organizer URLs. Все эти события остаются вымышленными.
 
 На B1 подключены Bruno CLI 4.2.1 и Schemathesis 4.32.2 с locks, отдельной временной PostgreSQL и проверкой собранного JAR. Рабочие ответы интеграционных тестов дополнительно валидируются по OpenAPI 3.1 / JSON Schema 2020-12. Scope и границы генерации зафиксированы в [scripts/b1/README](../scripts/b1/README.md). API, fixtures, авторизация и mobile не меняются; oasdiff понадобится при первом согласованном изменении контракта.
+
+
+## 5 ноября 2026 — N2 только в закрытой среде
+
+Друг подтвердил: strict0.2 не принят, canonical0.1.1 прежний. Candidate0.2.0-test.1
+генерируется в ignored target; общий Problem enum и mobile не меняются.
+PASSWORD_RESET_REQUIRED только login; protected revoked401/pending403EMAIL_NOT_VERIFIED.
+
+Выбраны dev/test+lifecycle-test guards, dedicated DB/source marker, queue16 в памяти,
+отдельные quotas, Spring Mail и Mailpit1.33.0 по digest. Sink не relay/provider.
+SMTP rDNS выключен только в sink для воспроизводимого greeting; backend timeout2с
+сохранён. На host только127.0.0.1. V9 готовит lifecycle restore в quarantine;
+approval требует подготовки, повторная миграция approved DB не блокирует снова.
+[Матрица и ограничения](research/2026-11-05-account-lifecycle-n2.md),
+[запуск](../infra/lifecycle-test/README.md). Далее нужно совместно согласовать matrix,
+private cache и переход старых клиентов. Внешний SMTP/public signup не разрешены.

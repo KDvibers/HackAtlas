@@ -11,7 +11,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "infra/release/ops"))
-from restore_review import read_private_review, target_database, validate_review
+from restore_review import read_private_review, target_database, validate_review, quarantine_state
 
 NOW = datetime(2026, 10, 26, 18, 0, tzinfo=timezone.utc)
 USER_ID = "11111111-2222-4333-8444-555555555555"
@@ -29,6 +29,21 @@ def fixtures():
 
 
 class RestoreReviewTests(unittest.TestCase):
+    def test_lifecycle_restore_flag_is_explicit_true_and_does_not_weaken_existing_review(self):
+        state, review = fixtures()
+        state["lifecycleRecoveryRequired"] = True
+        self.assertEqual([USER_ID], validate_review(review, state, now=NOW))
+        for invalid in (False, 0, 1, "true", None):
+            state["lifecycleRecoveryRequired"] = invalid
+            with self.subTest(flag=invalid), self.assertRaises(ValueError):
+                validate_review(review, state, now=NOW)
+
+    def test_old_snapshot_can_opt_into_recovery_without_tagging_legacy_restores(self):
+        legacy = quarantine_state("test-project", "hackatlas_restore_test", "a" * 64, now=NOW)
+        self.assertNotIn("lifecycleRecoveryRequired", legacy)
+        strict = quarantine_state("test-project", "hackatlas_restore_test", "a" * 64, now=NOW, lifecycle_required=True)
+        self.assertIs(strict["lifecycleRecoveryRequired"], True)
+
     def test_valid_review_returns_only_confirmed_canonical_ids(self):
         state, review = fixtures()
         self.assertEqual([USER_ID], validate_review(review, state, now=NOW))

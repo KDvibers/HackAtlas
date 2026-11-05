@@ -517,12 +517,12 @@ class RehearsalHash { public static void main(String[] args) throws Exception {
             require(self.sql("SELECT count(*) FROM public.flyway_schema_history WHERE version='7' AND success;", target) == "1",
                     "V7 must apply to a V6 restored database")
             current_version = self.sql("SELECT version FROM public.flyway_schema_history WHERE success ORDER BY installed_rank DESC LIMIT 1;", target)
-            require(current_version == "8", "Lifecycle foundation V8 must also apply to the legacy restore")
+            require(current_version == "9", "Lifecycle runtime V9 must also apply to the legacy restore")
             require(self.sql("SELECT has_database_privilege('hackatlas_runtime', " + sql_value(target) + ", 'CONNECT');", "postgres") == "f",
                     "Legacy migration callback must preserve quarantine")
             self.report["legacyRestore"] = {"backupSchemaVersion": 6, "migratedToVersion": int(current_version),
                                             "quarantinePreserved": True, "historicalReceiptsBackfilled": False}
-            self.passed("genuine V6 backup restores through V7 to V8 without opening quarantine or inventing history")
+            self.passed("genuine V6 backup restores through V7/V8 to V9 without opening quarantine or inventing history")
         finally:
             self.env["HACKATLAS_DB_NAME"] = previous
 

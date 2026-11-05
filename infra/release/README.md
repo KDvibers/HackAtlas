@@ -376,3 +376,16 @@ PostgreSQL не пишет statements и параметры ошибочных �
 backup реального окружения командами очистки лаборатории. Автоматический QA runner
 может очищать только ресурсы с собственным уникальным project и label; это не команда
 обслуживания существующей базы.
+
+
+### Lifecycle snapshots (N2, только закрытый тестовый профиль)
+
+Восстановление snapshot, уже помеченного как lifecycle source, автоматически добавляет
+`lifecycleRecoveryRequired=true` в quarantine metadata и требует V9 preparation.
+Для старого snapshot оператор явно добавляет к `restore.py` `--require-lifecycle-recovery`.
+Без актуальной схемы/подготовки approval отклоняется, runtime остаётся disconnected.
+Восстановленная lifecycle БД не может стартовать в legacy mode. Старые пароли требуют
+fresh email reset; sessions/proofs из backup отозваны. Повторная миграция после approval
+не заставляет уже восстановленного пользователя менять пароль ещё раз.
+Deletion review и отдельное operator approval сохраняются. Release профиль не включает
+HTTP lifecycle; закрытая проверка описана в [N2 runbook](../lifecycle-test/README.md).

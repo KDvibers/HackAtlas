@@ -5,8 +5,8 @@
 Параметры каталога, политика статусов и явный DEMO-запуск описаны в [CATALOG](CATALOG.md).
 
 Подготовлена [внутренняя account lifecycle основа N1](ACCOUNT_LIFECYCLE.md): V8,
-HMAC-коды, одноразовые challenges/grants и транзакционное хранилище. Она пока не
-подключена к HTTP/mail/guards; canonical lifecycle endpoints остаются planned.
+HMAC-коды, одноразовые challenges/grants и транзакционное хранилище. В N2 HTTP/mail/guards доступны только в закрытом локальном профиле;
+обычный сервер и canonical0.1.1 прежние. Команды — [закрытый стенд](../infra/lifecycle-test/README.md).
 
 Локальная подготовка B4: [контейнеры, HTTPS, секреты и backup/restore](../infra/release/README.md), [проверка восстановления](../scripts/b4/README.md), [dependency audit](../scripts/security/README.md). Runtime использует `prod,release` и отдельную ограниченную роль БД; миграции выполняются отдельным одноразовым процессом. Внешний staging ещё не развёрнут; текущее поручение ограничено подготовкой и локальными проверками.
 

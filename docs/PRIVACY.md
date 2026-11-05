@@ -80,3 +80,18 @@ password hashes из dump и псевдонимные UUID из exports; шиф�
 manifest timestamps и успешное извлечение не заменяют ручной review и карантин.
 
 Сроки хранения логов, обращений, аудита и backups, offsite-шифрование, расписание и контроль успешности backup остаются обязательными решениями перед внешним deployment. Локальный release-кандидат ограничивает размер Docker logs и удаляет поле request из Caddy runtime logs; это ограничение размера, а не согласованный срок retention. Подготовка B4 не объявляется публичным выпуском или готовой юридической политикой.
+
+
+## N2 — закрытый почтовый стенд, 5 ноября 2026
+
+Только синтетические @example.com аккаунты. Mailpit принимает настоящий локальный
+SMTP и хранит тело письма с кодом в tmpfs, на loopback; compose ограничен100 письмами.
+БД хранит hashes/MAC. Raw HMAC key32bytes и пароль БД создаются вне Git с owner-only
+permissions. Очередь содержит необходимые значения только в RAM, durable queue нет.
+Логи не содержат email/password/code/token, HTTP exports редактируют proof identifiers.
+
+Down удаляет контейнеры/tmpfs, но private settings/key остаются у оператора до ручного
+удаления. Expiry запрещает proof, но не удаляет строку. Retention cleanup не реализован;
+сроки хранения/внешний SMTP требуют согласования до rollout. Lifecycle restore отзывает
+sessions/proofs и требует fresh reset после подготовки/review в quarantine. Legacy
+исходный delivery address не выдумывается.

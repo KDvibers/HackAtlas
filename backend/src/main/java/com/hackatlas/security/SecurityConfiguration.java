@@ -2,6 +2,7 @@ package com.hackatlas.security;
 
 import com.hackatlas.auth.AuthRateLimiter;
 import com.hackatlas.auth.AuthService;
+import com.hackatlas.auth.lifecycle.LifecycleSettings;
 import com.hackatlas.admin.AdminAccessService;
 import com.hackatlas.admin.AdminAuthenticationProvider;
 import com.hackatlas.admin.AdminLoginException;
@@ -43,7 +44,7 @@ class SecurityConfiguration {
     @Bean
     @Order(1)
     SecurityFilterChain nativeApi(
-            HttpSecurity http, AuthService sessions, AuthRateLimiter limiter, SecurityProblems problems
+            HttpSecurity http, AuthService sessions, AuthRateLimiter limiter, SecurityProblems problems, LifecycleSettings lifecycle
     ) throws Exception {
         return http.securityMatcher("/api/v1/**")
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/**"))
@@ -55,13 +56,14 @@ class SecurityConfiguration {
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/v1/me", "/api/v1/me/**", "/api/v1/auth/logout",
-                                "/api/v1/suggestions", "/api/v1/hackathons/*/reports").authenticated()
+                                "/api/v1/suggestions", "/api/v1/hackathons/*/reports",
+                                "/api/v1/auth/email-verification/request", "/api/v1/auth/email-verification/confirm").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) -> problems.unauthorized(request, response))
                         .accessDeniedHandler((request, response, exception) -> problems.forbidden(request, response)))
                 .addFilterBefore(new AuthIpRateLimitFilter(limiter, problems), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(new BearerSessionFilter(sessions, problems), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new BearerSessionFilter(sessions, problems, lifecycle), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

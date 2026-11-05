@@ -74,8 +74,9 @@ public class AdminCatalogueService {
         }).optional().orElseThrow(AdminCatalogueService::notFound);
     }
 
-    public UUID create(UUID actor, AdminEventForm form) {
-        access.requireForMutation(actor);
+    public UUID create(AdminPrincipal principal, AdminEventForm form) {
+        access.requireForMutation(principal);
+        UUID actor = principal.userId();
         UUID id = UUID.randomUUID();
         jdbc.sql("""
                 INSERT INTO hackatlas.catalog_hackathon
@@ -89,8 +90,9 @@ public class AdminCatalogueService {
         return id;
     }
 
-    public void edit(UUID actor, UUID id, AdminEventForm form) {
-        access.requireForMutation(actor);
+    public void edit(AdminPrincipal principal, UUID id, AdminEventForm form) {
+        access.requireForMutation(principal);
+        UUID actor = principal.userId();
         lock(id);
         var current = editor(id);
         if (current.event.publicationStatus.equals("PUBLISHED")) { requireSource(form.value("officialUrl"),form.value("sourceUrl")); }
@@ -103,8 +105,9 @@ public class AdminCatalogueService {
         audit.record(actor, "EVENT_EDITED", id);
     }
 
-    public void publish(UUID actor, UUID id, boolean reviewConfirmed) {
-        access.requireForMutation(actor);
+    public void publish(AdminPrincipal principal, UUID id, boolean reviewConfirmed) {
+        access.requireForMutation(principal);
+        UUID actor = principal.userId();
         lock(id);
         var current = editor(id);
         if (!reviewConfirmed) { throw invalid("Подтвердите, что карточка проверена перед публикацией."); }
@@ -120,16 +123,18 @@ public class AdminCatalogueService {
         audit.record(actor, "EVENT_PUBLISHED", id);
     }
 
-    public void archive(UUID actor, UUID id) {
-        access.requireForMutation(actor);
+    public void archive(AdminPrincipal principal, UUID id) {
+        access.requireForMutation(principal);
+        UUID actor = principal.userId();
         lock(id);
         jdbc.sql("UPDATE hackatlas.catalog_hackathon SET publication_status='ARCHIVED',updated_at=:now WHERE id=:id")
                 .param("now", Timestamp.from(clock.instant())).param("id", id).update();
         audit.record(actor, "EVENT_ARCHIVED", id);
     }
 
-    public void verify(UUID actor, UUID id, boolean sourceChecked) {
-        access.requireForMutation(actor);
+    public void verify(AdminPrincipal principal, UUID id, boolean sourceChecked) {
+        access.requireForMutation(principal);
+        UUID actor = principal.userId();
         lock(id);
         var current = editor(id);
         if (!sourceChecked) { throw invalid("Подтвердите ручную проверку официального источника."); }
@@ -139,8 +144,9 @@ public class AdminCatalogueService {
         audit.record(actor, "SOURCE_VERIFIED", id);
     }
 
-    public void review(UUID actor, UUID id, String decision) {
-        access.requireForMutation(actor);
+    public void review(AdminPrincipal principal, UUID id, String decision) {
+        access.requireForMutation(principal);
+        UUID actor = principal.userId();
         moderation.review(id, decision);
         audit.record(actor, "SUBMISSION_" + decision, null);
     }

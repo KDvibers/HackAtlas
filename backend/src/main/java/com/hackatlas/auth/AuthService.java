@@ -14,6 +14,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import com.hackatlas.web.ApiFailure;
+import com.hackatlas.auth.lifecycle.LifecycleSettings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -31,12 +32,13 @@ public class AuthService {
     private final AuthRateLimiter limiter;
     private final boolean registrationEnabled;
     private final Duration sessionTtl;
+    private final LifecycleSettings lifecycle;
     private final SecureRandom random = new SecureRandom();
     private final String dummyPasswordHash;
 
     public AuthService(
             JdbcTemplate jdbc, Clock clock, PasswordEncoder passwords, AuthRateLimiter limiter,
-            Environment environment,
+            Environment environment, LifecycleSettings lifecycle,
             @Value("${hackatlas.auth.registration-enabled:false}") boolean registrationEnabled,
             @Value("${hackatlas.auth.session-ttl:P30D}") Duration sessionTtl
     ) {
@@ -50,6 +52,7 @@ public class AuthService {
         this.registrationEnabled = registrationEnabled
                 && environment.acceptsProfiles(Profiles.of("(dev | test) & !prod"));
         this.sessionTtl = sessionTtl;
+        this.lifecycle = lifecycle;
         // Missing accounts still perform the same expensive verification operation.
         this.dummyPasswordHash = passwords.encode(UUID.randomUUID().toString());
     }
@@ -80,15 +83,16 @@ public class AuthService {
         String normalizedEmail = normalizeEmail(email);
         limiter.checkAccount(normalizedEmail);
         List<AccountCredential> users = jdbc.query("""
-                SELECT id, password_hash FROM hackatlas.user_account WHERE email = ? FOR UPDATE
+                SELECT id, password_hash, password_reset_required FROM hackatlas.user_account WHERE email = ? FOR UPDATE
                 """, (rs, row) -> new AccountCredential(rs.getObject("id", UUID.class),
-                rs.getString("password_hash")), normalizedEmail);
+                rs.getString("password_hash"), rs.getBoolean("password_reset_required")), normalizedEmail);
         AccountCredential user = users.isEmpty() ? null : users.getFirst();
         boolean matches = passwords.matches(password, user == null ? dummyPasswordHash : user.passwordHash);
         if (user == null || !matches) {
             throw new ApiFailure(401, "INVALID_CREDENTIALS",
                     "Не удалось выполнить вход. Проверьте данные и повторите попытку.");
         }
+        if (user.resetRequired) throw new ApiFailure(403, "PASSWORD_RESET_REQUIRED", "Восстановите пароль по почте.");
         return issue(user.userId, now());
     }
 
@@ -98,11 +102,24 @@ public class AuthService {
             return Optional.empty();
         }
         return jdbc.query("""
-                SELECT id, user_id FROM hackatlas.auth_session
-                WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > ?
+                SELECT s.id, s.user_id, s.credential_version FROM hackatlas.auth_session s
+                JOIN hackatlas.user_account u ON u.id=s.user_id AND u.credential_version=s.credential_version
+                WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > ? AND NOT u.password_reset_required
                 """, (rs, row) -> new SessionPrincipal(rs.getObject("user_id", UUID.class),
-                rs.getObject("id", UUID.class)), TokenHash.sha256(token), Timestamp.from(now()))
+                rs.getObject("id", UUID.class), rs.getLong("credential_version")), TokenHash.sha256(token), Timestamp.from(now()))
                 .stream().findFirst();
+    }
+
+    @Transactional(readOnly = true)
+    public void requireVerified(SessionPrincipal principal) {
+        var flags = jdbc.query("""
+                SELECT u.email_verified FROM hackatlas.user_account u
+                JOIN hackatlas.auth_session s ON s.user_id=u.id AND s.credential_version=u.credential_version
+                WHERE u.id=? AND s.id=? AND s.credential_version=? AND s.revoked_at IS NULL
+                    AND s.expires_at>? AND NOT u.password_reset_required
+                """, (rs,row) -> rs.getBoolean(1), principal.userId(), principal.sessionId(), principal.credentialVersion(), Timestamp.from(now()));
+        if (flags.isEmpty()) throw new ApiFailure(401, "AUTH_REQUIRED", "Требуется действующая сессия.");
+        if (!flags.getFirst()) throw new ApiFailure(403, "EMAIL_NOT_VERIFIED", "Подтвердите почту для этого действия.");
     }
 
     @Transactional
@@ -125,11 +142,13 @@ public class AuthService {
         byte[] entropy = new byte[32];
         random.nextBytes(entropy);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(entropy);
-        Instant expiresAt = now.plus(sessionTtl).truncatedTo(ChronoUnit.MICROS);
+        var account = jdbc.queryForMap("SELECT credential_version,email_verified FROM hackatlas.user_account WHERE id=?", userId);
+        Duration ttl = lifecycle.enabled() && !Boolean.TRUE.equals(account.get("email_verified")) ? Duration.ofMinutes(30) : sessionTtl;
+        Instant expiresAt = now.plus(ttl).truncatedTo(ChronoUnit.MICROS);
         jdbc.update("""
-                INSERT INTO hackatlas.auth_session (id, user_id, token_hash, created_at, expires_at)
-                VALUES (?, ?, ?, ?, ?)
-                """, UUID.randomUUID(), userId, TokenHash.sha256(token), Timestamp.from(now), Timestamp.from(expiresAt));
+                INSERT INTO hackatlas.auth_session (id, user_id, token_hash, created_at, expires_at, credential_version)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """, UUID.randomUUID(), userId, TokenHash.sha256(token), Timestamp.from(now), Timestamp.from(expiresAt), account.get("credential_version"));
         return new IssuedSession(token, expiresAt, userId);
     }
 
@@ -141,10 +160,12 @@ public class AuthService {
     private static final class AccountCredential {
         private final UUID userId;
         private final String passwordHash;
+        private final boolean resetRequired;
 
-        private AccountCredential(UUID userId, String passwordHash) {
+        private AccountCredential(UUID userId, String passwordHash, boolean resetRequired) {
             this.userId = userId;
             this.passwordHash = passwordHash;
+            this.resetRequired = resetRequired;
         }
     }
 }

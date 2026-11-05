@@ -40,7 +40,7 @@ class AccountLifecycleMigrationIT {
                     """, UUID.randomUUID(), user, "a".repeat(64), now, now);
 
             var migration = Flyway.configure().dataSource(dataSource).defaultSchema("public")
-                    .createSchemas(false).cleanDisabled(true).load();
+                    .createSchemas(false).cleanDisabled(true).target("8").load();
             migration.migrate();
             assertThat(jdbc.queryForObject("SELECT version FROM public.flyway_schema_history ORDER BY installed_rank DESC LIMIT 1", String.class))
                     .isEqualTo("8");

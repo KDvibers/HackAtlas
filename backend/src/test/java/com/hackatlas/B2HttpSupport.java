@@ -93,6 +93,8 @@ abstract class B2HttpSupport {
             if (exported instanceof ObjectNode object && object.has("accessToken")) {
                 object.put("accessToken", REDACTED_TOKEN);
             }
+            if (exported instanceof ObjectNode object && object.has("resetToken")) object.put("resetToken", "R".repeat(43));
+            if (exported instanceof ObjectNode object && object.has("challengeId")) object.put("challengeId", "A".repeat(43));
             capture.set("body", exported);
             if (expected >= 400) {
                 assertThat(response.headers().firstValue("Content-Type").orElse(""))
@@ -105,7 +107,7 @@ abstract class B2HttpSupport {
         }
         boolean b3 = path.startsWith("/suggestions") || path.startsWith("/me/delete-account")
                 || path.startsWith("/hackathons/") && path.split("\\?", 2)[0].endsWith("/reports");
-        if (b3 == contractPhase().equals("B3")) responses.add(capture);
+        if (contractPhase().equals("N2") || b3 == contractPhase().equals("B3")) responses.add(capture);
         return response;
     }
 

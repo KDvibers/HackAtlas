@@ -49,7 +49,10 @@ def account_ids(values):
 
 
 def validate_state(state):
-    require(isinstance(state, dict) and set(state) == STATE_KEYS, "Unsupported restore metadata.")
+    require(isinstance(state, dict) and set(state) in (STATE_KEYS, STATE_KEYS | {"lifecycleRecoveryRequired"}),
+            "Unsupported restore metadata.")
+    if "lifecycleRecoveryRequired" in state:
+        require(state["lifecycleRecoveryRequired"] is True, "Lifecycle recovery requirement must be explicit true.")
     require(state["kind"] == "hackatlas.restore" and type(state["formatVersion"]) is int
             and state["formatVersion"] == 1, "Unsupported restore metadata format.")
     require(state["state"] == "QUARANTINED", "Restore is not awaiting review; repeated approval is refused.")
@@ -62,10 +65,13 @@ def validate_state(state):
     return timestamp(state["restoredAt"])
 
 
-def quarantine_state(project, database, checksum, *, now):
+def quarantine_state(project, database, checksum, *, now, lifecycle_required=False):
     state = {"kind": "hackatlas.restore", "formatVersion": 1, "project": project, "database": database,
              "backupSha256": checksum, "restoreId": str(uuid.uuid4()), "state": "QUARANTINED",
              "restoredAt": now.astimezone(timezone.utc).isoformat()}
+    require(type(lifecycle_required) is bool, "Lifecycle recovery requirement must be boolean.")
+    if lifecycle_required:
+        state["lifecycleRecoveryRequired"] = True
     validate_state(state)
     return state
 
@@ -126,7 +132,7 @@ def approval_sql(database, state, ids, reviewed_through):
     # All embedded values have restrictive validation; identifiers never come from free text.
     return f"""BEGIN;
 DO $hackatlas_review$
-DECLARE expected jsonb := {expected}::jsonb; actual jsonb; removed bigint;
+DECLARE expected jsonb := {expected}::jsonb; actual jsonb; removed bigint; lifecycle boolean := FALSE;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended('hackatlas.restore:' || current_database(), 0));
   IF current_database() <> expected->>'database' THEN RAISE EXCEPTION 'Wrong restore database'; END IF;
@@ -136,6 +142,15 @@ BEGIN
   IF has_database_privilege('hackatlas_runtime', current_database(), 'CONNECT') OR EXISTS (
     SELECT 1 FROM pg_stat_activity WHERE datname = current_database() AND usename = 'hackatlas_runtime'
   ) THEN RAISE EXCEPTION 'Restore runtime must remain disconnected'; END IF;
+  IF to_regclass('hackatlas.account_security_state') IS NOT NULL THEN
+    EXECUTE 'SELECT lifecycle_activated FROM hackatlas.account_security_state WHERE singleton' INTO lifecycle;
+  END IF;
+  IF actual->'lifecycleRecoveryRequired'='true'::jsonb OR lifecycle THEN
+    IF to_regprocedure('hackatlas.require_lifecycle_restore_prepared(uuid)') IS NULL THEN
+      RAISE EXCEPTION 'Lifecycle schema and preparation are required before approval';
+    END IF;
+    EXECUTE 'SELECT hackatlas.require_lifecycle_restore_prepared($1)' USING (actual->>'restoreId')::uuid;
+  END IF;
   WITH gone AS (
     DELETE FROM hackatlas.user_account WHERE id = ANY({array}) RETURNING 1
   ), audit AS (
