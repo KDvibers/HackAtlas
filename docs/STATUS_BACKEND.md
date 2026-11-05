@@ -1,5 +1,9 @@
 # BACKEND: статус
 
+Актуальное предложение для совместного review:
+[матрица клиента и N2, 5 ноября 2026](superpowers/specs/2026-11-05-account-lifecycle-client-matrix.md).
+Она ещё не согласована и не принимает strict0.2; результат подготовки — в конце файла.
+
 Актуальный результат: [N2, 5 ноября 2026](#n2--закрытый-lifecycle-runtime-5-ноября-2026).
 
 Дата актуального дополнения: 3 ноября 2026.
@@ -1169,3 +1173,38 @@ run42062085570 отличается только указанным Gitleaks fai
 к пользовательскому commit5a74ada до текущего исправления.
 Повторная локальная Java-сборка для config/docs изменения не запускалась.
 Исправление оставлено без staging/commit/push; отправка в тот же PR пользователем.
+
+## После merge PR #28 — предложение матрицы клиента, 5 ноября 2026
+
+GitHub подтвердил merged PR28 (`ded9404`), main Backend CI42066087861 SUCCESS.
+Пользователь передал ответ друга: перед интеграцией согласовать pending allowlist,
+operation/status/code/action, session/private cache cleanup с сохранением guest,
+старые клиенты/enforcement gates. Любой403 не означает logout; PASSWORD_RESET_REQUIRED
+только login. Согласование порядка не является принятием strict0.2.
+
+От чистого origin/main ded9404 в существующем checkout создана ветка
+`chore/account-lifecycle-client-matrix`. Один исполнитель, без дополнительных агентов.
+Подготовлен только [документ-предложение](superpowers/specs/2026-11-05-account-lifecycle-client-matrix.md).
+В нём22 операции/9 pending guards, contextual401/403, cache/session/flow generation,
+signed-out recovery, потерянные ответы, old-client gates и список совместной приёмки.
+
+Фактическое уточнение: delete-account с неверным паролем возвращает401
+INVALID_CREDENTIALS, но Bearer остаётся действующим (AccountDeletionService и
+ModerationApiIT). Поэтому прежнее обобщение401=expiry/revocation недостаточно.
+Текущий mobile ProfileDto не содержит emailVerified; generic Http теряет code,
+requireProtected очищает на любой401, а AccountSavedStore.verified(user) проверяет
+Authenticated, не подтверждение email. Это gaps для будущей интеграции, mobile не менялся.
+
+Предложены, но требуют review: pending private bytes скрывать/сохранять (альтернатива
+удалять), required offline cold start оставлять Unknown до server check, recovery
+из signed-out с явным logout, очистка private при отзыве без превращения его в guest.
+Реализация/канонический API0.1.1/fixtures/профили запуска не изменены. Не начинать
+mobile integration/enforcement/strict0.2 без отдельного согласования этой матрицы.
+
+Проверено UID1000:13 contract transition tests PASS; canonical OpenAPI3.1 и13 fixtures
+PASS. Сверка документа с сгенерированным candidate: ровно22 операции и9 pending guards,
+normal status maps/scoped Problem schemas, PASSWORD_RESET_REQUIRED отсутствует в
+protected403 refs. Относительные ссылки, docs-only scope2files, пустой staging,
+Gitleaks документации и git diff --check PASS. Helper/logs только ignored backend/target.
+Java/mobile сборка и device/E2E не запускались: runtime/source code не менялись.
+Документ готов к совместному review; approval решений и реализация ещё впереди.
