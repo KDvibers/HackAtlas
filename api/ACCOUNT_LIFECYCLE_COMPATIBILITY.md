@@ -7,8 +7,10 @@ mobile PR21. Уточнение7ноября: main `1563bef`, включая mob
 не авторизацию, runtime, SQL, mobile или канонические схемы/fixtures.
 
 Подробные [правила клиента](../docs/superpowers/specs/2026-11-05-account-lifecycle-client-matrix.md)
-ещё требуют совместного утверждения. Merge документов и успешный backend CI не
-принимают pending bytes/offline policy, minimum client version или strict rollout.
+частично согласованы7ноября после PR33: для закрытого N2 приняты pending retention,
+cold-start check, signed-out recovery и новое поколение каждой успешной сессии.
+Остальные детали проходят review [плана клиента](../docs/superpowers/plans/2026-11-07-n2-mobile-integration.md).
+Merge/CI и это согласование не принимают minimum client version или общий strict rollout.
 
 ## Переходный 0.1.1
 
@@ -37,10 +39,10 @@ stores пока не различают emailVerified; понятие verified �
 обоих stores и подтверждаемый guest copy. В закрытом N2 сервер уже блокирует9
 pending-операций, но мобильные состояния/UX для этого не реализованы.
 
-Предложение для required source: pending bytes сохранить и скрыть для ОБОИХ stores,
-required cold start offline скрывает private до server check. Это два отдельных
-неутверждённых продуктовых решения; второе меняет принятый mobile offline-сценарий.
-Не переносить их в legacy автоматически. Guest bytes не стирать при partial failure,
+Для закрытого N2 согласованы два правила: pending bytes сохранить/скрыть для ОБОИХ
+stores; restored cold start открывает private только после GET/me true. При offline
+после успешной проверки той же сессии в том же процессе копия читается до её expiry.
+Не переносить ограничения в legacy/общий strict source автоматически. Guest bytes не стирать при partial failure,
 private cache не становится guest. Cached identity/profile не доказывают verified.
 
 ## Матрица
@@ -71,12 +73,17 @@ PASSWORD_RESET_REQUIRED предусмотрен только на login403; л�
 Поздний401 старой generation не должен стирать новую сессию. Состояние не переносится
 между API source/accounts и не становится доказательством прав из offline cache.
 
+Для N2 принято: новая УСПЕШНО принятая login/register-сессия получает новую local
+generation даже для того же UUID/expiresAt. Неудачный login не отзывает действующую
+сессию. Recovery доступен signed-out без Authorization; reset204 не делает autologin.
+Authenticated recovery entry (в том числе вариант с явным logout) ещё не согласован.
+
 ## Этапы и gates
 
 | Этап | Backend/контракт | Mobile и условие завершения |
 |---|---|---|
 | 1. Принятый0.1.1 contract-only | Optional flag, planned paths, изолированные errors/fixtures | Исторические legacy checks/DTO replay не означают поддержку N2 UI |
-| 2. Подготовка клиента, ещё не выполнена | Общий source legacy; N2 отдельно | Сначала согласовать матрицу/политики, затем UNKNOWN/pending/verified/unsupported, OTP/reset, оба stores и mock/common/device checks |
+| 2. Подготовка клиента, ещё не выполнена | Общий source legacy; N2 отдельно | Четыре N2 правила приняты; далее review отдельного плана UNKNOWN/pending/verified/unsupported, OTP/reset, обоих stores и mock/common/device checks |
 | 3. Закрытая реализация N2 в main | Truthful flag,5 операций, attempts/grants/SMTP/revocation/restore работают только dev/test+lifecycle-test | Серверные tests есть; полный mobile email/reset/pending/cache E2E ещё не выполнен |
 | 4. Строгий 0.2 и активация | Required flag, новые error refs/403 и enforcement | Backend уже возвращает bool везде, клиенты обновлены, fixtures/validators готовы; общая Android/iPhone приёмка и отдельное разрешение выпуска |
 
@@ -103,7 +110,8 @@ delivery address. [Предложение](../docs/superpowers/specs/2026-11-07-
 Minimum поддерживаемая клиентская версия **не выбрана**. Backend API0.2 и версия
 приложения — разные значения. Перед общим strict source нужны:
 
-1. Отдельно принятые матрица, обе offline/pending политики и путь legacy/restore.
+1. Принятые правила общего источника и путь legacy/restore; закрытое N2-согласование
+   четырёх правил не распространяется автоматически на общий strict source.
 2. Готовый клиент и закрытый E2E обоих private stores; конкретные Android/iOS
    build identifiers и результаты, включая оставшиеся пробелы native iOS.
 3. Совместно утверждённый minimum build, канал обновления, аудитория старых клиентов,
