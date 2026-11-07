@@ -15,6 +15,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LifecycleApiIT extends N2HttpSupport {
     @Test
+    void wrongDeletePasswordPreservesPendingSessionAndPrivateGuards() throws Exception {
+        assertWrongDeleteKeepsSession(false);
+        for (var path : List.of("/me/saved", "/me/applications")) {
+            assertThat(call("GET", path, token, null, 403).path("code").stringValue()).isEqualTo("EMAIL_NOT_VERIFIED");
+        }
+    }
+
+    @Test
+    void wrongDeletePasswordPreservesVerifiedSession() throws Exception {
+        verified();
+        assertWrongDeleteKeepsSession(true);
+        call("GET", "/me/saved", token, null, 200);
+        call("GET", "/me/applications", token, null, 200);
+    }
+
+    private void assertWrongDeleteKeepsSession(boolean verified) throws Exception {
+        var wrong = call("POST", "/me/delete-account", token,
+                json.writeValueAsString(Map.of("password", PASSWORD + "wrong")), 401);
+        assertThat(wrong.path("code").stringValue()).isEqualTo("INVALID_CREDENTIALS");
+        var me = call("GET", "/me", token, null, 200);
+        assertThat(me.path("id").stringValue()).isEqualTo(user.toString());
+        assertThat(me.path("emailVerified").booleanValue()).isEqualTo(verified);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM hackatlas.auth_session WHERE user_id=? AND revoked_at IS NULL",
+                Integer.class, user)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM hackatlas.account_deletion_receipt WHERE account_id=?",
+                Integer.class, user)).isZero();
+    }
+
+    @Test
     void pendingSessionHasThirtyMinutesAndOnlyTheDocumentedPrivateAllowlist() throws Exception {
         var me = call("GET", "/me", token, null, 200);
         assertThat(me.path("emailVerified").isBoolean()).isTrue();

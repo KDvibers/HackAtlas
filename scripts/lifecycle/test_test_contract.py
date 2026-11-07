@@ -98,6 +98,22 @@ class TestContractTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_responses(api, exports)
 
+    def test_captured_headers_must_match_and_must_not_include_credentials(self):
+        api = render_test_contract(self.base)
+        base = {'operationPath': '/auth/password-reset/request', 'method': 'post', 'status': 202,
+                'cacheControl': 'no-store', 'contentType': 'application/json', 'retryAfter': '',
+                'headers': {'Content-Type': 'application/json', 'Cache-Control': 'no-store',
+                            'X-Request-Id': '00000000-0000-4000-8000-000000000001'},
+                'body': {'challengeId': 'A' * 43, 'expiresAt': '2026-11-05T10:00:00Z', 'resendAfterSeconds': 60}}
+        validate_responses(api, [{'source': 'N2 HTTP', 'responses': [base]}], require_coverage=False)
+        for key, value in (('Cache-Control', 'public'), ('Retry-After', '60'),
+                           ('X-Request-Id', 'invalid'), ('Set-Cookie', 'session=redacted'),
+                           ('Authorization', 'Bearer placeholder')):
+            row = copy.deepcopy(base)
+            row['headers'][key] = value
+            with self.subTest(header=key), self.assertRaises(ValueError):
+                validate_responses(api, [{'source': 'N2 HTTP', 'responses': [row]}], require_coverage=False)
+
 
 if __name__ == '__main__':
     unittest.main()

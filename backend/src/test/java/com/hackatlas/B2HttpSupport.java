@@ -84,6 +84,12 @@ abstract class B2HttpSupport {
                 .put("contentType", response.headers().firstValue("Content-Type").orElse(""))
                 .put("cacheControl", response.headers().firstValue("Cache-Control").orElse(""))
                 .put("retryAfter", response.headers().firstValue("Retry-After").orElse(""));
+        if (contractPhase().equals("N2")) {
+            var capturedHeaders = capture.putObject("headers");
+            for (var name : List.of("Content-Type", "Cache-Control", "Retry-After", "X-Request-Id", "WWW-Authenticate")) {
+                response.headers().firstValue(name).ifPresent(value -> capturedHeaders.put(name, value));
+            }
+        }
         if (expected == 204) {
             assertThat(response.body()).isEmpty();
             capture.putNull("body");

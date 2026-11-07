@@ -2,6 +2,7 @@
 import argparse
 import json
 from pathlib import Path
+from uuid import UUID
 
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker
@@ -16,6 +17,30 @@ REQUIRED = {(VERIFICATION + 'request', 'post', status) for status in (202, 204, 
     (RESET + 'confirm', 'post', status) for status in (204, 400)} | {
     (path, method, 403) for method, path in GUARDED} | {
     ('/auth/login', 'post', 403), ('/me', 'get', 200), ('/me', 'get', 401)}
+REQUIRED.add(('/me/delete-account', 'post', 401))
+
+
+def validate_captured_headers(row):
+    """Older exports have selected flat fields; new N2 captures include this allowlist."""
+    if 'headers' not in row:
+        return
+    source = row['headers']
+    if not isinstance(source, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in source.items()):
+        raise ValueError('Captured headers must be a string map')
+    headers = {key.lower(): value for key, value in source.items()}
+    allowed = {'content-type', 'cache-control', 'retry-after', 'x-request-id', 'www-authenticate'}
+    if len(headers) != len(source) or set(headers) - allowed:
+        raise ValueError('Unapproved or duplicate header in N2 export')
+    for flat, header in (('contentType', 'content-type'), ('cacheControl', 'cache-control'), ('retryAfter', 'retry-after')):
+        if headers.get(header, '') != row.get(flat, ''):
+            raise ValueError('Captured headers disagree with selected header fields')
+    request_id = headers.get('x-request-id')
+    try:
+        UUID(request_id)
+    except (ValueError, TypeError, AttributeError):
+        raise ValueError('Captured X-Request-Id must be a UUID') from None
+    if row['status'] >= 400 and (row.get('body') or {}).get('requestId') != request_id:
+        raise ValueError('Problem.requestId differs from captured X-Request-Id')
 
 
 def validate_responses(api, exports, *, require_coverage=True):
@@ -28,6 +53,7 @@ def validate_responses(api, exports, *, require_coverage=True):
     count = 0
     for export in exports:
         for row in export['responses']:
+            validate_captured_headers(row)
             path, method, status = row['operationPath'], row['method'], row['status']
             operation = api['paths'].get(path, {}).get(method)
             if operation is None or str(status) not in operation['responses']:

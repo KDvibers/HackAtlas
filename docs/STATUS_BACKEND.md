@@ -1321,3 +1321,66 @@ emailVerified не выставлялся SQL. Токены/пароли в от
 части закрытого N2 напарником и её прогон здесь по согласованной матрице;
 принятие строгого0.2 отдельным PR по-прежнему не выполнено. Пока оставлены
 backend/Mailpit/AVD и приложение на главном экране для ручной проверки пользователем.
+
+## Уточнение совместимости N2 после review друга — 7 ноября 2026
+
+GitHub/main подтверждён1563bef (merged PR32), чистый checkout переиспользован в
+`C:/Daniyar/MyProjects/HackAtlas`. Ветка `chore/n2-compatibility-review` от origin/main.
+GCM github list и credential.username для GitHub: yergaliuly; автор отдельно
+softache <itsyergaliuly@gmail.com>. Один исполнитель; staging/commit/push/PR не выполнялись.
+
+Пользователь поручил документы совместимости, HTTP-примеры и предложение legacy,
+запретив изменения авторизации/канонического API. Выполнено:
+
+- [Compatibility](../api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md): contextual401,
+  оба stores после PR31, сохранение legacy offline, актуальный closed N2 restore,
+  NULL delivery address и ещё не выбранный minimum client build/cutover gates.
+- [Матрица](superpowers/specs/2026-11-05-account-lifecycle-client-matrix.md):
+  account-saved/account-applications, публичный detail против private snapshot/marks,
+  календарь, profile counters, editor draft, import и scope/generation cleanup.
+  Pending bytes сохранить/скрыть и required cold-start offline hiding — два отдельных
+  НЕ утверждённых продуктовых решения. Legacy offline прежний.
+- [Предложение legacy](superpowers/specs/2026-11-07-legacy-account-recovery-design.md):
+  A отдельный новый source/B enrollment до cutover/C операторские исключения.
+  Рекомендованы A для закрытого N2 и отдельный дизайн B при необходимости переноса
+  реальных аккаунтов. Это рекомендация автора; выбор пользователя/друга ещё впереди.
+  Restore+NULL address остаётся блокером; bypass/backfill/новые endpoints не реализованы.
+- [HTTP fixtures](examples/n2-http/README.md):31 выбранный ответ из127 реальных N2
+  HTTP-ответов, включая pending И verified delete-password401 → GET/me200 с тем же
+  Bearer. Verified register не существует; новый register остаётся pending.
+
+Тестовые изменения: B2HttpSupport захватывает allowlisted actual response headers
+ТОЛЬКО для N2; LifecycleApiIT добавляет2 проверки сохранения pending/verified сессии
+после неверного delete-password. Pending private guards остаются403, verified lists200;
+deletion receipt не создаётся. Значимые headers сохраняются без cookies/Authorization.
+Exporter `scripts/lifecycle/export_mobile_examples.py` читает captures без HTTP,
+проверяет полноту/headers, обезличивает UUID/email/displayName и отклоняет рабочие proofs.
+Нерабочие placeholders/204 empty body/test clock описаны для будущего MockEngine.
+Кураторские31 fixtures не подменяют full runtime coverage127.
+
+Проверки (логи только ignored backend/target/n2-compat-*):
+
+- RED:5 header-сценариев были приняты прежним validator;2 exporter checks падали
+  из-за отсутствующего helper. После реализации GREEN.
+- `bash ./mvnw --batch-mode --no-transfer-progress verify`:47 unit+311 IT,
+  0 failures/errors/skips, BUILD SUCCESS. WSL launcher задаёт groups, сами Python/
+  Maven/Java/Docker tests выполнялись UID1000, не root. Тестовые containers отдельные;
+  данные пользовательского локального Android-стенда не использовались.
+- Канонический OpenAPI3.1/13 fixtures PASS;13 transition+15 lifecycle Python tests PASS.
+- renderer0.2.0-test.1 и validator127 actual N2 responses PASS; exporter31 samples,
+  оба same-Bearer401/200 sequences и checked-in fixture safety/schema tests PASS.
+- Diff относительно main: runtime backend/src/main, SQL, mobile, api/openapi.yaml,
+  api/README.md и api/examples НЕ изменены. Новых зависимостей/CI/профилей нет.
+
+Финальная проверка: ровно13 согласованных файлов,164 относительные Markdown links
+разрешаются, staging пуст, diff whitespace PASS. Gitleaks8.30.1: вся история
+39commits/6.94MB и все changed/new nonignored files —0 findings. Никаких новых
+ignore exceptions.15 lifecycle Python tests дополнительно прошли в Linux UID1000.
+Самостоятельный review выполнен в пределах одного исполнителя; это не независимый review.
+Полный mobile N2 E2E, API34 и iOS не выполнялись; клиент ещё не реализован.
+Прежнее наблюдение синхронизации PR32 не расследовалось в этом отдельном задании.
+Внешний SMTP, signup/cutover, canonical0.2 и продуктовые политики не включены.
+
+Следующий отдельный шаг: совместно review compatibility/fixtures и legacy-предложение,
+явно выбрать legacy путь/две политики, после этого отдельно поручить план клиентской
+интеграции. Пользователь выполняет commit/push/PR; друг review совместной api-документации.

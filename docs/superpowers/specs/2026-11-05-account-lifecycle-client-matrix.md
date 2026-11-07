@@ -4,9 +4,14 @@
 База: main `ded9404280bd479b591197a26703c1ee21ecf025`, merged PR #28.
 Его main Backend CI `42066087861` завершился успешно.
 
+Уточнение7ноября2026 после mobile PR31 и backend PR32: main `1563bef`.
+Разделы10–11 распространяют правила на оба private stores и фиксируют открытые
+legacy/rollout gates. Фактические [HTTP-примеры](../../examples/n2-http/README.md)
+не являются мобильной реализацией или утверждением политики.
+
 Каноническими остаются [OpenAPI0.1.1](../../../api/openapi.yaml) и
 [семантика](../../../api/README.md). Этот документ не меняет API, профиль запуска,
-backend/mobile код, fixtures или правила production. Согласование порядка работ
+backend/mobile код, канонические fixtures или правила production. Согласование порядка работ
 и merge N2 не означают принятие strict0.2. Кандидат `0.2.0-test.1` используется
 только в явно выбранной закрытой среде; отдельный PR потребуется для канонического0.2.
 
@@ -244,8 +249,72 @@ Authenticated/error-free, **не** emailVerified: это не готовый gua
 - [ ] Потерянные ответы consuming POST не приводят к автоматическим повторам/ложному успеху.
 - [ ] Поздний reset grant после background/смены recovery flow не восстанавливает секреты.
 - [ ] Зафиксированы фактические платформы/device results и результат CI согласованного PR.
+- [ ] Обе предложенные политики отдельно утверждены: pending bytes сохранить/скрыть;
+  required cold start offline скрывает private до server check. Legacy offline прежний.
+- [ ] Все пункты pending/401/expiry/logout/account-source switch выполнены для
+  account-saved И account-applications, включая производные UI из раздела10.
 
 **К согласованию:** pending-кеш скрывать/сохранять либо удалять; conservative offline
 cold start; signed-out recovery; исключение delete-password401; scope/generation cleanup;
 точная матрица и gates перехода. Принятие этой матрицы разрешает планировать клиентскую
 интеграцию, но само по себе не активирует strict0.2 и не разрешает deployment.
+
+## 10. Уточнение после PR31: два private stores и производный UI
+
+**Статус: предложение для совместного утверждения.** В PR31 добавлены
+ApplicationCache/ApplicationStore и личная отметка в DetailScreen; они ещё не
+различают emailVerified. Общий epoch/identity механизм не является проверкой почты.
+Saved и applications не превращаются в guest ни при одном auth transition.
+Ниже предлагается клиентская обработка тех же9 серверных guards; новых guards нет.
+
+| Поверхность | Предлагаемое поведение required pending/Unknown | Cleanup при текущем protected401, local expiry, logout, смене source/user |
+|---|---|---|
+| account-saved: membership + полные snapshots | Скрыть private entries; остановить refresh/write/import; guest store доступен отдельно | Очистить private document/память, owner routes и derived state; guest не изменять |
+| account-applications: marks + timestamps | Скрыть marks/counts и private cache; не выполнять GET/PUT/DELETE applications | Очистить applications document/память и все производные marks/counts |
+| Detail из публичного каталога | Публичное событие доступно; private bookmark/mark отражают pending/Unknown, без старых account badges и mutation | Публичные данные можно оставить; private controls/state старой identity очистить |
+| Detail из account-saved snapshot | Скрыть account snapshot до проверки; не выдавать его за guest/public fetch | Закрыть private route; допустим отдельный публичный GET details, если событие доступно |
+| Календарь сохранённого | Не строить события из скрытых account-saved; отдельный гостевой календарь сохраняется | Убрать account-derived entries/selection/detail route, не менять guest snapshot |
+| Профиль и его private counters | GET/me и pending-профиль разрешены; не считать старые cached counts/marks доказательством доступа | Очистить private производные/старый профиль; поздний ответ не восстанавливает их |
+| Editor + несохранённый draft | PATCH/me запрещён; pending/Unknown не открывает editing; draft остаётся только в совпавшем private RAM scope и не отображается | Удалить private draft/RAM и закрыть editor; не отправлять его после смены generation |
+| Guest import, captured candidates/progress | Только Verified текущей generation и явное подтверждение; pending/Unknown не запускает import | Отменить captured private intent/progress; partial server success не стирает guest |
+
+Cleanup в таблице относится к **совпавшему текущему scope** и правилам раздела4.
+Delete-password401 INVALID_CREDENTIALS — исключение: сохранить действующий Bearer,
+оба private stores и видимый UI, показать ошибку формы. Login401 не очищает другую
+активную identity. Поздний401/200/204 старой generation не очищает и не наполняет новую.
+Текущий валидный403 EMAIL_NOT_VERIFIED сохраняет Bearer/guest: hidden private bytes
+предлагается сохранить, а не выполнять cleanup как при отзыве. Generic403 не logout.
+
+Два состояния на диске недостаточны: проверять также saveable/navigation state,
+detail controls, profile counters, editor draft и captured import callbacks.
+Завершившийся private ответ принимается только текущей source/user/session generation;
+таймеры/корутины старого владельца не получают право записи после переключения.
+Публичный Profile может содержать counts: таблица задаёт клиентский UX, не новый
+серверный фильтр Profile или десятый guard.
+
+### Два отдельных продуктовых решения — пока НЕ утверждены
+
+| Решение | Предложение для required source | Почему требуется явное согласование |
+|---|---|---|
+| Pending bytes | Сохранить owner-scoped saved/applications bytes, скрыть до server-verified | Альтернатива — удалить bytes. Скрытие UI не равно удалению с устройства |
+| Cold start offline | Required начинает с Unknown; скрыть оба private stores до GET/me | Это ухудшает принятый PR31 offline read-only cold start; согласие на N2 не означает согласие на эту потерю доступности |
+
+Legacy0.1.1 сохраняет уже принятый offline read-only сценарий saved И applications.
+Для предлагаемого required поведения после успешного server check в текущем процессе
+временный offline допускает read-only до local expiry; новый процесс снова Unknown.
+Missing/null/неверный flag или недоступная planned операция не включает legacy fallback.
+Ни документы, ни HTTP fixtures не переключают конфигурацию клиента/сервера.
+
+## 11. Legacy и переход старых клиентов — ещё не выбранный rollout
+
+[Предложение по legacy](2026-11-07-legacy-account-recovery-design.md) объясняет
+NULL delivery address и restore PASSWORD_RESET_REQUIRED: реализованного recovery
+для такого аккаунта нет. Успешный SMTP smoke нового аккаунта не закрывает этот gap.
+
+Minimum client version/build пока **не выбран**. До общего strict source нужны
+обе отдельно утверждённые политики, legacy admission/recovery plan, реализация
+обоих private stores и полный закрытый E2E. Затем оба разработчика фиксируют
+конкретные Android/iOS build identifiers, канал/срок обновления и судьбу старой
+аудитории. Нативный iOS требует отдельного Mac-прогона; Android PASS не заменяет его.
+Канонический0.2 и cutover принимаются отдельными PR/разрешением. Заголовок версии
+или User-Agent не заменяет серверную авторизацию; нового negotiation endpoint нет.
