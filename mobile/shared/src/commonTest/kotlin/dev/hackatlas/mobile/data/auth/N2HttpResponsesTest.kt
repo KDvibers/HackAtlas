@@ -94,7 +94,7 @@ class N2HttpResponsesTest {
     fun legacyCanStillReadProfilesWithoutAFlag() = runTest {
         val capture = verifiedProfile
         val body = JsonObject(assertNotNull(capture.body) - "emailVerified")
-        val store = MemoryStore(sessionFor(capture))
+        val store = MemoryStore(sessionFor(capture, n2 = false))
         val client = AuthSessionClient(MockEngine { respondWith(capture, body) }, source, store) { now }
         try {
             assertEquals(store.session?.userId, client.profile().id)
@@ -106,7 +106,7 @@ class N2HttpResponsesTest {
 
     @Test
     fun n2ProfileChecksTheFlagOnRestoreAndPatch() = runTest {
-        val valid = pendingProfile
+        val valid = verifiedProfile
         val malformed = JsonObject(assertNotNull(valid.body) + ("emailVerified" to JsonPrimitive("false")))
         val stored = sessionFor(valid)
         val store = MemoryStore(stored)
@@ -117,7 +117,7 @@ class N2HttpResponsesTest {
         val client = AuthSessionClient(engine, source, store, AuthProtocol.CLOSED_N2) { now }
         try {
             client.restore()
-            assertEquals(EmailVerification.PENDING, assertIs<AuthState.Authenticated>(client.state.value).emailVerification)
+            assertEquals(EmailVerification.VERIFIED, assertIs<AuthState.Authenticated>(client.state.value).emailVerification)
             val failure = assertFailsWith<AuthException> {
                 client.updateProfile(stored.userId, JsonObject(mapOf("displayName" to JsonPrimitive("Updated"))))
             }
@@ -322,8 +322,9 @@ class N2HttpResponsesTest {
         return (body["user"]?.jsonObject ?: body).getValue("emailVerified").jsonPrimitive.boolean
     }
 
-    private fun sessionFor(profile: N2CapturedResponse) = StoredSession(
+    private fun sessionFor(profile: N2CapturedResponse, n2: Boolean = true) = StoredSession(
         testBearer, expiry, assertNotNull(profile.body).getValue("id").jsonPrimitive.content,
+        generation = "8e1017fb-064d-44c7-a6bc-515854b2b6cf".takeIf { n2 },
     )
 
     private inner class MemoryStore(var session: StoredSession? = null) : SecureTokenStore {

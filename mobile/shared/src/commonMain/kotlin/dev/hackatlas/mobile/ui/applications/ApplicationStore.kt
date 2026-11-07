@@ -21,6 +21,7 @@ data class ApplicationUiState(
     val known: Boolean = false, val fromCache: Boolean = true, val writable: Boolean = false,
     val syncing: Boolean = false, val pendingId: String? = null, val uncertainId: String? = null,
     val error: ApplicationFailure? = null,
+    val access: PrivateAccess? = null,
 ) {
     fun markFor(id: String) = marks.firstOrNull { it.hackathonId.equals(id, ignoreCase = true) }
 }
@@ -29,6 +30,11 @@ data class ApplicationUiState(
 internal fun ApplicationUiState.visibleFor(userId: String?, loggingOut: Boolean): ApplicationUiState =
     if(mode == ApplicationMode.ACCOUNT && (ownerId != userId || loggingOut))
         ApplicationUiState(mode = ApplicationMode.CHECKING) else this
+
+internal fun ApplicationUiState.visibleFor(auth: AuthUiState?): ApplicationUiState =
+    if (mode == ApplicationMode.ACCOUNT && (auth?.canReadPrivate != true || access != auth.privateAccess))
+        ApplicationUiState(mode = ApplicationMode.CHECKING, access = auth?.privateAccess)
+    else visibleFor(auth?.localIdentity?.userId, auth?.busy == AuthOperation.LOGOUT)
 
 /** Main-thread process owner; pagination is authoritative only after a complete scan. */
 class ApplicationStore(
@@ -48,20 +54,33 @@ class ApplicationStore(
     private var reconciled = false
     private var authenticated = false
     private var refreshPending = false
+    private var access: PrivateAccess? = null
 
     init {
         require(pageSize in 1..50)
         scope.launch { auth.state.collect(::observeAuth) }
     }
-    private fun verified(user: String?) = user != null && auth.state.value.let {
-        it.localIdentity?.userId == user && (it.session as? AuthState.Authenticated)?.user?.id == user &&
-            it.busy != AuthOperation.LOGOUT && it.error == null
-    }
+    private fun verified(user: String?) = user != null && if (access != null)
+        access == auth.currentPrivateAccess() && access?.canWrite == true
+    else auth.state.value.canWritePrivate && auth.state.value.localIdentity?.userId == user
+
     private fun current(turn: Long, user: String) = scope.isActive && turn == epoch && owner == user &&
-        auth.state.value.localIdentity?.userId == user && auth.state.value.busy != AuthOperation.LOGOUT
+        if (access != null) access == auth.currentPrivateAccess() && access?.canRead == true
+        else auth.state.value.localIdentity?.userId == user && auth.state.value.busy != AuthOperation.LOGOUT
 
     private fun observeAuth(value: AuthUiState) {
         val user = value.localIdentity?.userId?.takeUnless { value.busy == AuthOperation.LOGOUT }
+        if (value.privateAccess != null) {
+            val next = when {
+                value.session == AuthState.StorageUnavailable -> ApplicationMode.BLOCKED
+                user != null && value.canReadPrivate -> ApplicationMode.ACCOUNT
+                user != null || value.session == AuthState.NotLoaded || value.busy == AuthOperation.LOGOUT -> ApplicationMode.CHECKING
+                else -> ApplicationMode.GUEST
+            }
+            if (owner != user || destination != next || access != value.privateAccess)
+                transition(user, next, newAccess = value.privateAccess)
+            return
+        }
         if(user == null && value.session == AuthState.NotLoaded && value.busy != AuthOperation.LOGOUT) return
         val was = authenticated
         authenticated = verified(user)
@@ -83,10 +102,15 @@ class ApplicationStore(
         }
     }
 
-    private fun transition(user: String?, next: ApplicationMode, reset: Boolean = false) {
+    private fun transition(user: String?, next: ApplicationMode, reset: Boolean = false, newAccess: PrivateAccess? = null) {
         epoch++;val turn = epoch
         operation?.cancel();transitionJob?.cancel()
-        owner = user;destination = next;document = null;reconciled = false;refreshPending = false
+        owner = user;destination = next;document = null;reconciled = false;refreshPending = false;access = newAccess
+        if (newAccess != null && next != ApplicationMode.ACCOUNT) {
+            mutableState.value = ApplicationUiState(mode = next, ownerId = user, access = newAccess,
+                error = if (next == ApplicationMode.BLOCKED) ApplicationFailure.Storage else null)
+            return
+        }
         mutableState.value = ApplicationUiState(mode = ApplicationMode.CLEARING, ownerId = user)
         transitionJob = scope.launch {
             try {
@@ -95,12 +119,12 @@ class ApplicationStore(
                     if(turn == epoch) mutableState.value = ApplicationUiState(mode = next)
                 } else {
                     if(reset) cache.clear()
-                    val doc = cache.open(user)
+                    val doc = cache.open(user, newAccess?.identity?.generation)
                     if(!current(turn,user)) return@launch
                     document = doc
                     mutableState.value = ApplicationUiState(mode = ApplicationMode.ACCOUNT, ownerId = user,
                         marks = doc.marks, cachedAt = doc.cachedAt, known = doc.cachedAt != null,
-                        error = auth.state.value.error?.let(ApplicationFailure::Auth))
+                        error = auth.state.value.error?.let(ApplicationFailure::Auth), access = newAccess)
                     if(verified(user)) refresh()
                 }
             } catch(canceled: CancellationException) { throw canceled }
@@ -110,10 +134,13 @@ class ApplicationStore(
         }
     }
 
-    fun retryCleanup() = transition(owner, destination ?: ApplicationMode.GUEST, reset = true)
+    fun retryCleanup() {
+        if (access != null && auth.state.value.session == AuthState.StorageUnavailable) auth.refresh()
+        else transition(owner, destination ?: ApplicationMode.GUEST, reset = access == null, newAccess = access)
+    }
 
     fun refresh() {
-        if(auth.state.value.error != null) { auth.refresh();return }
+        if((access == null && auth.state.value.error != null) || access?.canWrite == false) { auth.refresh();return }
         perform(null) { turn,user ->
             val marks = scan(turn,user) ?: return@perform
             if(marks.size > pageSize && marks != scan(turn,user)) throw AuthException(AuthError.InvalidResponse)
@@ -130,7 +157,8 @@ class ApplicationStore(
         if(value.writable && !value.syncing && value.known && (value.markFor(id) != null) == !remove) return
         perform(id) { turn,user ->
             val before = document ?: return@perform
-            val mark = if(remove) { client.removeApplication(user,id);null } else client.markApplied(user,id)
+            val captured = access
+            val mark = if(remove) { client.removeApplication(user,id,captured);null } else client.markApplied(user,id,captured)
             if(!current(turn,user)) return@perform
             val rest = before.marks.filterNot { it.hackathonId.equals(id,ignoreCase = true) }
             val next = if(mark == null) rest else listOf(mark) + rest
@@ -142,7 +170,8 @@ class ApplicationStore(
     private suspend fun scan(turn: Long,user: String): List<ApplicationMark>? {
         val marks = mutableListOf<ApplicationMark>();var page = 0;var total: Int? = null
         do {
-            val response = client.listApplications(user,page,pageSize)
+            if(!current(turn,user)) return null
+            val response = client.listApplications(user,page,pageSize,access)
             if(!current(turn,user)) return null
             if(total != null && total != response.totalElements) throw AuthException(AuthError.InvalidResponse)
             total = response.totalElements;marks += response.items

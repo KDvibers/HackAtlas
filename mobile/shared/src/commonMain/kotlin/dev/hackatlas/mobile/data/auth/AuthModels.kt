@@ -5,7 +5,10 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
-class StoredSession(val accessToken: String, val expiresAt: String, val userId: String) {
+class StoredSession(
+    val accessToken: String, val expiresAt: String, val userId: String,
+    val generation: String? = null, val cleanupRequired: Boolean = false,
+) {
     override fun toString() = "StoredSession([REDACTED])"
 }
 
@@ -49,8 +52,24 @@ class AuthException(val error: AuthError) : Exception("Auth request failed: $err
 class SecureStorageException : Exception("Secure session storage unavailable")
 
 /** Locally validated credential metadata, never proof of current server acceptance. */
-data class LocalSessionIdentity(val userId: String, val expiresAt: String) {
+data class LocalSessionIdentity(
+    val userId: String, val expiresAt: String,
+    val apiBaseUrl: String? = null, val generation: String? = null,
+) {
     override fun toString() = "LocalSessionIdentity([REDACTED])"
+}
+
+enum class PrivateTrust { UNKNOWN, PENDING, VERIFIED_ONLINE, VERIFIED_OFFLINE }
+
+/** Only present in the explicitly selected N2 runtime. Revision closes work on a trust change. */
+@ConsistentCopyVisibility
+data class PrivateAccess internal constructor(
+    val identity: LocalSessionIdentity? = null,
+    val trust: PrivateTrust = PrivateTrust.UNKNOWN,
+    internal val revision: Long = 0,
+) {
+    val canRead get() = trust == PrivateTrust.VERIFIED_ONLINE || trust == PrivateTrust.VERIFIED_OFFLINE
+    val canWrite get() = trust == PrivateTrust.VERIFIED_ONLINE
 }
 
 sealed interface LogoutResult {
@@ -64,5 +83,7 @@ internal val USER_ID = Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9
 internal fun StoredSession.validate() {
     require(accessToken.length >= 32 && Regex("[A-Za-z0-9._~+/-]+=*").matches(accessToken))
     require(USER_ID.matches(userId))
+    require(generation == null || USER_ID.matches(generation))
+    require(!cleanupRequired || generation != null)
     Instant.parse(expiresAt)
 }

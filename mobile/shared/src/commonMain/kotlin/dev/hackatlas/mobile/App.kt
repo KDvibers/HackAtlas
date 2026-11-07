@@ -28,6 +28,8 @@ import dev.hackatlas.mobile.ui.profile.*
 import dev.hackatlas.mobile.ui.applications.*
 import dev.hackatlas.mobile.ui.auth.AuthOperation
 import dev.hackatlas.mobile.data.auth.AuthState
+import dev.hackatlas.mobile.data.auth.LocalSessionIdentity
+import dev.hackatlas.mobile.data.auth.PrivateAccess
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
@@ -69,17 +71,20 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val authState = auth?.state?.collectAsState()?.value
     val account = (authState?.session as? AuthState.Authenticated)?.user
     val editor=app.profileEditor
-    val editState=editor?.state?.collectAsState()?.value
+    val editState=editor?.state?.collectAsState()?.value?.let { editor.visibleFor(it, authState) }
     val editRoute=route=="editProfile"
     val accountSaved = ready.accountSaved
-    val savedState = accountSaved?.state?.collectAsState()?.value
-    val accountMode = accountSaved != null && (savedState?.mode != SavedMode.GUEST || authState?.localIdentity != null || authState?.busy == AuthOperation.LOGOUT)
-    val identity = authState?.localIdentity?.userId
+    val savedState = accountSaved?.state?.collectAsState()?.value?.visibleFor(authState)
+    val n2 = authState?.privateAccess != null
+    val accountMode = accountSaved != null && if (n2) authState?.canReadPrivate == true else
+        (savedState?.mode != SavedMode.GUEST || authState?.localIdentity != null || authState?.busy == AuthOperation.LOGOUT)
+    val identity = authState?.localIdentity
     val applications = ready.applications
-    val applicationState = applications?.state?.collectAsState()?.value?.visibleFor(identity,authState?.busy == AuthOperation.LOGOUT)
-    val cacheVisible = savedState?.mode == SavedMode.ACCOUNT && savedState.ownerId == identity && authState?.busy != AuthOperation.LOGOUT
+    val applicationState = applications?.state?.collectAsState()?.value?.visibleFor(authState)
+    val cacheVisible = savedState?.mode == SavedMode.ACCOUNT && savedState.ownerId == identity?.userId &&
+        authState?.canReadPrivate == true
     val snapshots = if(accountMode) savedState?.entries?.takeIf { cacheVisible }.orEmpty() else guestSnapshots
-    val activeOwner = if(accountMode) identity ?: "pending" else "guest"
+    val activeOwner = if(accountMode) identity?.generation ?: identity?.userId ?: "pending" else "guest"
     val canWrite = !accountMode || (cacheVisible && savedState?.writable == true && !savedState.syncing)
     val savedKeys = remember(snapshots) { snapshots.map { it.key }.toSet() }
     val pendingKeys = if(!canWrite) (catalog.items.map { it.savedKey() } + snapshots.map { it.key } +
@@ -87,7 +92,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         else if(accountMode) savedState?.pendingKeys.orEmpty() else bookmarks.pendingKeys
     var selectedSavedOwner by remember { mutableStateOf<String?>(null) }
     var importCandidates by remember { mutableStateOf<List<SavedGuestEvent>?>(null) }
-    var importOwner by remember { mutableStateOf<String?>(null) }
+    var importOwner by remember { mutableStateOf<LocalSessionIdentity?>(null) }
+    var importAccess by remember { mutableStateOf<PrivateAccess?>(null) }
     val authRoute = route == "login" || route == "register"
     val saveableStates = rememberSaveableStateHolder()
     val privateStateKeys = remember { mutableSetOf<String>() }
@@ -107,11 +113,22 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         else{editor?.close();route="profile"}
     }
     LaunchedEffect(editState?.saved,editState?.draft,route) {
-        if(editRoute && (editState?.saved==true || editState?.draft==null)){editor?.close();route="profile"}
+        if(editRoute && (editState?.saved==true || editState?.draft==null)){
+            if(dialog=="discardProfile") dialog=null
+            editor?.close();route="profile"
+        }
     }
     val savedStatus: @Composable () -> Unit = {
         if(accountSaved != null && savedState != null) AccountSavedStatus(accountSaved, savedState, guestSnapshots, format,
-            onImport = { importCandidates = guestSnapshots.toList(); importOwner = identity })
+            onImport = {
+                importCandidates = guestSnapshots.toList()
+                importOwner = identity
+                importAccess = authState?.privateAccess
+            })
+    }
+    LaunchedEffect(authState?.privateAccess) {
+        if (n2 && (authState?.canWritePrivate != true || importAccess != authState.privateAccess))
+            importCandidates = null
     }
     LaunchedEffect(activeOwner) {
         if(previousOwner != activeOwner) {
@@ -184,7 +201,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         Box(Modifier.weight(1f)) {
             saveableStates.SaveableStateProvider(screenKey) {
                 when (route) {
-                    "editProfile" -> if(editor!=null)ProfileEditScreen(editor,catalog.metadata,catalog.metadataLoading,
+                    "editProfile" -> if(editor!=null && editState?.draft != null)ProfileEditScreen(editor,catalog.metadata,catalog.metadataLoading,
                         ready.catalog::retryMetadata,closeEditor)
                     "login", "register" -> if (auth != null) AuthScreen(auth,
                         if (route == "register") AuthFormMode.REGISTER else AuthFormMode.LOGIN,
@@ -205,7 +222,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                                 onApplicationsRefresh = { applications?.refresh() },
                                 onApplicationsRecover = { applications?.retryCleanup();auth?.refresh() },
                                 onApplicationChange = { remove -> applications?.change(event.id,remove) },
-                                onApplicationSignIn = if(auth != null) ({ applicationReturnId = event.id;route = "login" }) else null)
+                                onApplicationSignIn = if(auth != null && (!n2 || identity == null))
+                                    ({ applicationReturnId = event.id;route = "login" }) else null)
                         } else Column {
                             IconAction(AtlasIcon.Back, stringResource(Res.string.back), back)
                             when {
@@ -220,7 +238,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                         account, authState, snapshots, format, openSnapshot,
                         { changeBookmark(it.detail.hackathon, true) }, { route = "saved" }, { dialog = "settings" },
                         auth::refresh, { dialog = "logout" }, accountSaved = accountMode,
-                        savedRemoveEnabled = canWrite, onEdit=if(editor!=null)({if(editor.open())route="editProfile"})else null,
+                        savedRemoveEnabled = canWrite, onEdit=if(editor!=null && (!n2 || authState.canWritePrivate))
+                            ({if(editor.open())route="editProfile"})else null,
                         savedStatus = savedStatus)
                     else if(authState?.localIdentity != null) UnverifiedAccountProfile(auth, authState,
                         { dialog = "logout" }, savedStatus)
@@ -250,14 +269,16 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     }
     val bookmarkFailure = bookmarks.failures.firstOrNull()
     val accountError = savedState?.error
-    if(importCandidates != null && accountSaved != null) {
+    if(importCandidates != null && accountSaved != null &&
+        (!n2 || authState?.canWritePrivate == true && importAccess == authState.privateAccess)) {
         val captured = importCandidates.orEmpty()
         AlertDialog(onDismissRequest = { importCandidates = null },
             title = { Text(stringResource(Res.string.account_copy_title)) },
             text = { Text(stringResource(Res.string.account_copy_body, captured.size, account?.displayName.orEmpty())) },
             containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
             confirmButton = { TextButton(onClick = {
-                if(identity == importOwner && savedState?.writable == true) accountSaved.importGuest(captured)
+                if(identity == importOwner && savedState?.writable == true &&
+                    (!n2 || importAccess == authState?.privateAccess)) accountSaved.importGuest(captured)
                 importCandidates = null
             }) { Text(stringResource(Res.string.account_copy_confirm)) } },
             dismissButton = { TextButton(onClick = { importCandidates = null }) { Text(stringResource(Res.string.auth_cancel)) } })

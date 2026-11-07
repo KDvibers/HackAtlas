@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 data class ApplicationCacheDocument(
     val version: Int = 1, val apiBaseUrl: String, val userId: String,
     val cachedAt: String? = null, val marks: List<ApplicationMark> = emptyList(),
+    val generation: String? = null,
 )
 
 class ApplicationCacheException : Exception("Application cache unavailable")
@@ -25,28 +26,39 @@ class ApplicationCache(val apiBaseUrl: String, private val storage: AccountCache
     private val mutex = Mutex()
     private val json = Json { encodeDefaults = true }
 
-    suspend fun open(userId: String): ApplicationCacheDocument = mutex.withLock { guarded {
+    suspend fun open(userId: String, generation: String? = null): ApplicationCacheDocument = mutex.withLock { guarded {
         require(USER_ID.matches(userId))
-        val text = storage.read() ?: return@guarded ApplicationCacheDocument(apiBaseUrl = apiBaseUrl, userId = userId)
+        val empty = ApplicationCacheDocument(apiBaseUrl = apiBaseUrl, userId = userId, generation = generation)
+        val text = storage.read() ?: return@guarded empty
         val doc = json.decodeFromString<ApplicationCacheDocument>(text)
         validate(doc)
+        if (doc.generation != generation || generation != null && doc.userId != userId) return@guarded empty
         if(doc.userId != userId) {
             withContext(NonCancellable) { storage.clear() }
-            ApplicationCacheDocument(apiBaseUrl = apiBaseUrl, userId = userId)
+            empty
         } else doc
     } }
 
     suspend fun write(doc: ApplicationCacheDocument, current: () -> Boolean): Boolean = mutex.withLock { guarded {
         validate(doc)
         if(!current()) return@guarded false
-        withContext(NonCancellable) { storage.write(json.encodeToString(doc)) }
-        current()
+        withContext(NonCancellable) {
+            val previous = if (doc.generation != null) storage.read() else null
+            if (!current()) return@withContext false
+            storage.write(json.encodeToString(doc))
+            val accepted = current()
+            if (!accepted && doc.generation != null) {
+                if (previous == null) storage.clear() else storage.write(previous)
+            }
+            accepted
+        }
     } }
 
     suspend fun clear() = mutex.withLock { guarded { withContext(NonCancellable) { storage.clear() } } }
 
     private fun validate(doc: ApplicationCacheDocument) {
         require(doc.version == 1 && doc.apiBaseUrl == apiBaseUrl && USER_ID.matches(doc.userId))
+        require(doc.generation == null || USER_ID.matches(doc.generation))
         doc.cachedAt?.let(Instant::parse)
         require(doc.cachedAt != null || doc.marks.isEmpty())
         require(doc.marks.map { it.hackathonId.lowercase() }.distinct().size == doc.marks.size)

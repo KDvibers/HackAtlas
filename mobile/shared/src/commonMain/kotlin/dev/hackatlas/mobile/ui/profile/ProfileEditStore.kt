@@ -18,38 +18,50 @@ class ProfileEditStore(private val auth:AuthStore,private val client:AuthSession
     private val mutableState=MutableStateFlow(ProfileEditState())
     val state=mutableState.asStateFlow()
     private var generation=0L
+    private var capturedAccess: PrivateAccess? = null
     init {scope.launch {auth.state.collect { value ->
         val owner=mutableState.value.baseline?.id ?: return@collect
-        if(value.localIdentity?.userId!=owner || value.session !is AuthState.Authenticated || value.busy==AuthOperation.LOGOUT) close()
+        if(value.localIdentity?.userId!=owner || value.session !is AuthState.Authenticated ||
+            value.busy==AuthOperation.LOGOUT || !accessStillValid()) close()
     }}}
+    internal fun visibleFor(state: ProfileEditState, authState: AuthUiState?): ProfileEditState =
+        if (authState?.privateAccess != null &&
+            (!authState.canWritePrivate || capturedAccess != authState.privateAccess)) ProfileEditState() else state
+
+    private fun accessStillValid() = client.protocol == AuthProtocol.LEGACY ||
+        capturedAccess?.canWrite == true && capturedAccess == auth.currentPrivateAccess()
+
     fun open():Boolean {
         val current=auth.state.value
         val user=(current.session as? AuthState.Authenticated)?.user ?: return false
-        if(current.busy!=null || current.error!=null || current.localIdentity?.userId!=user.id) return false
+        if(current.busy!=null || !current.canWritePrivate || current.localIdentity?.userId!=user.id ||
+            current.privateAccess != auth.currentPrivateAccess()) return false
+        capturedAccess = current.privateAccess
         generation++;mutableState.value=ProfileEditState(user,ProfileDraft.from(user));return true
     }
     fun change(update:(ProfileDraft)->ProfileDraft) {
         val current=mutableState.value
-        if(!current.busy) current.draft?.let{mutableState.value=current.copy(draft=update(it),errors=emptyMap())}
+        if(!current.busy && accessStillValid()) current.draft?.let{mutableState.value=current.copy(draft=update(it),errors=emptyMap())}
     }
-    fun close(){generation++;mutableState.value=ProfileEditState()}
+    fun close(){generation++;capturedAccess=null;mutableState.value=ProfileEditState()}
     fun reload(){close();auth.refresh()}
     fun save():Boolean {
         val current=mutableState.value
         val base=current.baseline ?: return false;val draft=current.draft ?: return false
-        if(current.busy) return false
+        if(current.busy || !accessStillValid()) return false
         val errors=draft.validate();mutableState.value=current.copy(errors=errors,error=null)
         if(errors.isNotEmpty() || !current.dirty) return false
         val turn=generation
+        val access = capturedAccess
         val patch=profilePatch(base,draft,current.uncertainFields)
         mutableState.value=mutableState.value.copy(busy=true)
         scope.launch {
             try {
-                client.updateProfile(base.id,patch)
-                if(turn==generation && auth.state.value.localIdentity?.userId==base.id && auth.state.value.busy!=AuthOperation.LOGOUT)
+                client.updateProfile(base.id,patch,access)
+                if(turn==generation && accessStillValid() && auth.state.value.localIdentity?.userId==base.id && auth.state.value.busy!=AuthOperation.LOGOUT)
                     mutableState.value=ProfileEditState(saved=true)
             }catch(cancelled:CancellationException){throw cancelled}
-            catch(failed:AuthException){if(turn==generation)mutableState.value=mutableState.value.copy(
+            catch(failed:AuthException){if(turn==generation && accessStillValid())mutableState.value=mutableState.value.copy(
                 error=failed.error,uncertainFields=mutableState.value.uncertainFields+patch.keys)}
             finally{if(turn==generation)mutableState.value=mutableState.value.copy(busy=false)}
         }

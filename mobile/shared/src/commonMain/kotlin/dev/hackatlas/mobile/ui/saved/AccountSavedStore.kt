@@ -24,7 +24,13 @@ data class AccountSavedUiState(
     val writable: Boolean = false, val syncing: Boolean = false,
     val pendingKeys: Set<SavedEventKey> = emptySet(), val error: SavedFailure? = null,
     val imported: Set<String> = emptySet(), val importTotal: Int = 0,
+    val access: PrivateAccess? = null,
 )
+
+internal fun AccountSavedUiState.visibleFor(auth: AuthUiState?): AccountSavedUiState =
+    if (mode == SavedMode.ACCOUNT && (ownerId != auth?.localIdentity?.userId || auth?.canReadPrivate != true ||
+        access != auth.privateAccess))
+        AccountSavedUiState(mode = SavedMode.CHECKING, access = auth?.privateAccess) else this
 
 /** Main-thread process owner. Every async completion is checked against current session/epoch. */
 class AccountSavedStore(
@@ -42,6 +48,7 @@ class AccountSavedStore(
     private var transitionJob: Job? = null
     private var operation: Job? = null
     private var document: AccountCacheDocument? = null
+    private var access: PrivateAccess? = null
 
     init {
         require(pageSize in 1..50)
@@ -49,14 +56,27 @@ class AccountSavedStore(
         scope.launch { auth.state.collect(::observeAuth) }
     }
 
-    private fun verified(user: String?) = user != null && auth.state.value.let {
-        it.session is AuthState.Authenticated && it.localIdentity?.userId == user && it.busy != AuthOperation.LOGOUT && it.error == null
-    }
-    private fun current(turn: Long, user: String) = turn == epoch && owner == user &&
-        auth.state.value.localIdentity?.userId == user && auth.state.value.busy != AuthOperation.LOGOUT
+    private fun verified(user: String?) = user != null && if (access != null)
+        access == auth.currentPrivateAccess() && access?.canWrite == true
+    else auth.state.value.canWritePrivate && auth.state.value.localIdentity?.userId == user
+
+    private fun current(turn: Long, user: String) = scope.isActive && turn == epoch && owner == user &&
+        if (access != null) access == auth.currentPrivateAccess() && access?.canRead == true
+        else auth.state.value.localIdentity?.userId == user && auth.state.value.busy != AuthOperation.LOGOUT
 
     private fun observeAuth(value: AuthUiState) {
         val user = value.localIdentity?.userId.takeUnless { value.busy == AuthOperation.LOGOUT }
+        if (value.privateAccess != null) {
+            val next = when {
+                value.session == AuthState.StorageUnavailable -> SavedMode.BLOCKED
+                user != null && value.canReadPrivate -> SavedMode.ACCOUNT
+                user != null || value.session == AuthState.NotLoaded || value.busy == AuthOperation.LOGOUT -> SavedMode.CHECKING
+                else -> SavedMode.GUEST
+            }
+            if (owner != user || destination != next || access != value.privateAccess)
+                transition(user, next, value.privateAccess)
+            return
+        }
         // Keep the existing file while secure storage is being read; never guess its owner.
         if(user == null && value.session == AuthState.NotLoaded && value.busy != AuthOperation.LOGOUT) return
         val next = when {
@@ -73,11 +93,18 @@ class AccountSavedStore(
         }
     }
 
-    private fun transition(user: String?, next: SavedMode) {
+    private fun transition(user: String?, next: SavedMode, newAccess: PrivateAccess? = null) {
         epoch++; val turn = epoch
         operation?.cancel(); transitionJob?.cancel(); document = null
-        owner = user; destination = next
-        onInvalidated()
+        val previous = access
+        owner = user; destination = next; access = newAccess
+        if (newAccess == null || previous?.canRead == true && (!newAccess.canRead || previous.identity != newAccess.identity))
+            onInvalidated()
+        if (newAccess != null && next != SavedMode.ACCOUNT) {
+            mutableState.value = AccountSavedUiState(mode = next, ownerId = user, access = newAccess,
+                error = if (next == SavedMode.BLOCKED) SavedFailure.Auth(AuthError.Storage) else null)
+            return
+        }
         mutableState.value = AccountSavedUiState(mode = SavedMode.CLEARING, ownerId = user)
         transitionJob = scope.launch {
             try {
@@ -86,11 +113,11 @@ class AccountSavedStore(
                     if(turn == epoch) mutableState.value = AccountSavedUiState(mode = next,
                         error = if(next == SavedMode.BLOCKED) SavedFailure.Auth(AuthError.Storage) else null)
                 } else {
-                    val doc = cache.open(user)
+                    val doc = cache.open(user, newAccess?.identity?.generation)
                     if(!current(turn, user)) return@launch
                     document = doc
                     mutableState.value = AccountSavedUiState(SavedMode.ACCOUNT, user, doc.entries, doc.cachedAt,
-                        writable = verified(user), imported = doc.imported)
+                        writable = verified(user), imported = doc.imported, access = newAccess)
                     if(verified(user)) refresh()
                 }
             } catch(cancelled: CancellationException) { throw cancelled }
@@ -100,18 +127,23 @@ class AccountSavedStore(
         }
     }
 
-    fun retryCleanup() { transition(owner, destination ?: SavedMode.GUEST) }
+    fun retryCleanup() {
+        if (access != null && auth.state.value.session == AuthState.StorageUnavailable) auth.refresh()
+        else transition(owner, destination ?: SavedMode.GUEST, access)
+    }
     fun dismissError() { mutableState.value = mutableState.value.copy(error = null) }
 
     fun refresh() {
-        if(auth.state.value.error != null) { auth.refresh(); return }
+        if((access == null && auth.state.value.error != null) || access?.canWrite == false) { auth.refresh(); return }
         perform(allowReadOnly = true) { turn, user -> refreshDocument(turn, user) }
     }
 
     fun change(event: Hackathon, remove: Boolean) = perform(setOf(event.savedKey())) { turn, user ->
-        if(remove) client.unsave(user, event.id) else {
+        val captured = access
+        if(remove) client.unsave(user, event.id, captured) else {
             checkedDetail(event)
-            client.save(user, event.id)
+            if(!current(turn, user)) return@perform
+            client.save(user, event.id, captured)
         }
         refreshDocument(turn, user)
         if(current(turn, user)) onChanged()
@@ -121,13 +153,15 @@ class AccountSavedStore(
     fun importGuest(captured: List<SavedGuestEvent>) {
         val candidates = captured.toList()
         perform(candidates.map { it.key }.toSet()) { turn, user ->
+            val capturedAccess = access
             mutableState.value = mutableState.value.copy(importTotal = candidates.size)
             for(snapshot in candidates) {
                 if(!current(turn, user)) return@perform
                 val key = journalKey(snapshot.key)
                 if(key in document!!.imported) continue
                 checkedDetail(snapshot.detail.hackathon)
-                client.save(user, snapshot.key.id)
+                if(!current(turn, user)) return@perform
+                client.save(user, snapshot.key.id, capturedAccess)
                 val next = document!!.copy(imported = document!!.imported + key)
                 commit(next, turn, user)
             }
@@ -162,7 +196,8 @@ class AccountSavedStore(
         val events = mutableListOf<Hackathon>()
         var page = 0; var total: Int? = null
         do {
-            val response = client.listSaved(user, page, pageSize)
+            if(!current(turn, user)) return null
+            val response = client.listSaved(user, page, pageSize, access)
             if(!current(turn, user)) return null
             if(total != null && total != response.totalElements) throw AuthException(AuthError.InvalidResponse)
             total = response.totalElements
@@ -195,7 +230,11 @@ class AccountSavedStore(
             try { action(turn, user) }
             catch(cancelled: CancellationException) { throw cancelled }
             catch(failed: AuthException) { fail(turn, user, SavedFailure.Auth(failed.error)) }
-            catch(failed: CatalogException) { fail(turn, user, SavedFailure.Catalog(failed.error)) }
+            catch(failed: CatalogException) {
+                if (current(turn, user) && (failed.error == CatalogError.Network || failed.error == CatalogError.Timeout))
+                    client.privateTransportUnavailable(access)
+                fail(turn, user, SavedFailure.Catalog(failed.error))
+            }
             catch(_: AccountCacheException) { fail(turn, user, SavedFailure.Storage) }
             catch(_: IllegalArgumentException) { fail(turn, user, SavedFailure.Auth(AuthError.InvalidResponse)) }
             finally {
