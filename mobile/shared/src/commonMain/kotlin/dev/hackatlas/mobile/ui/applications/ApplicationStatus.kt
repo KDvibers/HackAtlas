@@ -90,7 +90,7 @@ private fun applicationError(failure: ApplicationFailure): String = when(failure
         AuthError.Timeout -> stringResource(Res.string.auth_timeout)
         AuthError.Storage -> stringResource(Res.string.auth_storage)
         AuthError.Unauthorized -> stringResource(Res.string.auth_expired)
-        AuthError.InvalidResponse -> stringResource(Res.string.auth_invalid_response)
+        AuthError.InvalidResponse, AuthError.UnsupportedServer -> stringResource(Res.string.auth_invalid_response)
         is AuthError.Http -> when(error.status) {
             403 -> stringResource(Res.string.auth_forbidden)
             404 -> stringResource(Res.string.application_not_found)

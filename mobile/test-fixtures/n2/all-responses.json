@@ -1,0 +1,3323 @@
+{
+  "source": "N2 HTTP",
+  "candidateVersion": "0.2.0-test.1",
+  "canonicalVersion": "0.1.1",
+  "responseCount": 127,
+  "captureFiles": [
+    "LifecycleAdminIT",
+    "LifecycleApiIT",
+    "LifecycleJobsIT"
+  ],
+  "responses": [
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000001"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "email": "account-3@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000004"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000005"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000006"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:11:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000007"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:06:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000008"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000009"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000010",
+          "email": "account-11@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000012"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000013"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000014"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000015",
+          "email": "account-16@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000017"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000018"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000019"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000020",
+          "email": "account-21@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000022"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000023"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/me/delete-account",
+      "method": "post",
+      "status": 401,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000024",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 401,
+        "detail": "Не удалось подтвердить пароль.",
+        "instance": "/api/v1/me/delete-account",
+        "code": "INVALID_CREDENTIALS",
+        "requestId": "00000000-0000-4000-8000-000000000024",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000025"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000020",
+        "email": "account-21@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": true
+      }
+    },
+    {
+      "operationPath": "/me/saved",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000026"
+      },
+      "body": {
+        "items": [],
+        "page": 0,
+        "size": 20,
+        "totalElements": 0,
+        "totalPages": 0,
+        "hasNext": false,
+        "asOf": "2026-11-03T10:00:00Z"
+      }
+    },
+    {
+      "operationPath": "/me/applications",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000027"
+      },
+      "body": {
+        "items": [],
+        "page": 0,
+        "size": 20,
+        "totalElements": 0,
+        "totalPages": 0,
+        "hasNext": false,
+        "asOf": "2026-11-03T10:00:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000028"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000029",
+          "email": "account-30@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000031"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000032"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000032",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000033"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000033",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000034"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000034",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000035"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000035",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000036"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000036",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000037"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000037",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000038"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000029",
+        "email": "account-30@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": false
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000039"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000040",
+          "email": "account-41@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000042"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000043",
+          "email": "account-44@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000045"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000046"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:05:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000047"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000048"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000043",
+        "email": "account-44@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": false
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 401,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000049",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 401,
+        "detail": "Не удалось выполнить вход. Проверьте данные и повторите попытку.",
+        "instance": "/api/v1/auth/login",
+        "code": "INVALID_CREDENTIALS",
+        "requestId": "00000000-0000-4000-8000-000000000049",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000050"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-12-03T10:00:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000040",
+          "email": "account-41@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000051"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000052",
+          "email": "account-53@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000054"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 429,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "60",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "Retry-After": "60",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000055"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 429,
+        "detail": "Слишком много попыток. Повторите позже.",
+        "instance": "/api/v1/auth/email-verification/request",
+        "code": "RATE_LIMITED",
+        "requestId": "00000000-0000-4000-8000-000000000055",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000056"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000056",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000057"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000052",
+        "email": "account-53@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": false
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000058"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000059",
+          "email": "account-60@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000061"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000059",
+        "email": "account-60@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": false
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "patch",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000062"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000062",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/saved",
+      "method": "get",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000063"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/saved",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000063",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/saved/{id}",
+      "method": "put",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000064"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/saved/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000064",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/saved/{id}",
+      "method": "delete",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000065"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/saved/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000065",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/applications",
+      "method": "get",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000066"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/applications",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000066",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/applications/{id}",
+      "method": "put",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000067"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/applications/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000067",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/applications/{id}",
+      "method": "delete",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000068"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/applications/39287368-5259-5235-a1c4-25b4e1e8421e",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000068",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/suggestions",
+      "method": "post",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000069"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/suggestions",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000069",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/hackathons/{id}/reports",
+      "method": "post",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000070"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/hackathons/39287368-5259-5235-a1c4-25b4e1e8421e/reports",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000070",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/hackathons",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000071"
+      },
+      "body": {
+        "items": [
+          {
+            "id": "00000000-0000-4000-8000-000000000072",
+            "slug": "registration-closed-demo",
+            "title": "Registration Closed Demo",
+            "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+            "organizer": {
+              "name": "Demo Community",
+              "websiteUrl": "https://example.com"
+            },
+            "format": "ONLINE",
+            "location": {
+              "countryCode": null,
+              "city": null,
+              "venue": null
+            },
+            "starts": {
+              "precision": "DATE",
+              "date": "2026-11-15",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "ends": {
+              "precision": "DATE",
+              "date": "2026-11-15",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationDeadline": {
+              "precision": "DATE",
+              "date": "2026-10-01",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationStatus": "CLOSED",
+            "eventStatus": "SCHEDULED",
+            "topics": [
+              {
+                "id": "web",
+                "label": "Web"
+              }
+            ],
+            "prize": {
+              "status": "ANNOUNCED",
+              "totalAmount": "10000.00",
+              "currency": "USD",
+              "kind": "CASH",
+              "summary": "Демо: общий фонд нескольких призовых мест."
+            },
+            "team": {
+              "minSize": 1,
+              "maxSize": 5,
+              "individualApplicationAllowed": true,
+              "soloParticipationAllowed": true,
+              "teamFormationAvailable": null
+            },
+            "imageUrl": null,
+            "artworkKey": "WIREFRAME",
+            "lastVerifiedAt": null,
+            "updatedAt": "2026-10-12T10:00:00Z",
+            "isDemo": true
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000073",
+            "slug": "gamedev-jam-2026-demo",
+            "title": "GameDev Jam",
+            "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+            "organizer": {
+              "name": "Demo Community",
+              "websiteUrl": "https://example.com"
+            },
+            "format": "ONLINE",
+            "location": {
+              "countryCode": null,
+              "city": null,
+              "venue": null
+            },
+            "starts": {
+              "precision": "DATE",
+              "date": "2026-12-05",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "ends": {
+              "precision": "DATE",
+              "date": "2026-12-05",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationDeadline": {
+              "precision": "DATE",
+              "date": "2026-10-30",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationStatus": "CLOSED",
+            "eventStatus": "SCHEDULED",
+            "topics": [
+              {
+                "id": "gamedev",
+                "label": "GameDev"
+              }
+            ],
+            "prize": {
+              "status": "ANNOUNCED",
+              "totalAmount": "5000.00",
+              "currency": "USD",
+              "kind": "CASH",
+              "summary": "Демо: общий фонд нескольких призовых мест."
+            },
+            "team": {
+              "minSize": 1,
+              "maxSize": 5,
+              "individualApplicationAllowed": true,
+              "soloParticipationAllowed": true,
+              "teamFormationAvailable": null
+            },
+            "imageUrl": null,
+            "artworkKey": "GAMEPAD",
+            "lastVerifiedAt": null,
+            "updatedAt": "2026-10-12T10:00:00Z",
+            "isDemo": true
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000074",
+            "slug": "fintech-hack-2026-demo",
+            "title": "Fintech Hack",
+            "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+            "organizer": {
+              "name": "Demo Community",
+              "websiteUrl": "https://example.com"
+            },
+            "format": "OFFLINE",
+            "location": {
+              "countryCode": "KZ",
+              "city": "Астана",
+              "venue": null
+            },
+            "starts": {
+              "precision": "DATE",
+              "date": "2026-11-20",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "ends": {
+              "precision": "DATE",
+              "date": "2026-11-20",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationDeadline": {
+              "precision": "DATE",
+              "date": "2026-10-30",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationStatus": "CLOSED",
+            "eventStatus": "SCHEDULED",
+            "topics": [
+              {
+                "id": "fintech",
+                "label": "Fintech"
+              }
+            ],
+            "prize": {
+              "status": "ANNOUNCED",
+              "totalAmount": "3500000.00",
+              "currency": "KZT",
+              "kind": "CASH",
+              "summary": "Демо: общий фонд нескольких призовых мест."
+            },
+            "team": {
+              "minSize": 1,
+              "maxSize": 5,
+              "individualApplicationAllowed": true,
+              "soloParticipationAllowed": true,
+              "teamFormationAvailable": null
+            },
+            "imageUrl": null,
+            "artworkKey": "FINTECH_CITY",
+            "lastVerifiedAt": null,
+            "updatedAt": "2026-10-12T10:00:00Z",
+            "isDemo": true
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000075",
+            "slug": "ai-sprint-2026-demo",
+            "title": "AI Sprint 2026",
+            "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+            "organizer": {
+              "name": "Demo Community",
+              "websiteUrl": "https://example.com"
+            },
+            "format": "ONLINE",
+            "location": {
+              "countryCode": null,
+              "city": null,
+              "venue": null
+            },
+            "starts": {
+              "precision": "MINUTE",
+              "date": "2026-11-12",
+              "time": "10:00",
+              "timeZone": "Asia/Almaty",
+              "instant": "2026-11-12T05:00:00Z"
+            },
+            "ends": {
+              "precision": "MINUTE",
+              "date": "2026-11-14",
+              "time": "18:00",
+              "timeZone": "Asia/Almaty",
+              "instant": "2026-11-14T13:00:00Z"
+            },
+            "registrationDeadline": {
+              "precision": "MINUTE",
+              "date": "2026-11-01",
+              "time": "18:00",
+              "timeZone": "Asia/Almaty",
+              "instant": "2026-11-01T13:00:00Z"
+            },
+            "registrationStatus": "CLOSED",
+            "eventStatus": "SCHEDULED",
+            "topics": [
+              {
+                "id": "ai-ml",
+                "label": "AI / ML"
+              }
+            ],
+            "prize": {
+              "status": "ANNOUNCED",
+              "totalAmount": "10000.00",
+              "currency": "USD",
+              "kind": "CASH",
+              "summary": "Демо: общий фонд нескольких призовых мест."
+            },
+            "team": {
+              "minSize": 1,
+              "maxSize": 5,
+              "individualApplicationAllowed": true,
+              "soloParticipationAllowed": true,
+              "teamFormationAvailable": null
+            },
+            "imageUrl": null,
+            "artworkKey": "AI_BUST",
+            "lastVerifiedAt": null,
+            "updatedAt": "2026-10-12T10:00:00Z",
+            "isDemo": true
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000076",
+            "slug": "greentech-challenge-2026-demo",
+            "title": "GreenTech Challenge",
+            "shortDescription": "Демонстрационный AI-хакатон для проверки интерфейса.",
+            "organizer": {
+              "name": "Demo Community",
+              "websiteUrl": "https://example.com"
+            },
+            "format": "ONLINE",
+            "location": {
+              "countryCode": null,
+              "city": null,
+              "venue": null
+            },
+            "starts": {
+              "precision": "DATE",
+              "date": "2026-12-10",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "ends": {
+              "precision": "DATE",
+              "date": "2026-12-10",
+              "time": null,
+              "timeZone": "Asia/Almaty",
+              "instant": null
+            },
+            "registrationDeadline": null,
+            "registrationStatus": "UNKNOWN",
+            "eventStatus": "SCHEDULED",
+            "topics": [
+              {
+                "id": "greentech",
+                "label": "GreenTech"
+              }
+            ],
+            "prize": {
+              "status": "UNKNOWN",
+              "totalAmount": null,
+              "currency": null,
+              "kind": "UNSPECIFIED",
+              "summary": null
+            },
+            "team": {
+              "minSize": null,
+              "maxSize": null,
+              "individualApplicationAllowed": null,
+              "soloParticipationAllowed": null,
+              "teamFormationAvailable": null
+            },
+            "imageUrl": null,
+            "artworkKey": "GREENTECH",
+            "lastVerifiedAt": null,
+            "updatedAt": "2026-10-12T10:00:00Z",
+            "isDemo": true
+          }
+        ],
+        "page": 0,
+        "size": 20,
+        "totalElements": 5,
+        "totalPages": 1,
+        "hasNext": false,
+        "asOf": "2026-11-03T10:00:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/logout",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000077"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 401,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000078",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Требуется авторизация",
+        "status": 401,
+        "detail": "Требуется действующая сессия.",
+        "instance": "/api/v1/me",
+        "code": "AUTH_REQUIRED",
+        "requestId": "00000000-0000-4000-8000-000000000078",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000079"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000080",
+          "email": "account-81@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000082"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000083"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000084",
+          "email": "account-85@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000086"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/email-verification/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000086",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000087"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/password-reset/verify",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000087",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000088"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000089"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Некорректные параметры",
+        "status": 400,
+        "detail": "Проверьте параметры запроса.",
+        "instance": "/api/v1/auth/email-verification/request",
+        "code": "VALIDATION_ERROR",
+        "requestId": "00000000-0000-4000-8000-000000000089",
+        "fieldErrors": [
+          {
+            "field": "body",
+            "message": "Некорректное значение поля."
+          }
+        ]
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000090"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000091"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000092",
+          "email": "account-93@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000094"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Некорректные параметры",
+        "status": 400,
+        "detail": "Проверьте параметры запроса.",
+        "instance": "/api/v1/auth/password-reset/request",
+        "code": "VALIDATION_ERROR",
+        "requestId": "00000000-0000-4000-8000-000000000094",
+        "fieldErrors": [
+          {
+            "field": "body",
+            "message": "Некорректное значение поля."
+          }
+        ]
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000095"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000096"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:05:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000097"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Некорректные параметры",
+        "status": 400,
+        "detail": "Проверьте параметры запроса.",
+        "instance": "/api/v1/auth/password-reset/confirm",
+        "code": "VALIDATION_ERROR",
+        "requestId": "00000000-0000-4000-8000-000000000097",
+        "fieldErrors": [
+          {
+            "field": "body",
+            "message": "Некорректное значение поля."
+          }
+        ]
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000098"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000099",
+          "email": "account-100@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 403,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000101"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 403,
+        "detail": "Восстановите пароль по почте.",
+        "instance": "/api/v1/auth/login",
+        "code": "PASSWORD_RESET_REQUIRED",
+        "requestId": "00000000-0000-4000-8000-000000000101",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 401,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000102",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Требуется авторизация",
+        "status": 401,
+        "detail": "Требуется действующая сессия.",
+        "instance": "/api/v1/me",
+        "code": "AUTH_REQUIRED",
+        "requestId": "00000000-0000-4000-8000-000000000102",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000103"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000104"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:05:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000105"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000106"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-12-03T10:00:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000099",
+          "email": "account-100@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000107"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000108",
+          "email": "account-109@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000110"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000108",
+          "email": "account-109@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000111"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000112"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:05:00Z"
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 401,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000113",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Требуется авторизация",
+        "status": 401,
+        "detail": "Требуется действующая сессия.",
+        "instance": "/api/v1/me",
+        "code": "AUTH_REQUIRED",
+        "requestId": "00000000-0000-4000-8000-000000000113",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000114"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 401,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000115",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Требуется авторизация",
+        "status": 401,
+        "detail": "Требуется действующая сессия.",
+        "instance": "/api/v1/me",
+        "code": "AUTH_REQUIRED",
+        "requestId": "00000000-0000-4000-8000-000000000115",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 401,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000116",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Требуется авторизация",
+        "status": 401,
+        "detail": "Требуется действующая сессия.",
+        "instance": "/api/v1/me",
+        "code": "AUTH_REQUIRED",
+        "requestId": "00000000-0000-4000-8000-000000000116",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000117"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/password-reset/verify",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000117",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 400,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000118"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 400,
+        "detail": "Код или действие недействительны. Запросите новый код.",
+        "instance": "/api/v1/auth/password-reset/confirm",
+        "code": "EMAIL_ACTION_INVALID",
+        "requestId": "00000000-0000-4000-8000-000000000118",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 401,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000119",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 401,
+        "detail": "Не удалось выполнить вход. Проверьте данные и повторите попытку.",
+        "instance": "/api/v1/auth/login",
+        "code": "INVALID_CREDENTIALS",
+        "requestId": "00000000-0000-4000-8000-000000000119",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000120"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-12-03T10:00:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000108",
+          "email": "account-109@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000121"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000122",
+          "email": "account-123@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/me/delete-account",
+      "method": "post",
+      "status": 401,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000124",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 401,
+        "detail": "Не удалось подтвердить пароль.",
+        "instance": "/api/v1/me/delete-account",
+        "code": "INVALID_CREDENTIALS",
+        "requestId": "00000000-0000-4000-8000-000000000124",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000125"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000122",
+        "email": "account-123@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": false
+      }
+    },
+    {
+      "operationPath": "/me/saved",
+      "method": "get",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000126"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/saved",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000126",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/me/applications",
+      "method": "get",
+      "status": 403,
+      "contentType": "application/problem+json;charset=UTF-8",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json;charset=UTF-8",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000127"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Доступ запрещён",
+        "status": 403,
+        "detail": "Подтвердите почту для этого действия.",
+        "instance": "/api/v1/me/applications",
+        "code": "EMAIL_NOT_VERIFIED",
+        "requestId": "00000000-0000-4000-8000-000000000127",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000128"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000129",
+          "email": "account-130@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000131"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000132"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/me",
+      "method": "get",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000133"
+      },
+      "body": {
+        "id": "00000000-0000-4000-8000-000000000129",
+        "email": "account-130@example.invalid",
+        "displayName": "Test account",
+        "city": null,
+        "countryCode": null,
+        "roleLabel": null,
+        "avatarKey": "HOODED",
+        "interests": [],
+        "stats": {
+          "savedCount": 0,
+          "appliedCount": 0,
+          "interestsCount": 0
+        },
+        "emailVerified": true
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000134"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/me/saved/{id}",
+      "method": "put",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000135"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000136"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-12-03T10:00:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000129",
+          "email": "account-130@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 1,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000137"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000138",
+          "email": "account-139@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000140"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000141"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000142",
+          "email": "account-143@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000144"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000145",
+          "email": "account-146@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/email-verification/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000147"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/me/delete-account",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000148"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000149"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000150",
+          "email": "account-151@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000152"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000153",
+          "email": "account-154@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/me/delete-account",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000155"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000156"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000157"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000158"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000159"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000160",
+          "email": "account-161@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 503,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000162"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 503,
+        "detail": "Отправка временно недоступна. Попробуйте позже.",
+        "instance": "/api/v1/auth/password-reset/request",
+        "code": "SERVICE_UNAVAILABLE",
+        "requestId": "00000000-0000-4000-8000-000000000162",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 503,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000163"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 503,
+        "detail": "Отправка временно недоступна. Попробуйте позже.",
+        "instance": "/api/v1/auth/password-reset/request",
+        "code": "SERVICE_UNAVAILABLE",
+        "requestId": "00000000-0000-4000-8000-000000000163",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000164"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000165",
+          "email": "account-166@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000167"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000168"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:05:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000169"
+      },
+      "body": null
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000170"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-12-03T10:00:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000165",
+          "email": "account-166@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": true
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/login",
+      "method": "post",
+      "status": 401,
+      "contentType": "application/problem+json",
+      "cacheControl": "no-cache, no-store, max-age=0, must-revalidate",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/problem+json",
+        "Cache-Control": "no-cache, no-store, max-age=0, must-revalidate",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000171",
+        "WWW-Authenticate": "Bearer"
+      },
+      "body": {
+        "type": "about:blank",
+        "title": "Ошибка запроса",
+        "status": 401,
+        "detail": "Не удалось выполнить вход. Проверьте данные и повторите попытку.",
+        "instance": "/api/v1/auth/login",
+        "code": "INVALID_CREDENTIALS",
+        "requestId": "00000000-0000-4000-8000-000000000171",
+        "fieldErrors": []
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000172"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000173",
+          "email": "account-174@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000175"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/register",
+      "method": "post",
+      "status": 201,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000176"
+      },
+      "body": {
+        "tokenType": "Bearer",
+        "accessToken": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "expiresAt": "2026-11-03T10:30:00Z",
+        "user": {
+          "id": "00000000-0000-4000-8000-000000000177",
+          "email": "account-178@example.invalid",
+          "displayName": "Test account",
+          "city": null,
+          "countryCode": null,
+          "roleLabel": null,
+          "avatarKey": "HOODED",
+          "interests": [],
+          "stats": {
+            "savedCount": 0,
+            "appliedCount": 0,
+            "interestsCount": 0
+          },
+          "emailVerified": false
+        }
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000179"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:10:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/verify",
+      "method": "post",
+      "status": 200,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000180"
+      },
+      "body": {
+        "resetToken": "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "expiresAt": "2026-11-03T10:05:00Z"
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/request",
+      "method": "post",
+      "status": 202,
+      "contentType": "application/json",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000181"
+      },
+      "body": {
+        "challengeId": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "expiresAt": "2026-11-03T10:11:00Z",
+        "resendAfterSeconds": 60
+      }
+    },
+    {
+      "operationPath": "/auth/password-reset/confirm",
+      "method": "post",
+      "status": 204,
+      "contentType": "",
+      "cacheControl": "no-store",
+      "retryAfter": "",
+      "headers": {
+        "Cache-Control": "no-store",
+        "X-Request-Id": "00000000-0000-4000-8000-000000000182"
+      },
+      "body": null
+    }
+  ]
+}

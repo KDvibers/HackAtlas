@@ -9,12 +9,23 @@ class StoredSession(val accessToken: String, val expiresAt: String, val userId: 
     override fun toString() = "StoredSession([REDACTED])"
 }
 
+enum class AuthProtocol { LEGACY, CLOSED_N2 }
+
+enum class EmailVerification { PENDING, VERIFIED }
+
 sealed interface AuthState {
     data object NotLoaded : AuthState
     data object SignedOut : AuthState
     data object SignInRequired : AuthState
     data object StorageUnavailable : AuthState
-    class Authenticated(val user: ProfileDto) : AuthState { override fun toString() = "Authenticated" }
+    class Authenticated(val user: ProfileDto, val emailVerification: EmailVerification? = null) : AuthState {
+        override fun toString() = "Authenticated"
+    }
+}
+
+enum class N2HttpAction {
+    INVALID_CREDENTIALS, EMAIL_NOT_VERIFIED, PASSWORD_RESET_REQUIRED, FORBIDDEN, INVALID_INPUT,
+    INVALID_EMAIL_ACTION, EMAIL_ALREADY_EXISTS, NOT_FOUND, RATE_LIMITED, SERVER_ERROR, RETRY_MANUALLY,
 }
 
 sealed interface AuthError {
@@ -23,7 +34,15 @@ sealed interface AuthError {
     data object Network : AuthError
     data object Timeout : AuthError
     data object InvalidResponse : AuthError
-    data class Http(val status: Int, val retryAfterSeconds: Int?) : AuthError
+    data object UnsupportedServer : AuthError
+    data class Http(
+        val status: Int,
+        val retryAfterSeconds: Int?,
+        val n2Action: N2HttpAction? = null,
+        val requestId: String? = null,
+    ) : AuthError {
+        override fun toString() = "Http(status=$status, retryAfterSeconds=$retryAfterSeconds, n2Action=$n2Action)"
+    }
 }
 
 class AuthException(val error: AuthError) : Exception("Auth request failed: $error")

@@ -29,6 +29,7 @@ class AuthSessionClient(
     private val engine: HttpClientEngine,
     private val source: CatalogSource.Remote,
     private val store: SecureTokenStore,
+    private val protocol: AuthProtocol = AuthProtocol.LEGACY,
     private val now: () -> Instant = { Clock.System.now() },
 ) {
     init { require(source.baseUrl == store.apiBaseUrl) { "Auth store API scope mismatch" } }
@@ -67,9 +68,9 @@ class AuthSessionClient(
             bearerAuth(session.accessToken); contentType(ContentType.Application.Json); setBody(patch)
         } }
         requireProtected(response,200)
-        val user=decode<ProfileDto>(response)
+        val (user, verification) = decodeProfileResponse<ProfileDto>(response)
         invalidResponse { validateProfile(user); require(user.id == session.userId) }
-        mutableState.value=AuthState.Authenticated(user)
+        mutableState.value = AuthState.Authenticated(user, verification)
         user
     }
 
@@ -136,6 +137,19 @@ class AuthSessionClient(
     }
 
     private suspend fun requireProtected(response: HttpResponse, expected: Int) {
+        if (protocol == AuthProtocol.CLOSED_N2) {
+            response.requireN2Success(
+                source, expected, authenticated = true,
+                onPending = {
+                    val current = mutableState.value as? AuthState.Authenticated
+                    if (current != null && current.user.id == mutableIdentity.value?.userId) {
+                        mutableState.value = AuthState.Authenticated(current.user, EmailVerification.PENDING)
+                    }
+                },
+                onInvalidSession = { localClear(AuthState.SignInRequired) },
+            )
+            return
+        }
         if (response.status.value == 401) {
             localClear(AuthState.SignInRequired)
             throw AuthException(AuthError.Unauthorized)
@@ -153,7 +167,7 @@ class AuthSessionClient(
                 when (response.status.value) {
                     204 -> LogoutResult.Revoked
                     401 -> LogoutResult.AlreadyInvalid
-                    else -> LogoutResult.LocalOnly(response.error())
+                    else -> LogoutResult.LocalOnly(response.failure(authenticated = true))
                 }
             }
         } catch (cancelled: CancellationException) {
@@ -169,8 +183,8 @@ class AuthSessionClient(
         val response = transport { client.post(source.baseUrl + path) {
             contentType(ContentType.Application.Json); setBody(body)
         } }
-        if (response.status.value != expected) throw AuthException(response.error())
-        val dto = decode<AuthResponse>(response)
+        if (response.status.value != expected) throw AuthException(response.failure(authenticated = false))
+        val (dto, verification) = decodeProfileResponse<AuthResponse>(response, wrappedInAuthResponse = true)
         val session = invalidResponse {
             require(dto.tokenType == "Bearer")
             validateProfile(dto.user)
@@ -182,21 +196,17 @@ class AuthSessionClient(
         withContext(NonCancellable) {
             storage { store.write(session) }
             mutableIdentity.value = LocalSessionIdentity(session.userId, session.expiresAt)
-            mutableState.value = AuthState.Authenticated(dto.user)
+            mutableState.value = AuthState.Authenticated(dto.user, verification)
         }
         return dto.user
     }
 
     private suspend fun profile(session: StoredSession): ProfileDto {
         val response = transport { client.get(source.baseUrl + "me") { bearerAuth(session.accessToken) } }
-        if (response.status.value == 401) {
-            localClear(AuthState.SignInRequired)
-            throw AuthException(AuthError.Unauthorized)
-        }
-        if (response.status.value != 200) throw AuthException(response.error())
-        val user = decode<ProfileDto>(response)
+        requireProtected(response, 200)
+        val (user, verification) = decodeProfileResponse<ProfileDto>(response)
         invalidResponse { validateProfile(user); require(user.id == session.userId) }
-        mutableState.value = AuthState.Authenticated(user)
+        mutableState.value = AuthState.Authenticated(user, verification)
         return user
     }
 
@@ -234,6 +244,17 @@ class AuthSessionClient(
     } catch (cancelled: CancellationException) { throw cancelled
     } catch (_: Exception) { throw AuthException(AuthError.InvalidResponse) }
 
+    private suspend inline fun <reified T : Any> decodeProfileResponse(
+        response: HttpResponse,
+        wrappedInAuthResponse: Boolean = false,
+    ): Pair<T, EmailVerification?> {
+        if (protocol == AuthProtocol.LEGACY) return decode<T>(response) to null
+        val json = decode<JsonObject>(response)
+        val decoded = invalidResponse { ContractJson.decodeFromJsonElement<T>(json) }
+        val profile = if (wrappedInAuthResponse) json["user"] as? JsonObject else json
+        return decoded to (profile ?: throw AuthException(AuthError.InvalidResponse)).readN2EmailVerification()
+    }
+
     private inline fun <T> invalidResponse(block: () -> T): T = try { block() }
     catch (_: IllegalArgumentException) { throw AuthException(AuthError.InvalidResponse) }
 
@@ -250,6 +271,9 @@ class AuthSessionClient(
 
     private fun HttpResponse.error() = AuthError.Http(status.value,
         headers[HttpHeaders.RetryAfter]?.toIntOrNull()?.takeIf { it >= 0 })
+
+    private suspend fun HttpResponse.failure(authenticated: Boolean): AuthError =
+        if (protocol == AuthProtocol.CLOSED_N2) readN2Failure(source, authenticated) else error()
 
     private suspend inline fun <T> transport(block: () -> T): T = try { block() }
     catch (cancelled: CancellationException) { throw cancelled }
