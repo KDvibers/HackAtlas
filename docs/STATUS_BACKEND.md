@@ -1439,3 +1439,51 @@ review плана, без утверждения независимого review
 minimum builds, real legacy recovery, общий strict0.2/deployment остаются отдельными gates.
 Следующий отдельный шаг: review плана другом и поручение мобильной реализации,
 начиная с Task1. Authenticated recovery entry — отдельное продуктовое решение.
+
+## Диагностика saved sync из PR32 — 7–8 ноября 2026
+
+Пользователь поручил продолжить backend-часть, пока друг выполняет mobile Task1.
+База origin/main0de9776 (PR34), дерево чистое; ветка `chore/n2-sync-diagnostics`.
+Один исполнитель, без изменений auth/mobile/API и без commit/push/PR/staging.
+
+[Отчёт](research/2026-11-07-saved-sync-diagnostics.md) и
+[обезличенные metadata](research/2026-11-07-saved-sync-diagnostics.json): исходный
+статус **OPEN_NOT_REPRODUCED**, приложение не объявлено исправленным.
+Старый screenshot перечитан визуально: generic sync dialog настоящий, но status/
+code/requestId/failure type тогда не записаны. App.kt сужает его до Auth/Catalog
+failure, не до одного конкретного backend/transport/DTO дефекта.
+
+Стенд был остановлен; для проверки запущены прежний N2 PostgreSQL/Mailpit и Java
+от UID1000, API36 x86_64/tzdata2025a AVD2048MB/2cores. В ignored копии mobile создан
+отдельный app package; user debug APK/data не заменялись. Четыре новых synthetic
+verified accounts подготовлены реальными HTTP/SMTP proofs, saved0/applied1.
+
+4/4 native cases прошли: guest bookmark → saved snapshot → login → detail;
+sync dialog0, authenticated detail4, stable saved control4. Два cases через
+loopback-only status/type proxy, один direct с safe diagnostics, один direct с
+исходным mobile source. Для proxy cases native login200/62мс, private GET200/31–32мс;
+для direct cases wire capture отсутствует, status не выдумывается.
+Mobile source идентичен dec07cc8, backend src/main+pom —f9ba707; git diff checks PASS.
+Три diagnostic/control APK сборки BUILD SUCCESS. Это legacy-клиент с verified user,
+не полная N2 mobile приёмка и не доказательство устранения редкого исходного сбоя.
+
+Отдельный подтверждённый дефект: локальный ignored android-local-control.py при
+failed uiautomator dump читал previous XML и не проверял package. Helper исправлен
+в target: unique path, success/path/package checks, retry и cleanup своего файла.
+Изолированные freshness tests: RED2failures → GREEN3PASS. Product/mobile scripts
+не менялись. Связь helper defect с исходным sync dialog НЕ установлена.
+
+После прогона восстановлено исходное состояние: только поднятые Java/proxy/AVD и
+два HackAtlas containers остановлены. БД/volumes/containers/старое приложение не
+удалялись;4 новых synthetic accounts и probe artifacts остались локально.
+Новый Maven/Kotlin unit suite/API34/iOS/full lifecycle UI E2E не выполнялись.
+Fresh checks PASS: canonical OpenAPI/13 fixtures,13 transition+15 lifecycle Python
+tests и повторная validation127 ранее записанных HTTP-ответов; локальный helper3PASS.
+Scope ровно3 docs-файла,144 относительные ссылки корректны, staging пуст,
+production/canonical/mobile code прежний. Gitleaks8.30.1:41commits/7.08MB и все
+changed/new docs —0 findings; новых ignore exceptions нет. Diff whitespace PASS.
+
+Следующий шаг по открытому наблюдению — получить actual failure kind/status/code/
+requestId при повторе. Друг продолжает Task1 с сохранением Problem.code и scope;
+backend fix без доказанной причины не готовить. Canonical0.1.1, opaque auth,
+runtime/SQL/mobile source и согласованные N2 границы сохранены.

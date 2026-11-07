@@ -1,0 +1,172 @@
+{
+  "date": "2026-11-07",
+  "baseCommit": "0de9776",
+  "status": "OPEN_NOT_REPRODUCED",
+  "originalDialogConfirmedByScreenshot": true,
+  "mobileSourceIdenticalTo": "dec07cc8",
+  "backendRuntimeSourceIdenticalTo": "f9ba707",
+  "device": {
+    "api": "36",
+    "android": "16",
+    "abi": "x86_64",
+    "tzdata": "tzdata2025a"
+  },
+  "cases": [
+    {
+      "case": 1,
+      "mode": "proxy",
+      "instrumented": true,
+      "newSyntheticVerifiedAccount": true,
+      "initialSavedCount": 0,
+      "initialAppliedCount": 1,
+      "authenticatedDetail": true,
+      "stableSavedControl": true,
+      "syncDialogObserved": false,
+      "freshTreeRetries": 0,
+      "clientFailureEvents": 0,
+      "httpMetadata": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "status": 200,
+          "durationMs": 62
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hackathons/{id}",
+          "status": 200,
+          "durationMs": 32
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/applications",
+          "status": 200,
+          "page": {
+            "page": 0,
+            "size": 50,
+            "totalElements": 1,
+            "totalPages": 1,
+            "hasNext": false
+          },
+          "itemsCount": 1,
+          "durationMs": 32
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/saved",
+          "status": 200,
+          "page": {
+            "page": 0,
+            "size": 50,
+            "totalElements": 0,
+            "totalPages": 0,
+            "hasNext": false
+          },
+          "itemsCount": 0,
+          "durationMs": 32
+        }
+      ]
+    },
+    {
+      "case": 2,
+      "mode": "proxy",
+      "instrumented": true,
+      "newSyntheticVerifiedAccount": true,
+      "initialSavedCount": 0,
+      "initialAppliedCount": 1,
+      "authenticatedDetail": true,
+      "stableSavedControl": true,
+      "syncDialogObserved": false,
+      "freshTreeRetries": 0,
+      "clientFailureEvents": 0,
+      "httpMetadata": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "status": 200,
+          "durationMs": 62
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/hackathons/{id}",
+          "status": 200,
+          "durationMs": 31
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/applications",
+          "status": 200,
+          "page": {
+            "page": 0,
+            "size": 50,
+            "totalElements": 1,
+            "totalPages": 1,
+            "hasNext": false
+          },
+          "itemsCount": 1,
+          "durationMs": 31
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/saved",
+          "status": 200,
+          "page": {
+            "page": 0,
+            "size": 50,
+            "totalElements": 0,
+            "totalPages": 0,
+            "hasNext": false
+          },
+          "itemsCount": 0,
+          "durationMs": 31
+        }
+      ]
+    },
+    {
+      "case": 3,
+      "mode": "direct",
+      "instrumented": true,
+      "newSyntheticVerifiedAccount": true,
+      "initialSavedCount": 0,
+      "initialAppliedCount": 1,
+      "authenticatedDetail": true,
+      "stableSavedControl": true,
+      "syncDialogObserved": false,
+      "freshTreeRetries": 0,
+      "clientFailureEvents": 0,
+      "httpMetadata": []
+    },
+    {
+      "case": 4,
+      "mode": "direct",
+      "instrumented": false,
+      "newSyntheticVerifiedAccount": true,
+      "initialSavedCount": 0,
+      "initialAppliedCount": 1,
+      "authenticatedDetail": true,
+      "stableSavedControl": true,
+      "syncDialogObserved": false,
+      "freshTreeRetries": 0,
+      "clientFailureEvents": null,
+      "httpMetadata": []
+    }
+  ],
+  "caseCount": 4,
+  "syncErrorsObserved": 0,
+  "helperFinding": {
+    "oldHelperCanReadStaleXmlAfterFailedDump": true,
+    "wrongPackageWasNotRejected": true,
+    "localHelperPatched": true,
+    "isolatedTests": 3,
+    "initialFailures": 2,
+    "finalFailures": 0
+  },
+  "limits": [
+    "No original HTTP status/Problem.code/requestId/failure type was captured for PR32",
+    "Four successful attempts do not prove the original failure is fixed",
+    "Separate diagnostic package/source scopes were used; original app data untouched",
+    "No complete N2 pending/verification/recovery UI or iOS acceptance"
+  ],
+  "credentialsOrResponseBodiesExported": false,
+  "completionDate": "2026-11-08"
+}
