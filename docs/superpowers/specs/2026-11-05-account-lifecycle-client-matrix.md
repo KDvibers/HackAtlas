@@ -22,6 +22,29 @@ backend/mobile код, канонические fixtures или правила p
 [N2 и его ограничения](../../research/2026-11-05-account-lifecycle-n2.md),
 [локальный Mailpit-стенд](../../../infra/lifecycle-test/README.md).
 
+## 0. Согласованные правила закрытого N2 — 7 ноября 2026
+
+После merge PR33 (main `c543eb0`) друг явно подтвердил правила кеша/recovery/session
+generation; пользователь поручил их зафиксировать и подготовить
+[план мобильной интеграции](../plans/2026-11-07-n2-mobile-integration.md).
+Эти договорённости действуют в закрытом N2. Состояние реализации отмечено в [плане мобильного клиента](../plans/2026-11-07-mobile-closed-n2.md).
+
+| Правило | Зафиксированное решение |
+|---|---|
+| Pending | Сохранить Bearer и owner-scoped bytes ОБОИХ private stores; скрыть private данные/производный UI, запретить личные записи и import; guest bookmarks доступны |
+| Cold start / offline | В N2 restored-сессия открывает private только после GET/me с emailVerified=true. Без сети — Unknown, bytes скрыты. После успешной проверки той же сессии в том же процессе копия читается до её expiry; новый процесс снова требует проверки |
+| Recovery без входа | Доступен из signed-out; public transport не отправляет Authorization. Reset grant не Bearer; reset204 ведёт к обычному login без autologin |
+| Новая сессия и поздние ответы | Каждая УСПЕШНО принятая login/register-сессия создаёт новое локальное поколение, даже при одинаковых userId/expiresAt. Старые200/204/401 не меняют новую сессию, UI или оба кеша. Неудачный login сам по себе не отзывает существующую сессию |
+
+Legacy API0.1.1 сохраняет прежний offline-сценарий. Поколение — внутренняя metadata
+клиента, не новый API field, JWT или refresh flow. Смена scope должна защищать также
+поздние storage writes/finally callbacks; public recovery имеет отдельный flow epoch.
+
+Recovery открывается с экрана входа в состоянии signed-out. Для отдельного
+перехода из активного аккаунта требуется продуктовое решение.
+Legacy migration/recovery, minimum client build, canonical0.2 и общий rollout
+по-прежнему требуют отдельных решений. Не считать всю матрицу принятой автоматически.
+
 ## 1. Подтверждённые правила кеша
 
 В pending клиент сохраняет Bearer и обе частные копии (`account-saved` и
@@ -49,12 +72,14 @@ backend/mobile код, канонические fixtures или правила p
 | Unsupported server / invalid response | В required mode поле отсутствует, null/не boolean, либо нужная операция недоступна | Сохранить сессию, частные данные скрыть; показать несовместимость, без fallback в legacy |
 | Storage unavailable | Secure store/cache нельзя безопасно прочитать или очистить | Частные данные скрыть; повторить локальную проверку/очистку, не смешивать владельцев |
 
-При холодном запуске в required mode частные копии остаются скрытыми до
+Восстановленный с диска профиль не подтверждает статус почты. При холодном запуске в required mode частные копии остаются скрытыми до
 `GET /me` с `emailVerified=true` для текущей сессии. Состояние до проверки —
 Unknown. После успешной проверки в текущем процессе временная потеря сети позволяет
 читать свою копию до локального истечения той же сессии. Сетевые записи в этот
 период недоступны. При восстановлении связи серверный ответ снова определяет доступ.
 Legacy 0.1.1 сохраняет существующий сценарий чтения кеша после перезапуска.
+Серверный отзыв на другом устройстве обнаруживается после восстановления связи
+и запроса к серверу.
 
 ## 3. Матрица операций N2
 
@@ -142,7 +167,7 @@ PASSWORD_RESET_REQUIRED вне login не является согласован�
 | Explicit logout, включая offline/ошибку revoke | Очистить локальную сессию/private. При сетевом сбое серверный revoke не подтверждён — не сообщать обратное |
 | Delete-account204 | Очистить сессию/private/recovery context этого пользователя; account→guest conversion не выполнять |
 | Смена пользователя, apiBaseUrl или явно выбранного режима | Инвалидировать старую generation/операции и private UI; очистить старый активный private/session scope перед новой активацией. Старый Bearer не отправлять новому source |
-| Новая успешная login/register сессия, даже того же UUID | Новая generation; очистить/загрузить заново private snapshot, не доверять прежнему emailVerified или ответам старых запросов |
+| Новая принятая login/register-сессия, даже того же UUID | Выдать новое поколение, закрыть прежний доступ и инвалидировать результаты и копии в памяти. В pending того же источника, режима и владельца сохранить частные файлы скрытыми. Загрузку, показ и запись выполнять в новом scope после проверки |
 | Неудачная попытка login | Сохранить действующую сессию, её поколение и обе частные копии. Ошибка относится к попытке входа |
 | Перезапуск приложения / background | Не восстанавливать OTP/code/newPassword/resetToken из settings/rememberSaveable/cache. Reset grant и введённые секреты сбрасывать при background; challengeId можно держать только в RAM до TTL/выхода из flow |
 | Ошибка физической очистки secure store/cache | Скрыть private UI и заблокировать его новую активацию до успешной очистки; не заявлять об удалении, которого не было |
@@ -167,11 +192,11 @@ failure не стирает guest bookmarks и не запускает безу�
 
 ## 6. Password reset и неизвестный результат
 
-В закрытом N2 recovery доступен из состояния без входа. Пользователь активного
-аккаунта сначала явно выходит. Все запросы recovery отправляются без
-`Authorization`. Reset grant передаётся только в теле запроса подтверждения сброса.
-После `204` клиент очищает контекст recovery и открывает обычный login. Новый
-Bearer появляется после успешного входа.
+В закрытом N2 recovery открывается с экрана входа в состоянии signed-out.
+Для перехода из активного аккаунта требуется отдельное решение. Запросы recovery
+отправляются без `Authorization`. Reset grant используется только в теле запроса
+подтверждения сброса. После `204` клиент очищает контекст recovery и открывает
+обычный login. Новый Bearer выдаётся после успешного входа.
 
 Backend по204 отзывает все native sessions целевого аккаунта, делает прежний admin
 cookie непригодным по version, инвалидирует прочие challenges/grants. На другом
@@ -249,18 +274,20 @@ Authenticated/error-free, **не** emailVerified: это не готовый gua
 - [ ] Потерянные ответы consuming POST не приводят к автоматическим повторам/ложному успеху.
 - [ ] Поздний reset grant после background/смены recovery flow не восстанавливает секреты.
 - [ ] Зафиксированы фактические платформы/device results и результат CI согласованного PR.
-- [x] Обе политики закрытого N2 утверждены: pending bytes сохранить/скрыть;
-  required cold start offline скрывает private до server check. Legacy offline прежний.
+- [x] Для закрытого N2 отдельно утверждены pending bytes сохранить/скрыть и
+  required cold start offline hiding до GET/me. Legacy offline прежний.
 - [ ] Все пункты pending/401/expiry/logout/account-source switch выполнены для
   account-saved И account-applications, включая производные UI из раздела10.
 
-Правила pending, холодного запуска, signed-out recovery и поколений сессий
-утверждены для закрытого N2. Канонический контракт — 0.1.1. Условия перехода старых
-клиентов и общий strict rollout согласуются отдельно.
+**На review:** подробный план клиента/cleanup, authenticated recovery entry,
+legacy migration, minimum builds и gates общего перехода. Согласованные четыре
+правила раздела0 позволяют подготовить план закрытой интеграции; они не принимают
+strict0.2 и не разрешают deployment. Остальные E2E checkboxes выше ещё не выполнены.
 
 ## 10. Уточнение после PR31: два private stores и производный UI
 
-В PR31 добавлены
+**Статус:** детализированные UI/cleanup-пункты ниже — предложение; четыре правила
+раздела0 уже приняты для закрытого N2. В PR31 добавлены
 ApplicationCache/ApplicationStore и личная отметка в DetailScreen; они ещё не
 различают emailVerified. Общий epoch/identity механизм не является проверкой почты.
 Saved и applications не превращаются в guest ни при одном auth transition.
@@ -291,15 +318,15 @@ detail controls, profile counters, editor draft и captured import callbacks.
 Публичный Profile может содержать counts: таблица задаёт клиентский UX, не новый
 серверный фильтр Profile или десятый guard.
 
-### Утверждённые продуктовые решения для закрытого N2
+### Два продуктовых решения — утверждены только для закрытого N2
 
-| Решение | Правило для required source | Последствие |
+| Решение | Правило закрытого N2 | Граница согласования |
 |---|---|---|
-| Pending bytes | Сохранить owner-scoped saved/applications bytes, скрыть до server-verified | После проверки можно открыть копию той же сессии |
-| Cold start offline | Required начинает с Unknown и скрывает оба private stores до GET/me | Офлайн после проверки в том же процессе допускает чтение до expiry |
+| Pending bytes | Сохранить owner-scoped saved/applications bytes, скрыть до server-verified | Скрытие UI не равно удалению bytes; delete-on-pending для N2 не выбран |
+| Cold start offline | Restored N2-сессия начинает с Unknown; скрыть оба stores до GET/me true | Ограничение принято для закрытого N2; перенос в legacy/общий source не утверждён |
 
 Legacy0.1.1 сохраняет уже принятый offline read-only сценарий saved И applications.
-После успешного server check в текущем процессе
+Для согласованного закрытого N2 после успешного server check в текущем процессе
 временный offline допускает read-only до local expiry; новый процесс снова Unknown.
 Missing/null/неверный flag или недоступная planned операция не включает legacy fallback.
 Ни документы, ни HTTP fixtures не переключают конфигурацию клиента/сервера.
@@ -311,7 +338,7 @@ NULL delivery address и restore PASSWORD_RESET_REQUIRED: реализованн
 для такого аккаунта нет. Успешный SMTP smoke нового аккаунта не закрывает этот gap.
 
 Minimum client version/build пока **не выбран**. До общего strict source нужны
-обе отдельно утверждённые политики, legacy admission/recovery plan, реализация
+отдельное согласование политики общего источника, legacy admission/recovery plan, реализация
 обоих private stores и полный закрытый E2E. Затем оба разработчика фиксируют
 конкретные Android/iOS build identifiers, канал/срок обновления и судьбу старой
 аудитории. Нативный iOS требует отдельного Mac-прогона; Android PASS не заменяет его.

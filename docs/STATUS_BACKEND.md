@@ -1384,3 +1384,58 @@ ignore exceptions.15 lifecycle Python tests дополнительно прош�
 Следующий отдельный шаг: совместно review compatibility/fixtures и legacy-предложение,
 явно выбрать legacy путь/две политики, после этого отдельно поручить план клиентской
 интеграции. Пользователь выполняет commit/push/PR; друг review совместной api-документации.
+
+## Согласованные N2 правила и план мобильной интеграции — 7 ноября 2026
+
+GitHub/main c543eb0 содержит merged PR33. От чистого checkout создана ветка
+`chore/n2-mobile-integration-plan`. GCM account/default credential.username —
+yergaliuly; author softache <itsyergaliuly@gmail.com> отдельно. Один исполнитель,
+без commit/push/PR и без staging. Пользователь поручил только фиксацию правил/план.
+
+В [разделе0 матрицы](superpowers/specs/2026-11-05-account-lifecycle-client-matrix.md)
+зафиксированы четыре явно согласованных правила ТОЛЬКО закрытого N2:
+
+1. Pending сохраняет Bearer и bytes обоих private stores; private UI/writes/import
+   закрыты, guest bookmarks доступны.
+2. Restored cold start N2 требует GET/me true; offline копия скрыта. После проверки
+   той же сессии в том же процессе чтение допускается до её expiresAt. Legacy offline прежний.
+3. Recovery доступен signed-out без Authorization, reset grant не Bearer,
+   reset204 ведёт к обычному login без autologin.
+4. Каждая успешно принятая login/register-сессия получает новую local generation
+   даже при совпавших UUID/expiresAt. Поздние200/204/401/disk commits/finally старого
+   scope не меняют новый. Неудачный login сам по себе не отзывает прежнюю сессию.
+
+Согласование отражено также в [compatibility](../api/ACCOUNT_LIFECYCLE_COMPATIBILITY.md)
+и checkbox-статусе [legacy-предложения](superpowers/specs/2026-11-07-legacy-account-recovery-design.md).
+Сам legacy путь A/B/C НЕ выбран. Вход в recovery ИЗ активного аккаунта тоже НЕ
+согласован: явный logout — прежнее предложение, не принятое из слов «без входа».
+Новый план пока исключает такой entry; скрытый/автоматический logout не разрешён.
+
+[План для друга](superpowers/plans/2026-11-07-n2-mobile-integration.md) содержит6 задач:
+mode/DTO/Problem/MockEngine fixtures; authoritative session snapshot/generation;
+оба private stores/derived UI; verification/public recovery; общий UI/host wiring;
+common/Android/API36+34/Mailpit evidence и отдельный native iOS gate на Mac.
+Он привязан к реально существующим Kotlin классам/методам после PR31 и перечисляет
+будущие файлы, interfaces, RED/GREEN cases, команды, ограничения и handoff.
+
+Особо отмечены same-user stale requests, выбор нового Bearer старым intent,
+fence вокруг storage commit, null/missing flag, cold/warm offline, публичный recovery
+без Bearer, lost consuming response, RAM-only secrets и iOS HTTPS/ATS ограничение.
+Будущий hackatlas.debugLifecycleMode=REQUIRED_N2 ещё НЕ существует в main:
+само указание неизвестного Gradle property не доказывает N2. Default LEGACY сохраняется.
+План подготовлен к review; это не поручение автоматически реализовать mobile.
+
+Выполнены: canonical OpenAPI3.1/13 fixtures PASS;13 transition+15 lifecycle Python
+tests PASS; отдельный renderer0.2.0-test.1 PASS и повторная валидация ранее захваченных
+127 N2 HTTP-ответов PASS. Новый HTTP-прогон/Maven/Android build/device E2E/iOS здесь
+не выполнялись: runtime/test sources/mobile/API schemas не менялись. Будущие Kotlin
+tests из плана ещё не написаны и не запускались. Прежний sync observation PR32 открыт.
+
+Final checks PASS: ровно5 docs-файлов,171 относительная ссылка, карта13 реальных Kotlin
+source files,6 tasks; staging пуст. Gitleaks8.30.1:40commits/7.03MB и все changed/new
+docs —0 findings, новых ignore exceptions нет. Diff whitespace PASS; самостоятельный
+review плана, без утверждения независимого review. Новых API операций,
+миграций/зависимостей/settings/runtime enforcement нет. Canonical0.1.1 прежний;
+minimum builds, real legacy recovery, общий strict0.2/deployment остаются отдельными gates.
+Следующий отдельный шаг: review плана другом и поручение мобильной реализации,
+начиная с Task1. Authenticated recovery entry — отдельное продуктовое решение.
