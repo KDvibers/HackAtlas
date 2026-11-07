@@ -118,8 +118,8 @@ Minimum client version/build пока **не выбрана**. Предлага�
 - [ ] Установлено, есть ли реальные legacy-аккаунты и требуется ли их перенос.
 - [ ] Выбран A/B/C и владелец следующего отдельного дизайна; сейчас рекомендация, не approval.
 - [ ] Для реальных аккаунтов закрыт NULL-address/restore gap или cutover заблокирован.
-- [ ] Pending bytes сохранить/скрыть утверждено отдельно от delete-on-pending альтернативы.
-- [ ] Required cold start offline hiding утверждено отдельно; legacy offline остаётся прежним.
+- [x] Pending bytes сохранить/скрыть выбрано для закрытого N2; общий source требует отдельного решения.
+- [x] Cold start N2 требует GET/me true; legacy offline прежний. Общий strict rollout не утверждён.
 - [ ] Minimum client builds/распространение/старые клиенты согласованы после готовности клиента.
 
 [Матрица](2026-11-05-account-lifecycle-client-matrix.md),
