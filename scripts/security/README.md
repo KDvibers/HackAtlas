@@ -44,7 +44,7 @@ python scripts/security/run_container_audit.py --rehearsal-report backend/target
 
 `release-readiness.json` сохраняет **все** findings. Suppressions, `ignore-unfixed`, автоматическое принятие риска и широкие исключения отсутствуют. Даже при `containerGatePassed=true` поле `publicReleaseReady` остаётся false: инфраструктура, privacy recovery, M4 и разрешение deployment проверяются отдельно. Версионные совпадения не доказывают эксплуатацию; известные контекстные пояснения находятся в [исследовании](../../docs/research/2026-10-26-release-security.md).
 
-Пакеты без определённой версии записываются в `unversionedPackages` и блокируют gate до проверки покрытия. Узкое правило для Caddy build wrapper: запись `caddy` с PURL `pkg:golang/caddy` без версии сопоставляется только с реально присутствующим версионированным `github.com/caddyserver/caddy/v2` в Go inventory proxy. В испытанном image это `v2.11.7`. Оба факта остаются видны в `coverageNotes` и `versionedCaddyModule`; findings этого опубликованного модуля и его dependencies не исключаются. Другое имя/PURL, отсутствующая или неизвестная версия canonical module такое сопоставление не разрешают.
+Пакеты без определённой версии записываются в `unversionedPackages` и блокируют gate до проверки покрытия. Запись `caddy` с PURL `pkg:golang/caddy` без версии сопоставляется только с присутствующим в Go inventory прокси версионированным модулем `github.com/caddyserver/caddy/v2`. Отчёт показывает оба факта в `coverageNotes` и `versionedCaddyModule` и сохраняет находки по самому модулю и его зависимостям. Правило требует точного имени и PURL обёртки и известной версии канонического модуля.
 
 Повторная проверка готовых JSON без повторного скачивания/сканирования:
 

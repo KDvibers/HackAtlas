@@ -5,12 +5,10 @@
 публичная регистрация и публикация требуют отдельного решения. Доступный staging
 и совместная приёмка M4 остаются отдельными пунктами B4.
 
-**Security gate пока не пройден:** фактический Trivy scan обнаружил HIGH findings,
-в том числе в зависимостях Caddy base. На 30.10.2026 проверенный official image —
-тот же v2.11.7; повторный build не обновляет встроенные Go/x/net. Этот stack разрешено
-использовать для текущей локальной репетиции, но нельзя считать готовым к внешнему
-выпуску. Находки, версии исправлений и область проверки записаны в
-[`docs/research/2026-10-30-runtime-security.md`](../../docs/research/2026-10-30-runtime-security.md).
+**Внешний выпуск требует проверки `External release readiness`.** Эта конфигурация
+используется для локальных репетиций. Предыдущий Trivy scan выявил блокирующие
+находки, а повтор на новом Caddy остановился при загрузке баз. См. [результат обновления](../../docs/STATUS_BACKEND.md#b4--обновление-caddy-до-2119-10-ноября-2026)
+и [аудит от 30 октября](../../docs/research/2026-10-30-runtime-security.md).
 
 ## Состав и закреплённые образы
 
@@ -18,19 +16,20 @@
 |---|---|---|
 | Java runtime | `eclipse-temurin:21.0.13_9-jre-noble@sha256:03fedab2c0d7355868b5ba5330d64088b956a0bfac48f904e5c57207e261e2c9` | Только JRE и уже проверенный JAR |
 | PostgreSQL | `postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5` | База, клиенты backup/restore и подготовка собственных volumes |
-| Caddy base | `caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f` | HTTPS и reverse proxy |
+| Caddy base | `caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee` | HTTPS и reverse proxy |
 
 Digest фиксирует содержимое, tag показывает версию. Caddy собирается из этого
 официального образа с точечными обновлениями `brotli-libs=1.2.1-r0`,
 `curl=8.23.0-r0` и `libcurl=8.23.0-r0` из подписанных Alpine repositories
 (CVE-2026-111497 и curl advisories, включая CVE-2026-92392), а также `setcap -r /usr/bin/caddy`:
 file capability официального бинарника мешает запуску с `cap_drop: ALL`.
-Внутри контейнера используются непривилегированные порты 8080/8443. Дополнительные
-пакеты не добавляются; обновляются только указанные существующие пакеты. Java Dockerfile копирует только JAR из `backend/target`;
+Внутри контейнера используются непривилегированные порты 8080/8443. Alpine может
+обновить зависимости закреплённых пакетов при сборке. Итоговые версии проверяются
+по фактическому образу. Java Dockerfile копирует только JAR из `backend/target`;
 исходники, Maven, `.env` и секреты в build context не попадают.
 
 Источники проверки версий:
-[официальный Caddy tag](https://hub.docker.com/v2/repositories/library/caddy/tags/2.11.7-alpine),
+[официальный Caddy tag](https://hub.docker.com/v2/repositories/library/caddy/tags/2.11.9-alpine),
 [официальный Temurin tag](https://hub.docker.com/v2/repositories/library/eclipse-temurin/tags/21.0.13_9-jre-noble),
 [официальный PostgreSQL tag](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm),
 [Temurin Dockerfile](https://github.com/adoptium/containers/blob/main/21/jre/ubuntu/noble/Dockerfile).
@@ -41,10 +40,10 @@ file capability официального бинарника мешает зап�
 JRE как отдельный пакет, поэтому реальная версия runtime по-прежнему проверяется
 отдельно. PostgreSQL 17.11 закреплён на пересборке от 28 октября.
 
-У Caddy общий index digest изменился после добавления riscv64; Linux amd64 manifest
-остался `sha256:04913b1da43339a40ad1ea87827d70a576ac5aa6cf674c6e24fdca675887533a`.
-Для проверяемой платформы это не исправление Go/x/net, поэтому прежний Caddy pin сохранён.
-Новые проверки и оставшиеся ограничения — [B4.3 security report](../../docs/research/2026-10-30-runtime-security.md).
+Caddy 2.11.9 включает исправления [2.11.8](https://github.com/caddyserver/caddy/releases/tag/v2.11.8)
+и [2.11.9](https://github.com/caddyserver/caddy/releases/tag/v2.11.9). Официальный
+Linux amd64 manifest `sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424`.
+В собранном бинарнике проверены Go `1.27.3` и `golang.org/x/net` `v0.60.0`.
 
 PostgreSQL 17.11 остаётся [актуальным minor в ветке 17](https://www.postgresql.org/support/versioning/).
 Закреплён свежий официальный build образа от 21.10.2026; index digest сверён с
