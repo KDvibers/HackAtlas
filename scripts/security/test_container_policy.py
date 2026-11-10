@@ -34,6 +34,39 @@ def evidence():
     return manifest, reports
 
 
+def no_go_fixture(directory, *, change=lambda manifest, proof, reports: None):
+    manifest, reports = evidence()
+    reports["postgres"]["Results"].pop()
+    for name, report in reports.items():
+        raw = json.dumps(report).encode()
+        manifest["images"][name]["reportSha256"] = hashlib.sha256(raw).hexdigest()
+    postgres = manifest["images"]["postgres"]
+    postgres["rehearsedContainerImageId"] = postgres["inspectedImageId"]
+    files = {"usr/bin/postgres": ["elf", 0o755, 0, 0, "d" * 64]}
+    proof = {
+        "formatVersion": 1,
+        "method": "postgres-bookworm-rootfs-diff-v1",
+        "baseReference": "postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5",
+        "baseImageId": "sha256:" + "e" * 64,
+        "baseLayers": ["sha256:" + "0" * 64],
+        "candidateLayers": ["sha256:" + "0" * 64, "sha256:" + "1" * 64],
+        "candidateUser": "999:999",
+        "candidate": {key: postgres[key] for key in (
+            "inspectedImageId", "rehearsedContainerImageId", "configDigest", "archiveSha256", "reportSha256")},
+        "baseFiles": {**copy.deepcopy(files), "usr/local/bin/gosu": ["go-elf", 0o755, 0, 0, "f" * 64]},
+        "candidateFiles": copy.deepcopy(files),
+    }
+    change(manifest, proof, reports)
+    for name, report in reports.items():
+        raw = json.dumps(report).encode()
+        (directory / (name + "-trivy.json")).write_bytes(raw)
+        manifest["images"][name]["reportSha256"] = hashlib.sha256(raw).hexdigest()
+    proof_raw = json.dumps(proof).encode()
+    (directory / "postgres-no-go.json").write_bytes(proof_raw)
+    postgres["noGoProofSha256"] = hashlib.sha256(proof_raw).hexdigest()
+    (directory / "audit-manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
 class ContainerPolicyTest(unittest.TestCase):
     def test_failed_command_preserves_diagnostic_output(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -105,10 +138,86 @@ class ContainerPolicyTest(unittest.TestCase):
         del reports["postgres"]
         with self.assertRaises(PolicyError):
             evaluate_evidence(manifest, reports, now=NOW)
-        manifest, reports = evidence()
-        reports["app"]["Results"][1]["Packages"] = []
-        with self.assertRaises(PolicyError):
-            evaluate_evidence(manifest, reports, now=NOW)
+        for service in ("app", "proxy", "postgres"):
+            with self.subTest(service=service):
+                manifest, reports = evidence()
+                reports[service]["Results"][1]["Packages"] = []
+                with self.assertRaisesRegex(PolicyError, service + " language inventory missing"):
+                    evaluate_evidence(manifest, reports, now=NOW)
+
+    def test_postgres_no_go_proof_allows_only_the_missing_language_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            no_go_fixture(directory)
+            result = evaluate_directory(directory, now=NOW)
+            self.assertTrue(result["containerGatePassed"])
+            self.assertFalse(result["publicReleaseReady"])
+            self.assertTrue(result["images"]["postgres"]["coverageNotes"])
+
+    def test_postgres_no_go_proof_does_not_hide_os_findings(self):
+        def add_finding(manifest, proof, reports):
+            reports["postgres"]["Results"][0]["Vulnerabilities"] = [
+                {"VulnerabilityID": "CVE-test", "PkgName": "libc", "InstalledVersion": "1", "Severity": "CRITICAL"}]
+            proof["candidate"]["reportSha256"] = hashlib.sha256(json.dumps(reports["postgres"]).encode()).hexdigest()
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            no_go_fixture(directory, change=add_finding)
+            result = evaluate_directory(directory, now=NOW)
+            self.assertFalse(result["containerGatePassed"])
+            self.assertEqual(1, result["images"]["postgres"]["severityCounts"]["CRITICAL"])
+
+    def test_missing_or_modified_postgres_proof_is_incomplete(self):
+        for change in (lambda file: file.unlink(), lambda file: file.write_bytes(file.read_bytes() + b" ")):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                no_go_fixture(directory)
+                change(directory / "postgres-no-go.json")
+                with self.assertRaises(PolicyError):
+                    evaluate_directory(directory, now=NOW)
+
+    def test_postgres_proof_bound_to_exact_image_and_scan(self):
+        for field in ("inspectedImageId", "rehearsedContainerImageId", "configDigest", "archiveSha256", "reportSha256"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                other = ("sha256:" if field.endswith(("Id", "Digest")) else "") + "0" * 64
+                no_go_fixture(directory, change=lambda m, p, r: p["candidate"].update({field: other}))
+                with self.assertRaises(PolicyError):
+                    evaluate_directory(directory, now=NOW)
+
+    def test_proof_cannot_allow_altered_files_or_a_different_base(self):
+        changes = (
+            lambda m, p, r: p.update(baseReference="postgres:latest"),
+            lambda m, p, r: p.update(candidateUser="0:0"),
+            lambda m, p, r: p["candidateLayers"].reverse(),
+            lambda m, p, r: p["candidateFiles"]["usr/bin/postgres"].__setitem__(4, "0" * 64),
+            lambda m, p, r: p["candidateFiles"].update({"usr/bin/extra": ["elf", 0o755, 0, 0, "0" * 64]}),
+            lambda m, p, r: p["candidateFiles"].update({"usr/local/bin/gosu": p["baseFiles"]["usr/local/bin/gosu"]}),
+            lambda m, p, r: p["candidateFiles"].clear(),
+        )
+        for change in changes:
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                no_go_fixture(directory, change=change)
+                with self.assertRaises(PolicyError):
+                    evaluate_directory(directory, now=NOW)
+
+    def test_postgres_proof_cannot_waive_proxy_language_inventory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            no_go_fixture(directory, change=lambda m, p, r: r["proxy"]["Results"].pop())
+            with self.assertRaisesRegex(PolicyError, "proxy language inventory missing"):
+                evaluate_directory(directory, now=NOW)
+
+    def test_trivy_go_result_contradicts_the_postgres_proof(self):
+        def add_go_result(manifest, proof, reports):
+            report = reports["postgres"]
+            report["Results"].append({"Class": "lang-pkgs", "Type": "gobinary", "Packages": []})
+            proof["candidate"]["reportSha256"] = hashlib.sha256(json.dumps(report).encode()).hexdigest()
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            no_go_fixture(directory, change=add_go_result)
+            with self.assertRaisesRegex(PolicyError, "contradicts"):
+                evaluate_directory(directory, now=NOW)
 
     def test_stale_missing_future_or_timezone_free_database_is_incomplete(self):
         for value in (None, "invalid", "2026-10-26T00:00:00", (NOW + timedelta(hours=1)).isoformat(),
