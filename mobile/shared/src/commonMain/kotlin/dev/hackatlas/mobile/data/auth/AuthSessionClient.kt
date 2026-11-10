@@ -230,6 +230,38 @@ class AuthSessionClient(
     private suspend fun requestMe(session: StoredSession) =
         client.get(source.baseUrl + "me") { bearerAuth(session.accessToken) }
 
+    internal suspend fun <T> emailVerification(
+        owner: LocalSessionIdentity,
+        proof: EmailVerificationProof?,
+        proofExpiresAt: Instant? = null,
+        decode: suspend (HttpResponse) -> T,
+    ): T {
+        val captured = captureVerification(owner, pendingOnly = true)
+        val action = if (proof == null) "request" else "confirm"
+        return executeN2(captured, 204, { session ->
+            if (proofExpiresAt != null && proofExpiresAt <= now()) throw VerificationChallengeExpired()
+            client.post(source.baseUrl + "auth/email-verification/$action") {
+                bearerAuth(session.accessToken)
+                setBody(verificationPostBody(proof))
+            }
+        }, alternativeStatus = if (proof == null) 202 else null) { response, _ -> decode(response) }
+    }
+
+    internal suspend fun checkVerification(owner: LocalSessionIdentity): Boolean =
+        executeN2(captureVerification(owner, pendingOnly = false), 200, ::requestMe) { response, session ->
+            acceptProfile(response, session, verifiedByGet = true)
+            view.value.access?.canRead == true
+        }
+
+    private suspend fun captureVerification(owner: LocalSessionIdentity, pendingOnly: Boolean): SessionRequest =
+        mutex.withLock {
+            checkOpen()
+            val access = view.value.access ?: throw StaleSession()
+            if (access.identity != owner || pendingOnly && access.trust != PrivateTrust.PENDING) throw StaleSession()
+            val session = readSession()?.takeIf { it.identity() == owner } ?: throw StaleSession()
+            SessionRequest(session, requireNotNull(view.value.access))
+        }
+
     private fun noSession(restore: Boolean): Nothing? {
         if (!restore) throw AuthException(AuthError.Unauthorized)
         // Keep the reason for signing in again after expiry or a 401.
@@ -255,13 +287,14 @@ class AuthSessionClient(
             if (!access.canWrite || expectedAccess != null && access != expectedAccess) throw StaleSession()
             SessionRequest(session, access)
         }
-        return executeN2(captured, expectedStatus, request, decode)
+        return executeN2(captured, expectedStatus, request, decode = decode)
     }
 
     /** Network waits do not hold the session mutex. Only the originating session can consume a reply. */
     private suspend fun <T> executeN2(
         captured: SessionRequest, expectedStatus: Int,
         request: suspend (StoredSession) -> HttpResponse,
+        alternativeStatus: Int? = null,
         decode: suspend (HttpResponse, StoredSession) -> T,
     ): T {
         val response = try { transport { request(captured.session) } }
@@ -277,7 +310,9 @@ class AuthSessionClient(
         }
         return mutex.withLock {
             checkCurrent(captured, requireSameTrust = false)
-            val failure = if (response.status.value == expectedStatus) null else response.readN2Failure(source, authenticated = true)
+            val status = response.status.value
+            val failure = if (status == expectedStatus || status == alternativeStatus) null
+                else response.readN2Failure(source, authenticated = true)
             if (failure == AuthError.Unauthorized) {
                 clearN2(captured.session, AuthState.SignInRequired)
                 throw AuthException(failure)

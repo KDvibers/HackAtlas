@@ -31,7 +31,8 @@ import org.jetbrains.compose.resources.stringResource
 fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: List<SavedGuestEvent>, format: DisplayFormat,
     onOpen: (SavedGuestEvent) -> Unit, onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit,
     onSettings: () -> Unit, onRefresh: () -> Unit, onLogout: () -> Unit,
-    accountSaved: Boolean = false, savedRemoveEnabled: Boolean = true, onEdit:(()->Unit)?=null, savedStatus: @Composable () -> Unit = {}) {
+    accountSaved: Boolean = false, savedRemoveEnabled: Boolean = true, onEdit:(()->Unit)?=null,
+    onVerifyEmail: (() -> Unit)? = null, savedStatus: @Composable () -> Unit = {}) {
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
@@ -75,6 +76,9 @@ fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: Lis
             }
         }
         item { AuthFeedback(state) }
+        if (onVerifyEmail != null) item {
+            NeonButton(stringResource(Res.string.verification_title), onVerifyEmail, Modifier.fillMaxWidth())
+        }
         item {
             SectionTitle(stringResource(Res.string.interests))
             Spacer(Modifier.height(12.dp))

@@ -143,7 +143,7 @@ fun AuthFeedback(state: AuthUiState) {
 }
 
 @Composable
-private fun authErrorText(error: AuthError): String = when (error) {
+internal fun authErrorText(error: AuthError): String = when (error) {
     AuthError.Network -> stringResource(Res.string.auth_network)
     AuthError.Timeout -> stringResource(Res.string.auth_timeout)
     AuthError.Storage -> stringResource(Res.string.auth_storage)

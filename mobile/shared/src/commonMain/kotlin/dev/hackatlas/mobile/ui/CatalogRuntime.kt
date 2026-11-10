@@ -4,6 +4,7 @@ import dev.hackatlas.mobile.data.*
 import dev.hackatlas.mobile.data.network.*
 import dev.hackatlas.mobile.data.auth.*
 import dev.hackatlas.mobile.ui.auth.AuthStore
+import dev.hackatlas.mobile.ui.auth.EmailVerificationStore
 import dev.hackatlas.mobile.data.saved.*
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
 import dev.hackatlas.mobile.ui.profile.ProfileEditStore
@@ -41,6 +42,8 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
             if (accessMode == AccountAccessMode.N2_REQUIRED) AuthProtocol.CLOSED_N2 else AuthProtocol.LEGACY,
             clearPrivateCaches = { clearAccountCopies(requireNotNull(savedCache), requireNotNull(applicationsCache)) }) else null
     private val auth = authClient?.let { AuthStore(it, scope) }
+    private val verification = authClient?.takeIf { it.protocol == AuthProtocol.CLOSED_N2 }
+        ?.let { EmailVerificationStore(N2AccountClient(it), it, scope) }
     private val profileEditor=if(auth!=null && authClient!=null) ProfileEditStore(auth,authClient,scope) else null
     val state = AppState(source, scope, storageFactory, remoteRepositoryFactory = { remote ->
         val transport = createPlatformHttpEngine().also { engine = it }
@@ -53,16 +56,21 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
                 onInvalidated = invalidate, onChanged = auth::refresh) } else null,
         applicationsFactory = if(auth != null && authClient != null && applicationsCache != null)
             { -> ApplicationStore(auth,authClient,applicationsCache,scope,
-                onChanged = auth::refresh) } else null)
+                onChanged = auth::refresh) } else null,
+        emailVerification = verification)
 
     fun onForeground() {
         auth?.onForeground()
         (state.state.value as? BootstrapState.Ready)?.accountSaved?.refresh()
         (state.state.value as? BootstrapState.Ready)?.applications?.refresh()
     }
-    fun onBackground() { auth?.onBackground() }
+    fun onBackground() {
+        auth?.onBackground()
+        verification?.onBackground()
+    }
 
     fun close() {
+        verification?.close()
         scope.cancel()
         authClient?.close()
         client?.close()

@@ -30,6 +30,7 @@ import dev.hackatlas.mobile.ui.auth.AuthOperation
 import dev.hackatlas.mobile.data.auth.AuthState
 import dev.hackatlas.mobile.data.auth.LocalSessionIdentity
 import dev.hackatlas.mobile.data.auth.PrivateAccess
+import dev.hackatlas.mobile.data.auth.PrivateTrust
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
@@ -79,6 +80,12 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val accountMode = accountSaved != null && if (n2) authState?.canReadPrivate == true else
         (savedState?.mode != SavedMode.GUEST || authState?.localIdentity != null || authState?.busy == AuthOperation.LOGOUT)
     val identity = authState?.localIdentity
+    val verification = app.emailVerification
+    val verificationState = verification?.state?.collectAsState()?.value
+    var verificationOwner by remember { mutableStateOf(verification?.state?.value?.owner) }
+    val verificationRoute = route == "verifyEmail"
+    val pendingEmail = verification != null && identity != null &&
+        authState.privateAccess?.trust == PrivateTrust.PENDING
     val applications = ready.applications
     val applicationState = applications?.state?.collectAsState()?.value?.visibleFor(authState)
     val cacheVisible = savedState?.mode == SavedMode.ACCOUNT && savedState.ownerId == identity?.userId &&
@@ -108,6 +115,30 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         route = if(applicationReturnId != null) "detail" else "profile"
         applicationReturnId = null
     }
+    val finishAuth: () -> Unit = {
+        val returnId = applicationReturnId
+        applicationReturnId = null
+        if (returnId == null) {
+            route = "profile"
+        } else {
+            selectedId = returnId
+            openLocalCopy = false
+            selectedSavedOwner = null
+            ready.details.open(returnId)
+            route = "detail"
+        }
+    }
+    fun openVerification(): Boolean {
+        if (identity == null || verification?.open(identity) != true) return false
+        verificationOwner = identity
+        route = "verifyEmail"
+        return true
+    }
+    val closeVerification: () -> Unit = {
+        verification?.close()
+        verificationOwner = null
+        closeAuth()
+    }
     val closeEditor:()->Unit={
         if(editState?.dirty==true && !editState.busy)dialog="discardProfile"
         else{editor?.close();route="profile"}
@@ -134,20 +165,34 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         if(previousOwner != activeOwner) {
             privateStateKeys.forEach(saveableStates::removeState); privateStateKeys.clear()
             if(openLocalCopy && selectedSavedOwner != activeOwner) {
-                route = "home"; selectedId = ""; selectedSavedOwner = null; openLocalCopy = false
+                if (route == "detail") {
+                    route = "home"
+                    selectedId = ""
+                }
+                selectedSavedOwner = null
+                openLocalCopy = false
             }
             if(importOwner != identity) importCandidates = null
             previousOwner = activeOwner
         }
     }
     LaunchedEffect(route) { if (route == "profile") auth?.refresh() }
-    LaunchedEffect(authState?.session) {
+    LaunchedEffect(authRoute, authState?.session, pendingEmail) {
         if (authRoute && authState?.session is AuthState.Authenticated) {
-            val returnId = applicationReturnId;applicationReturnId = null
-            if(returnId != null) {
-                selectedId = returnId;openLocalCopy = false;selectedSavedOwner = null
-                ready.details.open(returnId);route = "detail"
-            } else route = "profile"
+            if (pendingEmail && openVerification()) return@LaunchedEffect
+            finishAuth()
+        }
+    }
+    LaunchedEffect(verificationRoute, identity, verificationState?.owner, authState?.canReadPrivate) {
+        if (verificationRoute) {
+            val access = auth?.currentPrivateAccess()
+            if (access?.canRead == true && access.identity == verificationOwner) {
+                verification?.close()
+                verificationOwner = null
+                finishAuth()
+            } else if (identity == null || verification?.state?.value?.owner != identity) {
+                closeVerification()
+            }
         }
     }
 
@@ -189,8 +234,13 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         ready.catalog.setQuery(it)
         app.ownerScope.launch { catalogueScroll.scrollToItem(0) }
     }
-    BackHandler(enabled = route == "detail" || route == "typography" || authRoute || editRoute,
-        onBack = if(editRoute) closeEditor else if (authRoute) closeAuth else back)
+    BackHandler(enabled = route == "detail" || route == "typography" || authRoute || editRoute || verificationRoute,
+        onBack = when {
+            editRoute -> closeEditor
+            verificationRoute -> closeVerification
+            authRoute -> closeAuth
+            else -> back
+        })
     val content = details as? DetailUiState.Content
     val screenKey = "$activeOwner:" + if (route == "detail") ready.saved.scope.detailStateKey(
         if (!openLocalCopy && content?.detail?.hackathon?.id == selectedId) content.detail.hackathon.savedKey()
@@ -201,6 +251,9 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         Box(Modifier.weight(1f)) {
             saveableStates.SaveableStateProvider(screenKey) {
                 when (route) {
+                    "verifyEmail" -> if (verification != null && verificationState != null &&
+                        identity != null && verificationState.owner == identity)
+                        EmailVerificationScreen(verification, verificationState, closeVerification)
                     "editProfile" -> if(editor!=null && editState?.draft != null)ProfileEditScreen(editor,catalog.metadata,catalog.metadataLoading,
                         ready.catalog::retryMetadata,closeEditor)
                     "login", "register" -> if (auth != null) AuthScreen(auth,
@@ -240,6 +293,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                         auth::refresh, { dialog = "logout" }, accountSaved = accountMode,
                         savedRemoveEnabled = canWrite, onEdit=if(editor!=null && (!n2 || authState.canWritePrivate))
                             ({if(editor.open())route="editProfile"})else null,
+                        onVerifyEmail = if (pendingEmail) ({ openVerification() }) else null,
                         savedStatus = savedStatus)
                     else if(authState?.localIdentity != null) UnverifiedAccountProfile(auth, authState,
                         { dialog = "logout" }, savedStatus)
@@ -265,7 +319,8 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                 }
             }
         }
-        if (route != "detail" && route != "typography" && !authRoute && !editRoute) AtlasTabBar(route) { route = it }
+        if (route != "detail" && route != "typography" && !authRoute && !editRoute && !verificationRoute)
+            AtlasTabBar(route) { route = it }
     }
     val bookmarkFailure = bookmarks.failures.firstOrNull()
     val accountError = savedState?.error
