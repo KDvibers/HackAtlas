@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tarfile
+import tempfile
 import uuid
 
 from container_policy import SCANNER_IMAGE, SCANNER_VERSION, main as check_policy
@@ -39,6 +40,13 @@ def config_digest(archive):
         if not member.isfile() or member.size > 1024 * 1024:
             raise ValueError("Invalid archived image configuration")
         return "sha256:" + hashlib.sha256(source.extractfile(member).read()).hexdigest()
+
+
+def save_scan_archive(reference, archive):
+    run(["docker", "image", "save", "--output", str(archive), reference])
+    # The scanner has no DAC override. Its bind mount exposes just this file;
+    # the host directory remains private to the user running the audit.
+    archive.chmod(0o644)
 
 
 def cleanup_cache(cache):
@@ -84,7 +92,7 @@ def main():
     if not re.fullmatch(r"hackatlas-audit-[0-9a-f]{32}", cache):
         raise ValueError("Invalid audit cache identity")
     cache_created = False
-    archives = []
+    archives = tempfile.TemporaryDirectory(prefix="hackatlas-audit-images-")
     manifest = {"formatVersion": 1, "createdAt": datetime.now(timezone.utc).isoformat(),
                 "rehearsalProject": project, "jarSha256": rehearsal["jarSha256"],
                 "scannerImage": SCANNER_IMAGE, "images": {}}
@@ -116,9 +124,8 @@ def main():
             inspect = json.loads(run(["docker", "image", "inspect", reference]))[0]
             if inspect["Id"] != rehearsal["images"][name]["id"]:
                 raise ValueError("Image changed since successful rehearsal")
-            archive = output / (name + ".tar")
-            archives.append(archive)
-            run(["docker", "image", "save", "--output", str(archive), reference])
+            archive = Path(archives.name) / (name + ".tar")
+            save_scan_archive(reference, archive)
             with archive.open("rb") as stream:
                 archive_hash = hashlib.file_digest(stream, "sha256").hexdigest()
             image = {"reference": reference, "inspectedImageId": inspect["Id"],
@@ -149,16 +156,16 @@ def main():
         return check_policy()
     finally:
         failure_in_progress = sys.exc_info()[0] is not None
-        if cache_created:
-            try:
-                cleanup_cache(cache)
-            except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
-                print("Scanner cleanup incomplete; owned cache: " + cache, file=sys.stderr)
-                if not failure_in_progress:
-                    raise RuntimeError("Scanner cleanup failed; candidate is not approved")
-        for archive in archives:
-            if archive.is_file():
-                archive.unlink()
+        try:
+            if cache_created:
+                try:
+                    cleanup_cache(cache)
+                except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
+                    print("Scanner cleanup incomplete; owned cache: " + cache, file=sys.stderr)
+                    if not failure_in_progress:
+                        raise RuntimeError("Scanner cleanup failed; candidate is not approved")
+        finally:
+            archives.cleanup()
 
 
 if __name__ == "__main__":
