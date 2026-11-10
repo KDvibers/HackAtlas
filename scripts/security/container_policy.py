@@ -9,6 +9,8 @@ from pathlib import Path
 import re
 import sys
 
+from postgres_no_go import PROOF_FILE, validate_proof
+
 SCANNER_VERSION = "0.76.1"
 SCANNER_IMAGE = "aquasec/trivy@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c"
 SERVICES = {"app": "jar", "proxy": "gobinary", "postgres": "gobinary"}
@@ -77,11 +79,27 @@ def evaluate_report(report, expected_config_digest, *, now):
             "versionedCaddyModule": caddy_module, "types": sorted(t for t in types if t)}
 
 
-def evaluate_evidence(manifest, reports, *, now):
+def postgres_coverage(image, report, summary, raw_proof):
+    require(isinstance(raw_proof, bytes), "PostgreSQL proof is missing")
+    require(hashlib.sha256(raw_proof).hexdigest() == image["noGoProofSha256"], "PostgreSQL proof hash mismatch")
+    require(summary["types"] == ["debian"] and not any(result.get("Type") == "gobinary" for result in report["Results"]),
+            "Trivy report contradicts the PostgreSQL no-Go proof")
+    try:
+        validate_proof(json.loads(raw_proof), image)
+    except (ValueError, TypeError, KeyError) as error:
+        raise PolicyError(str(error)) from error
+    return "Pinned Bookworm filesystem proof: only gosu was removed from the rehearsed PostgreSQL image."
+
+
+def evaluate_evidence(manifest, reports, *, now, postgres_proof=None):
     require(manifest.get("formatVersion") == 1, "Unsupported evidence format")
     fresh(manifest.get("createdAt"), now, timedelta(hours=24), "Evidence timestamp")
     require(manifest.get("scannerImage") == SCANNER_IMAGE, "Unexpected scanner image")
     require(set(manifest.get("images", {})) == set(SERVICES) == set(reports), "Expected app/proxy/postgres evidence")
+    require(all("noGoProofSha256" not in manifest["images"][name] for name in ("app", "proxy")),
+            "No-Go proof is supported only for PostgreSQL")
+    has_postgres_proof = "noGoProofSha256" in manifest["images"]["postgres"]
+    require(has_postgres_proof == (postgres_proof is not None), "PostgreSQL proof does not match the manifest")
     for key, age, version in (("database", timedelta(hours=48), 2), ("javaDatabase", timedelta(days=7), 1)):
         metadata = manifest.get(key)
         require(isinstance(metadata, dict) and metadata.get("Version") == version, "Database metadata missing or unsupported")
@@ -92,14 +110,17 @@ def evaluate_evidence(manifest, reports, *, now):
         require(DIGEST.fullmatch(evidence.get("inspectedImageId", "")), "Inspected image identity missing")
         require(re.fullmatch(r"[0-9a-f]{64}", evidence.get("archiveSha256", "")), "Archive hash missing")
         summary = evaluate_report(reports[name], evidence.get("configDigest"), now=now)
-        require(language in summary["types"], name + " language inventory missing")
+        summary["coverageNotes"] = []
+        if name == "postgres" and has_postgres_proof:
+            summary["coverageNotes"].append(postgres_coverage(evidence, reports[name], summary, postgres_proof))
+        else:
+            require(language in summary["types"], name + " language inventory missing")
         images[name] = summary
         if any(summary["severityCounts"][s] for s in ("HIGH", "CRITICAL", "UNKNOWN")):
             blockers.append(name + ": unresolved HIGH/CRITICAL/UNKNOWN findings")
         uncovered = [p for p in summary["unversionedPackages"] if not (
             name == "proxy" and summary["versionedCaddyModule"] and p["Name"] == "caddy"
             and p["Type"] == "gobinary" and p["purl"] == "pkg:golang/caddy")]
-        summary["coverageNotes"] = []
         if len(uncovered) != len(summary["unversionedPackages"]):
             summary["coverageNotes"].append("Unversioned caddy build wrapper; published github.com/caddyserver/caddy/v2 module is inventoried at " + summary["versionedCaddyModule"])
         if uncovered:
@@ -123,7 +144,9 @@ def evaluate_directory(directory, *, now):
         raw = (directory / (name + "-trivy.json")).read_bytes()
         require(hashlib.sha256(raw).hexdigest() == manifest["images"][name].get("reportSha256"), "Report hash mismatch")
         reports[name] = json.loads(raw)
-    return evaluate_evidence(manifest, reports, now=now)
+    proof_file = directory / PROOF_FILE
+    proof = proof_file.read_bytes() if proof_file.is_file() else None
+    return evaluate_evidence(manifest, reports, now=now, postgres_proof=proof)
 
 
 def main():
