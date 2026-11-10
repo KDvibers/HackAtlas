@@ -11,6 +11,7 @@ import dev.hackatlas.mobile.domain.GuestStoreScope
 import dev.hackatlas.mobile.ui.applications.ApplicationStore
 import dev.hackatlas.mobile.ui.applications.visibleFor
 import dev.hackatlas.mobile.ui.auth.AuthStore
+import dev.hackatlas.mobile.ui.auth.EmailVerificationStore
 import dev.hackatlas.mobile.ui.profile.ProfileEditStore
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
 import dev.hackatlas.mobile.ui.saved.visibleFor
@@ -33,6 +34,42 @@ class N2PrivateAccessTest {
     private val headers = headersOf(HttpHeaders.ContentType, "application/json")
     private val oldBearer = "test-session-one-" + "a".repeat(32)
     private val newBearer = "test-session-two-" + "b".repeat(32)
+
+    @Test fun confirmingEmailRestoresBothCopiesOnlyAfterMeWithTheSameBearerAndExpiry() = runTest {
+        val disk = Disk()
+        val seed = Process(this, disk)
+        seed.start()
+        assertNotNull(disk.saved.text)
+        assertNotNull(disk.applications.text)
+        seed.close()
+        val process = Process(this, disk)
+        try {
+            process.pending = true
+            process.start()
+            val identity = assertNotNull(process.client.localIdentity.value)
+            val before = disk.session
+            assertTrue(process.saved.state.value.entries.isEmpty())
+            assertTrue(process.applications.state.value.marks.isEmpty())
+            assertTrue(process.verification.open(identity))
+            process.verification.requestCode()
+            runCurrent()
+            val me = CompletableDeferred<Unit>()
+            process.waitForOldMe = me
+            process.verification.changeCode("01234567")
+            process.verification.confirmCode()
+            runCurrent()
+            assertTrue(process.requests.contains("POST /api/v1/auth/email-verification/confirm"))
+            assertTrue(process.saved.state.value.entries.isEmpty())
+            assertTrue(process.applications.state.value.marks.isEmpty())
+            assertFalse(process.auth.state.value.canReadPrivate)
+            me.complete(Unit)
+            runCurrent()
+            assertEquals(event.id, process.saved.state.value.entries.single().key.id)
+            assertEquals(event.id, process.applications.state.value.marks.single().hackathonId)
+            assertEquals(identity, process.client.localIdentity.value)
+            assertSame(before, disk.session)
+        } finally { process.close() }
+    }
 
     @Test fun coldOfflineHidesBothCopiesUntilMeAndWarmOfflineKeepsReadOnlyUntilExpiry() = runTest {
         val disk = Disk()
@@ -468,6 +505,19 @@ class N2PrivateAccessTest {
                     "emailVerified" to JsonPrimitive(!pending),
                 ))
                 when {
+                    path.endsWith(VerificationHarness.requestPath) -> {
+                        assertEquals("Bearer $oldBearer", bearer)
+                        respond(buildJsonObject {
+                            put("challengeId", VerificationHarness.challengeId)
+                            put("expiresAt", (at.toEpochMilliseconds() + 600_000).let(Instant::fromEpochMilliseconds).toString())
+                            put("resendAfterSeconds", 60)
+                        }.toString(), HttpStatusCode.Accepted, headers)
+                    }
+                    path.endsWith(VerificationHarness.confirmPath) -> {
+                        assertEquals("Bearer $oldBearer", bearer)
+                        pending = false
+                        respond("", HttpStatusCode.NoContent)
+                    }
                     path.endsWith("/auth/login") || path.endsWith("/auth/register") -> respond(buildJsonObject {
                         put("tokenType", "Bearer")
                         put("accessToken", newBearer)
@@ -511,6 +561,9 @@ class N2PrivateAccessTest {
             Instant.fromEpochMilliseconds(at.toEpochMilliseconds() + test.testScheduler.currentTime)
         }
         val auth = AuthStore(client, owner)
+        val verification = EmailVerificationStore(N2AccountClient(client), client, owner) {
+            Instant.fromEpochMilliseconds(at.toEpochMilliseconds() + test.testScheduler.currentTime)
+        }
         val editor = ProfileEditStore(auth, client, owner)
         lateinit var guest: GuestSavedRepository
         lateinit var saved: AccountSavedStore
