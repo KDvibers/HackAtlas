@@ -313,6 +313,22 @@ git push origin feat/backend-recovery-archive
 Start-Process 'https://github.com/KDvibers/HackAtlas/pull/19/checks'
 ```
 
+## B4 — разбор PostgreSQL CRITICAL, 10 ноября 2026
+
+От `main` `19ad561` создана ветка `chore/b4-postgres-critical-review`. PR #43
+с исправлением APT рассматривается отдельно. На одной базе Trivy сравнены
+текущий Bookworm, его свежая пересборка и Trixie. Свежий Bookworm сохранил
+4 CRITICAL; Trixie снизил их до 2, сохранив блокировки `libxml2` и Go в `gosu`.
+Число HIGH у Trixie выросло с 117 до 131.
+
+Логический backup Bookworm восстановился в чистую Trixie. При этом версия
+collation меняется с `2.36` на `2.41`, поэтому переход существующей установки
+требует отдельного плана. В изолированных копиях прошли 358 Maven-тестов на
+Trixie, сборка и 12 проверок B4, включая HTTPS, карантин и V6–V9. Полный Trivy
+трёх образов завершился и подтвердил блокировки. Ветка содержит отчёт и статус;
+релизный pin Bookworm оставлен до решения по миграции и уязвимостям.
+[Разбор четырёх находок, варианты и проверка](research/2026-11-10-postgres-critical-review.md).
+
 ## B4 — обновление Caddy до 2.11.9, 10 ноября 2026
 
 Ветка `chore/b4-caddy-security-update` от `origin/main` `1f381a5`.
