@@ -5,7 +5,29 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import run_container_audit
+from postgres_no_go import BASE_REFERENCE
 from run_container_audit import save_scan_archive
+
+
+class PostgresReferenceTest(unittest.TestCase):
+    project = "hackatlas-b4-123456789abc"
+
+    def test_release_image_must_match_project_and_require_proof(self):
+        tag = self.project + "-postgres:local"
+        validate = run_container_audit.validate_postgres_reference
+        validate(self.project, tag, with_proof=True)
+        with self.assertRaises(ValueError):
+            validate(self.project, tag, with_proof=False)
+        with self.assertRaises(ValueError):
+            validate(self.project, "hackatlas-b4-456789abcdef-postgres:local", with_proof=True)
+
+    def test_previous_stock_and_experiment_reports_remain_auditable(self):
+        validate = run_container_audit.validate_postgres_reference
+        validate(self.project, BASE_REFERENCE, with_proof=False)
+        validate(self.project, "postgres:17.11-bookworm-nogosu-probe", with_proof=True)
+        with self.assertRaises(ValueError):
+            validate(self.project, "postgres:17.11-bookworm", with_proof=False)
 
 
 @unittest.skipUnless(os.name == "posix", "Scanner bind mounts are supported on Linux/WSL")

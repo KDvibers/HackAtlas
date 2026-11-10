@@ -33,6 +33,8 @@ RELEASE = ROOT / "infra/release"
 sys.path.insert(0, str(RELEASE / "ops"))
 from restore_review import approval_sql
 from restic_tool import verify_binary
+sys.path.insert(0, str(ROOT / "scripts/security"))
+from postgres_no_go import BASE_REFERENCE
 from recovery_archive_checks import RecoveryArchiveChecks
 SERVICES = {"init-volumes", "postgres", "migrate", "app", "proxy"}
 SECRET_FILES = ("postgres-admin-password", "migrator-password", "runtime-password")
@@ -79,6 +81,13 @@ def validate_bindings(config):
             require(isinstance(port, dict) and port.get("host_ip") == "127.0.0.1",
                     "Release rehearsal refuses non-loopback port bindings")
     require(len(services["proxy"].get("ports", [])) == 2, "Expected exactly two proxy loopback ports")
+
+
+def validate_postgres_image(config, tag):
+    for name in ("postgres", "init-volumes"):
+        service = config["services"].get(name, {})
+        require(service.get("image") == tag and service.get("pull_policy") == "never",
+                name + " must use the locally built PostgreSQL image without pulling")
 
 
 def validate_owned(containers, project):
@@ -149,6 +158,7 @@ class Rehearsal:
             self.https_port = free_port()
         self.env.update({"HACKATLAS_SECRET_DIR": str(self.temp / "secrets"), "HACKATLAS_SITE": "localhost",
                          "HACKATLAS_APP_IMAGE": self.project + "-app:local", "HACKATLAS_PROXY_IMAGE": self.project + "-proxy:local",
+                         "HACKATLAS_POSTGRES_IMAGE": self.project + "-postgres:local",
                          "HACKATLAS_HTTP_PORT": str(self.http_port), "HACKATLAS_HTTPS_PORT": str(self.https_port)})
         self.compose = ["docker", "compose", "--env-file", "/dev/null", "--project-name", self.project,
                         "-f", str(RELEASE / "compose.yaml"), "-f", str(RELEASE / "compose.local.yaml"),
@@ -198,18 +208,22 @@ class Rehearsal:
         require((self.temp.stat().st_mode & 0o077) == 0, "Secrets parent must be private")
         config = json.loads(self.dc("Validate effective local Compose", "config", "--format", "json").stdout)
         validate_bindings(config)
+        postgres_tag = self.env["HACKATLAS_POSTGRES_IMAGE"]
+        validate_postgres_image(config, postgres_tag)
         self.passed("effective Compose exposes only two loopback proxy ports")
+        self.run("Pull pinned PostgreSQL Bookworm base", ["docker", "pull", BASE_REFERENCE], timeout=600)
+        # Build directly so Compose does not add image labels to the base configuration.
+        self.run("Build PostgreSQL without gosu", ["docker", "build", "--network", "none",
+                 "--tag", postgres_tag, str(RELEASE / "postgres")], timeout=900)
         self.dc("Build exact tested application and proxy images", "build", "app", "proxy", timeout=900)
         self.report["images"] = {}
-        for service, variable in (("app", "HACKATLAS_APP_IMAGE"), ("proxy", "HACKATLAS_PROXY_IMAGE")):
+        for service, variable in (("app", "HACKATLAS_APP_IMAGE"), ("proxy", "HACKATLAS_PROXY_IMAGE"),
+                                  ("postgres", "HACKATLAS_POSTGRES_IMAGE")):
             tag = self.env[variable]
             inspect = json.loads(self.run("Inspect built " + service, ["docker", "image", "inspect", tag]).stdout)[0]
             self.report["images"][service] = {"tag": tag, "id": inspect["Id"]}
         self.started = True
         self.dc("Start isolated database", "up", "-d", "--wait", "--wait-timeout", str(self.timeout), "postgres", timeout=self.timeout + 60)
-        tag = config["services"]["postgres"]["image"]
-        inspect = json.loads(self.run("Inspect rehearsed PostgreSQL image", ["docker", "image", "inspect", tag]).stdout)[0]
-        self.report["images"]["postgres"] = {"tag": tag, "id": inspect["Id"]}
         self.dc("Run migrations as separate migrator role", "--profile", "ops", "run", "--rm", "migrate", timeout=self.timeout)
         self.dc("Start least-privilege runtime and TLS proxy", "up", "-d", "--wait", "--wait-timeout", str(self.timeout), "app", "proxy", timeout=self.timeout + 60)
         self.dc("Export disposable Caddy root certificate", "cp", "proxy:/data/caddy/pki/authorities/local/root.crt", str(self.temp / "root.crt"))

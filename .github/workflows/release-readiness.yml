@@ -49,6 +49,7 @@ jobs:
           scripts/b1/.venv/bin/python scripts/security/run_container_audit.py
           --rehearsal-report backend/target/release-rehearsal/report.json
           --output-dir backend/target/container-audit
+          --postgres-without-gosu
       - name: Audit recovery operator tool and block unresolved findings
         if: always()
         run: >-

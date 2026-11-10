@@ -396,11 +396,47 @@ missing`. После изменения прошли **37 тестов ауди�
 примерами. Два полных локальных прогона Trivy по реальным отчётам репетиций
 дали `evidenceComplete=true`. У кандидата доказательство принято, у обычного
 Bookworm сохранён Go-инвентарь. Кандидат содержит 3 CRITICAL, 92 HIGH и 25
-UNKNOWN по Debian, поэтому правила возвращают код `1` по находкам. Релизный
-Compose и автоматический запуск workflow используют прежний режим аудита.
-[Команда проверки кандидата](../scripts/security/README.md#локальный-кандидат-postgresql-без-gosu).
+UNKNOWN по Debian, поэтому правила возвращают код `1` по находкам. На момент
+PR #46 Compose и workflow ещё использовали прежний режим аудита.
+[Команда проверки PostgreSQL](../scripts/security/README.md#релизный-postgresql-без-gosu).
 Сводки и proof — ignored `backend/target/b4-pg-proof-candidate-audit/` и
 `b4-pg-proof-stock-audit/`.
+
+## B4 — PostgreSQL без gosu в релизной репетиции, 10 ноября 2026
+
+Ветка `feat/release-postgres-nogosu` начата от `3a6b367`.
+[PR #46](https://github.com/KDvibers/HackAtlas/pull/46) прошёл
+[Backend CI](https://github.com/KDvibers/HackAtlas/actions/runs/42858456393)
+и вошёл в `main` коммитом `d2a4301`.
+
+[Релизный Dockerfile](../infra/release/postgres/Dockerfile) удаляет
+`/usr/local/bin/gosu` из закреплённого PostgreSQL 17.11 Bookworm и задаёт
+`USER 999:999`. Репетиция собирает образ отдельно, чтобы сборка сохранила
+остальную конфигурацию родителя без дополнительных меток. PostgreSQL и
+`init-volumes` получают общий локальный тег с `pull_policy: never`.
+`External release readiness` требует доказательство для этого тега
+и сохраняет `postgres-no-go.json` вместе с отчётом Trivy.
+
+- WSL, UID 1000. Maven verify собрал JAR, прошли 358 тестов (47 unit и 311 IT).
+  Прошли 52 теста B4, 39 тестов аудита и валидация OpenAPI с 13 примерами.
+- Репетиция `hackatlas-b4-09d39e849119` прошла все 12 проверок за 154.891 с.
+  Проверены общий ID образа двух сервисов, повторная инициализация томов,
+  HTTPS с проверкой сертификата, миграции и восстановление в карантин,
+  включая старый бэкап V6 с обновлением до V9.
+- Trivy 0.76.1 просканировал все три образа. Повторная проверка артефактов
+  подтвердила `evidenceComplete=true`. ID PostgreSQL
+  `sha256:d5acf397834eb815c19d17b0ca3c5c1720eeaf53372bb22b9da3371fa56366ba`
+  совпал в репетиции и доказательстве. Go-инвентарь и `CVE-2025-68121`
+  отсутствуют в отчёте PostgreSQL. Выпуск блокируют три Debian CRITICAL
+  (SQLite, libxml2 и zlib), 92 HIGH и 25 UNKNOWN у PostgreSQL, два HIGH
+  у приложения, два HIGH и один UNKNOWN у Caddy.
+- Отдельный Trivy для restic 0.19.1 вернул 23 HIGH и один UNKNOWN.
+  В Go-инвентаре версия самого модуля restic не определена.
+  `containerGatePassed=false`, публичный выпуск закрыт.
+
+Локальные артефакты находятся в ignored `backend/target/b4-pg-integrated-*`.
+Следующая проверка для этой ветки — ручной `External release readiness` на
+GitHub после публикации ветки. Канонический OpenAPI проверен на существующих примерах.
 
 ## B4.5 — локальный шифрованный архив реализован; эксплуатация заблокирована
 

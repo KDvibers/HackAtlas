@@ -63,6 +63,18 @@ def cleanup_cache(cache):
     run(["docker", "volume", "rm", cache])
 
 
+def validate_postgres_reference(project, reference, *, with_proof):
+    if with_proof:
+        if reference == project + "-postgres:local":
+            return
+        # Older experiment reports used a separate local tag in the postgres namespace.
+        if re.fullmatch(r"postgres:[a-z0-9][a-z0-9._-]*", reference or ""):
+            return
+        raise ValueError("PostgreSQL no-Go proof requires the rehearsed local image tag")
+    if reference != BASE_REFERENCE:
+        raise ValueError("A local PostgreSQL image requires --postgres-without-gosu")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rehearsal-report", type=Path, required=True)
@@ -79,20 +91,12 @@ def main():
     project = rehearsal["project"]
     if not re.fullmatch(r"hackatlas-b4-[0-9a-f]{12}", project):
         raise ValueError("Unexpected rehearsal project identity")
-    postgres = set(re.findall(r"image: (postgres:[^\s]+)", (ROOT / "infra/release/compose.yaml").read_text()))
-    if len(postgres) != 1:
-        raise ValueError("Expected one pinned release PostgreSQL image")
     references = {name: rehearsal["images"][name]["tag"] for name in ("app", "proxy")}
     for name, reference in references.items():
         if reference != project + "-" + name + ":local":
             raise ValueError("Unexpected rehearsed image reference")
-    pinned_postgres = postgres.pop()
     rehearsed_postgres = rehearsal["images"].get("postgres", {}).get("tag")
-    if args.postgres_without_gosu:
-        if pinned_postgres != BASE_REFERENCE or not re.fullmatch(r"postgres:[a-z0-9][a-z0-9._-]*", rehearsed_postgres or ""):
-            raise ValueError("PostgreSQL no-Go proof requires the pinned Bookworm base and a rehearsed local tag")
-    elif rehearsed_postgres != pinned_postgres:
-        raise ValueError("PostgreSQL reference changed since rehearsal; rerun the candidate")
+    validate_postgres_reference(project, rehearsed_postgres, with_proof=args.postgres_without_gosu)
     references["postgres"] = rehearsed_postgres
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=False)
