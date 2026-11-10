@@ -1,4 +1,4 @@
-FROM caddy:2.11.7-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f
+FROM caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee
 
 # CVE-2026-111497 and curl advisories including CVE-2026-92392.
 # Install exact fixed package versions from Alpine's signed repositories.

@@ -304,6 +304,48 @@ git push origin feat/backend-recovery-archive
 Start-Process 'https://github.com/KDvibers/HackAtlas/pull/19/checks'
 ```
 
+## B4 — обновление Caddy до 2.11.9, 10 ноября 2026
+
+Ветка `chore/b4-caddy-security-update` от `origin/main` `1f381a5`.
+В [Dockerfile прокси](../infra/release/proxy/Dockerfile) закреплён официальный
+`caddy:2.11.9-alpine` с digest из [Docker Hub](https://hub.docker.com/v2/repositories/library/caddy/tags/2.11.9-alpine),
+сверенным с загрузкой Docker. Это обновление включает исправление заголовков
+reverse proxy из [Caddy 2.11.8](https://github.com/caddyserver/caddy/releases/tag/v2.11.8)
+и дальнейшие security fixes из [Caddy 2.11.9](https://github.com/caddyserver/caddy/releases/tag/v2.11.9).
+В новом бинарнике проверены Go `1.27.3`, `x/net v0.60.0` и `go-jose/v4 v4.1.6`.
+Alpine сохранил прежние pins Brotli/curl/libcurl и обновил зависимость zlib до `1.4-r0`.
+Непривилегированный пользователь контейнера `10001:10001` подтверждён инспекцией.
+
+`docker build --pull` завершился успешно. `caddy validate` подтвердил релизный
+Caddyfile в изолированном контейнере. Прошли 51 B4 и 27 security Python-тестов.
+Свежий `dependency:list` и запрос OSV проверили 111 разрешённых Maven-зависимостей,
+совпадений на момент запроса — 0. Для HTTPS/restore использован JAR из успешного
+`verify` того же `main`, SHA-256 `a890e4b983dde184a28ce1d8aa25498dd0d5b7a610945766cb9777f7b1601b30`.
+
+`python scripts/b4/run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b4-caddy-2119-rehearsal` — **PASS за 168,276 с**.
+Пройдены 12 контрольных пунктов, в том числе проверка TLS, HSTS и редиректа 308,
+публичные GET по канонической схеме, вход админа и CSRF, backup, восстановление в
+карантин с учётом последующих удалений, повторный HTTPS smoke и восстановление
+реальной схемы V6 с миграциями до V9. Временные контейнеры, тома, секреты и копии
+репетиции очищены; собранные образы оставлены для сверки аудита.
+
+OSV сравнил Go-инвентарь двух образов прокси, фактически использованных в старой и
+новой репетициях. Сверены image IDs и вывод `caddy build-info`. По одной базе OSV
+и с положительными контролями проверены **148 версий модулей и stdlib на образ**.
+Число пар «модуль — advisory» снизилось **с 28 до 7**, затронутых модулей — с 7 до
+4. В новом образе совпадения остаются у `go-jose/v3`, `klauspost/compress`,
+`golang.org/x/crypto` и `golang.org/x/net`. Это проверка версий Go, без анализа
+достижимости и без покрытия системных пакетов, JAR или PostgreSQL. Сводка
+`backend/target/b4-caddy-2119-go-osv.json` сохранена локально.
+
+Полный `run_container_audit.py` не завершился. Загрузка `trivy-db` с зеркала
+истекла по тайм-ауту; повторные загрузки с официальных реестров остановлены из-за
+низкой скорости, полного набора свежих баз не получено. Допуск к внешнему выпуску
+требует завершённого Trivy-аудита всех образов по действующей политике. Следующий
+серверный шаг — повторить этот аудит в окружении с устойчивой загрузкой баз и
+разобрать оставшиеся блокировки. Отдельный audit бинарника restic в этом этапе не
+повторялся. Артефакты `backend/target/b4-caddy-2119-*` остаются локально.
+
 ## B4.5 — локальный шифрованный архив реализован; эксплуатация заблокирована
 
 [PR #17](https://github.com/KDvibers/HackAtlas/pull/17) слит в main
