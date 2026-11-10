@@ -5,6 +5,7 @@ import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.resources.Res
 import dev.hackatlas.mobile.ui.auth.AuthStore
 import dev.hackatlas.mobile.ui.auth.EmailVerificationStore
+import dev.hackatlas.mobile.ui.auth.PasswordRecoveryStore
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
 import dev.hackatlas.mobile.ui.profile.ProfileEditStore
 import dev.hackatlas.mobile.ui.applications.ApplicationStore
@@ -46,6 +47,7 @@ class AppState(
     private val accountSavedFactory: ((GuestSavedRepository, CatalogRepository, () -> Unit) -> AccountSavedStore)? = null,
     private val applicationsFactory: (() -> ApplicationStore)? = null,
     val emailVerification: EmailVerificationStore? = null,
+    val passwordRecovery: PasswordRecoveryStore? = null,
 ) {
     private val mutableState = MutableStateFlow<BootstrapState>(BootstrapState.Loading)
     val state = mutableState.asStateFlow()

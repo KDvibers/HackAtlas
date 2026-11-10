@@ -113,17 +113,7 @@ class PlatformHttpEngineTest {
                         assertTrue(request(reader).startsWith("GET /api/v1/me "))
                         respond(socket, 200, VerificationHarness.pending.body.toString())
                         val action = if (confirm) "confirm" else "request"
-                        assertTrue(request(reader).startsWith("POST /api/v1/auth/email-verification/$action "))
-                        respond(socket, 503, """{"type":"about:blank","title":"Unavailable","status":503,"detail":"Retry manually","instance":"/api/v1/auth/email-verification/$action","requestId":"test","code":"SERVICE_UNAVAILABLE","fieldErrors":[]}""",
-                            "Retry-After: 0\r\n", "application/problem+json")
-                        socket.soTimeout = 1200
-                        try {
-                            request(reader)
-                            respond(socket, 204, "")
-                            2
-                        } catch (_: SocketTimeoutException) {
-                            1
-                        }
+                        countPostsAfter503(socket, reader, "/api/v1/auth/email-verification/$action")
                     }
                 }
                 val session = AuthSessionClient(createAuthHttpEngine(), source, disk, AuthProtocol.CLOSED_N2) {
@@ -146,6 +136,62 @@ class PlatformHttpEngineTest {
                     worker.shutdownNow()
                 }
             }
+        }
+    }
+
+    @Test fun consumingRecoveryPostsAreNotReplayedWhenProxyReturns503WithImmediateRetry(): Unit = runBlocking {
+        for (action in listOf(PasswordResetOperation.VERIFY, PasswordResetOperation.CONFIRM)) {
+            ServerSocket(0, 1, InetAddress.getByName("127.0.0.1")).use { server ->
+                server.soTimeout = 8_000
+                val source = CatalogSource.Remote("http://127.0.0.1:${server.localPort}/api/v1/", allowDebugHttp = true)
+                val disk = object : SecureTokenStore {
+                    override val apiBaseUrl = source.baseUrl
+                    override suspend fun read() = error("Public recovery must not read the secure session")
+                    override suspend fun write(session: StoredSession) = error("Unexpected session write")
+                    override suspend fun clear() = error("Unexpected session clear")
+                }
+                val worker = Executors.newSingleThreadExecutor()
+                val serving = worker.submit<Int> {
+                    server.accept().use { socket ->
+                        socket.soTimeout = 8_000
+                        countPostsAfter503(socket, socket.getInputStream().bufferedReader(), "/api/v1/${action.path}")
+                    }
+                }
+                val session = AuthSessionClient(createAuthHttpEngine(), source, disk, AuthProtocol.CLOSED_N2) {
+                    Instant.parse("2026-11-10T12:00:00Z")
+                }
+                try {
+                    val client = N2AccountClient(session)
+                    val expires = Instant.parse("2026-11-10T12:05:00Z")
+                    val failure = assertFailsWith<AuthException> {
+                        if (action == PasswordResetOperation.VERIFY) {
+                            client.verifyPasswordReset(EmailActionChallenge(VerificationHarness.challengeId, expires, 60), "01234567")
+                        } else {
+                            client.confirmPasswordReset(PasswordResetGrant("R".repeat(43), expires), "preview password")
+                        }
+                    }
+                    assertEquals(N2HttpAction.RETRY_MANUALLY, assertIs<AuthError.Http>(failure.error).n2Action)
+                    assertEquals(1, serving.get(8, TimeUnit.SECONDS))
+                } finally {
+                    session.close()
+                    server.close()
+                    worker.shutdownNow()
+                }
+            }
+        }
+    }
+
+    private fun countPostsAfter503(socket: Socket, reader: java.io.BufferedReader, path: String): Int {
+        assertTrue(request(reader).startsWith("POST $path "))
+        val problem = """{"type":"about:blank","title":"Unavailable","status":503,"detail":"Retry manually","instance":"$path","requestId":"test","code":"SERVICE_UNAVAILABLE","fieldErrors":[]}"""
+        respond(socket, 503, problem, "Retry-After: 0\r\n", "application/problem+json")
+        socket.soTimeout = 1200
+        return try {
+            request(reader)
+            respond(socket, 204, "")
+            2
+        } catch (_: SocketTimeoutException) {
+            1
         }
     }
 

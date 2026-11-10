@@ -14,6 +14,7 @@ import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.*
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.*
+import io.ktor.http.content.OutgoingContent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
@@ -232,7 +233,7 @@ class AuthSessionClient(
 
     internal suspend fun <T> emailVerification(
         owner: LocalSessionIdentity,
-        proof: EmailVerificationProof?,
+        proof: EmailCodeProof?,
         proofExpiresAt: Instant? = null,
         decode: suspend (HttpResponse) -> T,
     ): T {
@@ -242,9 +243,28 @@ class AuthSessionClient(
             if (proofExpiresAt != null && proofExpiresAt <= now()) throw VerificationChallengeExpired()
             client.post(source.baseUrl + "auth/email-verification/$action") {
                 bearerAuth(session.accessToken)
-                setBody(verificationPostBody(proof))
+                setBody(emailActionPostBody(proof))
             }
         }, alternativeStatus = if (proof == null) 202 else null) { response, _ -> decode(response) }
+    }
+
+    /** Public recovery shares the fixed origin, while session attachment and 401 handling stay separate. */
+    internal suspend fun <T> passwordReset(
+        operation: PasswordResetOperation,
+        body: OutgoingContent,
+        proofExpiresAt: Instant? = null,
+        decode: suspend (HttpResponse) -> T,
+    ): T {
+        check(protocol == AuthProtocol.CLOSED_N2)
+        checkOpen()
+        if (proofExpiresAt != null && proofExpiresAt <= now()) throw RecoveryProofExpired()
+        val response = transport {
+            client.post(source.baseUrl + operation.path) { setBody(body) }
+        }
+        checkOpen()
+        if (response.status.value != operation.status)
+            throw AuthException(response.readN2Failure(source, authenticated = false))
+        return decode(response)
     }
 
     internal suspend fun checkVerification(owner: LocalSessionIdentity): Boolean =

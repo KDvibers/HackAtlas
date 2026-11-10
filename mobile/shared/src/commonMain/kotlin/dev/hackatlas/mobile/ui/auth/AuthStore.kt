@@ -51,6 +51,10 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
     internal fun currentPrivateAccess(): PrivateAccess? =
         client.currentPrivateAccess()?.takeUnless { mutableState.value.busy == AuthOperation.LOGOUT }
 
+    internal fun canRecoverPassword(): Boolean =
+        client.protocol == AuthProtocol.CLOSED_N2 && state.value.canAuthenticate && client.localIdentity.value == null &&
+            (client.state.value == AuthState.SignedOut || client.state.value == AuthState.SignInRequired)
+
     private fun AuthUiState.withView(view: SessionView) =
         copy(session = view.state, localIdentity = view.identity, privateAccess = view.access)
 

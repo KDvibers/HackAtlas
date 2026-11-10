@@ -23,6 +23,86 @@ import kotlin.time.Duration.Companion.seconds
 
 class N2AccountClientTest {
     @Test
+    fun passwordResetUsesPublicPostsAndNeverStoresGrantOrNormalizesPassword() = runTest {
+        val requests = mutableListOf<String>()
+        val password = "  ${"🔐".repeat(129)}  "
+        val h = VerificationHarness(clock = { RecoveryFixtures.now }) { request ->
+            val path = request.url.encodedPath.removePrefix("/api/v1")
+            requests += path
+            assertEquals(HttpMethod.Post, request.method)
+            assertNull(request.headers[HttpHeaders.Authorization])
+            val payload = ContractJson.parseToJsonElement(request.body.toByteArray().decodeToString()).jsonObject
+            when (path) {
+                RecoveryFixtures.request -> {
+                    assertEquals(setOf("email"), payload.keys)
+                    assertEquals("fixture@example.org", payload.getValue("email").jsonPrimitive.content)
+                    respondWith(RecoveryFixtures.challenge)
+                }
+                RecoveryFixtures.verify -> {
+                    assertEquals(setOf("challengeId", "code"), payload.keys)
+                    assertEquals(RecoveryFixtures.challenge.body!!.getValue("challengeId"), payload["challengeId"])
+                    assertEquals("01234567", payload.getValue("code").jsonPrimitive.content)
+                    respondWith(RecoveryFixtures.grant)
+                }
+                RecoveryFixtures.confirm -> {
+                    assertEquals(setOf("resetToken", "newPassword"), payload.keys)
+                    assertEquals(RecoveryFixtures.grant.body!!.getValue("resetToken"), payload["resetToken"])
+                    assertEquals(password, payload.getValue("newPassword").jsonPrimitive.content)
+                    respondWith(N2HttpFixtures.response(path, 204))
+                }
+                else -> error("Unexpected recovery path")
+            }
+        }
+        try {
+            val stored = h.disk.session
+            val challenge = h.client.requestPasswordReset("fixture@example.org")
+            val grant = h.client.verifyPasswordReset(challenge, "01234567")
+            assertFalse(grant.toString().contains(RecoveryFixtures.grant.body!!.getValue("resetToken").jsonPrimitive.content))
+            assertFailsWith<IllegalArgumentException> { h.client.confirmPasswordReset(grant, "a".repeat(11)) }
+            assertFailsWith<IllegalArgumentException> { h.client.confirmPasswordReset(grant, "🔐".repeat(6)) }
+            assertFailsWith<IllegalArgumentException> { h.client.confirmPasswordReset(grant, "a".repeat(12) + '\uD800') }
+            assertFailsWith<IllegalArgumentException> { h.client.confirmPasswordReset(grant, "a".repeat(257)) }
+            h.client.confirmPasswordReset(grant, password)
+            assertSame(stored, h.disk.session)
+            assertNull(h.session.localIdentity.value)
+            assertEquals(listOf(RecoveryFixtures.request, RecoveryFixtures.verify, RecoveryFixtures.confirm), requests)
+        } finally { h.session.close() }
+    }
+
+    @Test
+    fun publicRecovery401DoesNotInvalidateAnotherActiveAccountAndExpiredGrantDoesNotSend() = runTest {
+        var now = RecoveryFixtures.now
+        var publicCalls = 0
+        val h = VerificationHarness(clock = { now }) { request ->
+            when (val path = request.url.encodedPath.removePrefix("/api/v1")) {
+                "/me" -> respondWith(VerificationHarness.pending)
+                RecoveryFixtures.request -> respondWith(RecoveryFixtures.challenge)
+                RecoveryFixtures.verify -> respondWith(RecoveryFixtures.grant)
+                RecoveryFixtures.confirm -> {
+                    publicCalls++
+                    assertNull(request.headers[HttpHeaders.Authorization])
+                    respondWith(N2HttpFixtures.response(path, 204).copy(status = 401))
+                }
+                else -> error("Unexpected recovery path")
+            }
+        }
+        try {
+            h.session.restore()
+            val owner = h.session.localIdentity.value
+            val stored = h.disk.session
+            val challenge = h.client.requestPasswordReset("fixture@example.org")
+            val grant = h.client.verifyPasswordReset(challenge, "01234567")
+            assertEquals(AuthError.UnsupportedServer, assertFailsWith<AuthException> {
+                h.client.confirmPasswordReset(grant, "a".repeat(12))
+            }.error)
+            now = grant.expiresAt
+            assertFailsWith<RecoveryProofExpired> { h.client.confirmPasswordReset(grant, "a".repeat(256)) }
+            assertEquals(1, publicCalls)
+            assertSame(stored, h.disk.session)
+            assertEquals(owner, h.session.localIdentity.value)
+        } finally { h.session.close() }
+    }
+    @Test
     fun verificationUsesCapturedBearerAndPreservesLeadingZeroAndSession() = runTest {
         val requests = mutableListOf<String>()
         val harness = VerificationHarness { request ->
@@ -119,6 +199,18 @@ class N2AccountClientTest {
             harness.session.close()
         }
     }
+}
+
+internal object RecoveryFixtures {
+    const val request = "/auth/password-reset/request"
+    const val verify = "/auth/password-reset/verify"
+    const val confirm = "/auth/password-reset/confirm"
+    val challenge = N2HttpFixtures.response(request, 202)
+    val grant = N2HttpFixtures.response(verify, 200)
+    val now = minOf(
+        Instant.parse(challenge.body!!.getValue("expiresAt").jsonPrimitive.content),
+        Instant.parse(grant.body!!.getValue("expiresAt").jsonPrimitive.content),
+    ) - 120.seconds
 }
 
 internal class VerificationHarness(
