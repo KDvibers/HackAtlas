@@ -23,9 +23,18 @@ import dev.hackatlas.mobile.resources.*
 import dev.hackatlas.mobile.ui.IconAction
 import org.jetbrains.compose.resources.stringResource
 
+enum class PasswordRecoveryLoginNotice { CHANGED, OUTCOME_UNKNOWN }
+
 /** Ephemeral inputs: never saveable, never passed into navigation or process state. */
 @Composable
-fun AuthScreen(store: AuthStore, mode: AuthFormMode, onMode: (AuthFormMode) -> Unit, onBack: () -> Unit) {
+fun AuthScreen(
+    store: AuthStore,
+    mode: AuthFormMode,
+    onMode: (AuthFormMode) -> Unit,
+    onBack: () -> Unit,
+    onRecoverPassword: ((String) -> Unit)? = null,
+    recoveryNotice: PasswordRecoveryLoginNotice? = null,
+) {
     val state by store.state.collectAsState()
     var email by remember(mode, state.formRevision) { mutableStateOf("") }
     var password by remember(mode, state.formRevision) { mutableStateOf("") }
@@ -46,6 +55,12 @@ fun AuthScreen(store: AuthStore, mode: AuthFormMode, onMode: (AuthFormMode) -> U
         PixelHeading(stringResource(if (register) Res.string.auth_register_title else Res.string.auth_login_title), fontSize = 24.sp)
         Text(stringResource(if (register) Res.string.auth_register_body else Res.string.auth_login_body),
             style = MaterialTheme.typography.bodyMedium, color = AtlasColors.TextSecondary)
+        if (!register && recoveryNotice != null) Text(
+            stringResource(if (recoveryNotice == PasswordRecoveryLoginNotice.CHANGED)
+                Res.string.recovery_complete else Res.string.recovery_confirm_unknown),
+            Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            color = AtlasColors.Cyan,
+        )
         AuthFeedback(state)
         if (state.canAuthenticate || submitting) {
             if (register) AuthField(name, { name = it }, stringResource(Res.string.auth_name),
@@ -59,6 +74,7 @@ fun AuthScreen(store: AuthStore, mode: AuthFormMode, onMode: (AuthFormMode) -> U
             val passwordError = state.fields.password?.let {
                 stringResource(when (it) {
                     AuthFieldError.PASSWORD_LONG -> Res.string.auth_password_long
+                    AuthFieldError.PASSWORD_INVALID -> Res.string.auth_password_invalid_characters
                     else -> if (register) Res.string.auth_password_short else Res.string.auth_password_required
                 })
             }
@@ -77,6 +93,22 @@ fun AuthScreen(store: AuthStore, mode: AuthFormMode, onMode: (AuthFormMode) -> U
                 color = AtlasColors.TextMuted, style = MaterialTheme.typography.bodySmall)
             NeonButton(stringResource(if (submitting) Res.string.auth_submitting else if (register) Res.string.auth_register else Res.string.auth_login),
                 submit, Modifier.fillMaxWidth(), enabled = !submitting)
+            if (!register && onRecoverPassword != null) {
+                val resetRequired = (state.error as? AuthError.Http)?.n2Action == N2HttpAction.PASSWORD_RESET_REQUIRED
+                TextButton(
+                    onClick = {
+                        password = ""
+                        showPassword = false
+                        focus.clearFocus()
+                        onRecoverPassword(email)
+                    },
+                    enabled = state.canAuthenticate,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(if (resetRequired) Res.string.recovery_title else Res.string.recovery_forgot),
+                        color = AtlasColors.Cyan)
+                }
+            }
             TextButton(onClick = {
                 password = ""; email = ""; name = ""; showPassword = false
                 store.dismissFeedback(); onMode(if (register) AuthFormMode.LOGIN else AuthFormMode.REGISTER)
@@ -152,7 +184,8 @@ internal fun authErrorText(error: AuthError): String = when (error) {
     is AuthError.Http -> when (error.status) {
         400 -> stringResource(Res.string.auth_validation)
         401 -> stringResource(Res.string.auth_invalid_credentials)
-        403 -> stringResource(Res.string.auth_forbidden)
+        403 -> stringResource(if (error.n2Action == N2HttpAction.PASSWORD_RESET_REQUIRED)
+            Res.string.recovery_required else Res.string.auth_forbidden)
         409 -> stringResource(Res.string.auth_conflict)
         429 -> error.retryAfterSeconds?.let { stringResource(Res.string.auth_rate_limit_seconds, it) }
             ?: stringResource(Res.string.auth_rate_limit)

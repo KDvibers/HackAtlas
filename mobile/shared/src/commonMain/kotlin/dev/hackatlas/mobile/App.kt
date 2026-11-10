@@ -31,6 +31,7 @@ import dev.hackatlas.mobile.data.auth.AuthState
 import dev.hackatlas.mobile.data.auth.LocalSessionIdentity
 import dev.hackatlas.mobile.data.auth.PrivateAccess
 import dev.hackatlas.mobile.data.auth.PrivateTrust
+import dev.hackatlas.mobile.data.auth.PasswordResetOperation
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
@@ -82,6 +83,10 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val identity = authState?.localIdentity
     val verification = app.emailVerification
     val verificationState = verification?.state?.collectAsState()?.value
+    val recovery = app.passwordRecovery
+    val recoveryState = recovery?.state?.collectAsState()?.value
+    val recoveryRoute = route == "recoverPassword"
+    var recoveryLoginNotice by remember { mutableStateOf<PasswordRecoveryLoginNotice?>(null) }
     var verificationOwner by remember { mutableStateOf(verification?.state?.value?.owner) }
     val verificationRoute = route == "verifyEmail"
     val pendingEmail = verification != null && identity != null &&
@@ -112,10 +117,12 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
     val sourceId = ready.saved.scope.documentScope
     val back: () -> Unit = { route = previousRoute.takeIf { it != "detail" && it != "typography" } ?: "home" }
     val closeAuth: () -> Unit = {
+        recoveryLoginNotice = null
         route = if(applicationReturnId != null) "detail" else "profile"
         applicationReturnId = null
     }
     val finishAuth: () -> Unit = {
+        recoveryLoginNotice = null
         val returnId = applicationReturnId
         applicationReturnId = null
         if (returnId == null) {
@@ -138,6 +145,16 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         verification?.close()
         verificationOwner = null
         closeAuth()
+    }
+    fun returnFromRecovery(notice: PasswordRecoveryLoginNotice? = null) {
+        recovery?.close()
+        recoveryLoginNotice = notice
+        route = "login"
+    }
+    val closeRecovery: () -> Unit = {
+        val current = recovery?.state?.value
+        val uncertain = current?.step == RecoveryStep.UNCERTAIN || current?.busy == PasswordResetOperation.CONFIRM
+        returnFromRecovery(PasswordRecoveryLoginNotice.OUTCOME_UNKNOWN.takeIf { uncertain })
     }
     val closeEditor:()->Unit={
         if(editState?.dirty==true && !editState.busy)dialog="discardProfile"
@@ -195,6 +212,13 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             }
         }
     }
+    LaunchedEffect(recoveryRoute, recoveryState?.step, authState?.canAuthenticate) {
+        if (recoveryRoute) {
+            val current = recovery?.state?.value
+            if (current?.step == RecoveryStep.COMPLETE) returnFromRecovery(PasswordRecoveryLoginNotice.CHANGED)
+            else if (current?.open != true || authState?.canAuthenticate != true) closeRecovery()
+        }
+    }
 
     val openEvent: (Hackathon) -> Unit = { event ->
         previousRoute = route; selectedId = event.id; selectedDemo = event.isDemo; openLocalCopy = false
@@ -234,10 +258,11 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         ready.catalog.setQuery(it)
         app.ownerScope.launch { catalogueScroll.scrollToItem(0) }
     }
-    BackHandler(enabled = route == "detail" || route == "typography" || authRoute || editRoute || verificationRoute,
+    BackHandler(enabled = route == "detail" || route == "typography" || authRoute || editRoute || verificationRoute || recoveryRoute,
         onBack = when {
             editRoute -> closeEditor
             verificationRoute -> closeVerification
+            recoveryRoute -> closeRecovery
             authRoute -> closeAuth
             else -> back
         })
@@ -251,6 +276,9 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
         Box(Modifier.weight(1f)) {
             saveableStates.SaveableStateProvider(screenKey) {
                 when (route) {
+                    "recoverPassword" -> if (recovery != null && recoveryState?.open == true &&
+                        authState?.canAuthenticate == true)
+                        PasswordRecoveryScreen(recovery, recoveryState, closeRecovery)
                     "verifyEmail" -> if (verification != null && verificationState != null &&
                         identity != null && verificationState.owner == identity)
                         EmailVerificationScreen(verification, verificationState, closeVerification)
@@ -258,7 +286,21 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                         ready.catalog::retryMetadata,closeEditor)
                     "login", "register" -> if (auth != null) AuthScreen(auth,
                         if (route == "register") AuthFormMode.REGISTER else AuthFormMode.LOGIN,
-                        { route = if (it == AuthFormMode.REGISTER) "register" else "login" }, closeAuth)
+                        {
+                            recoveryLoginNotice = null
+                            route = if (it == AuthFormMode.REGISTER) "register" else "login"
+                        }, closeAuth,
+                        onRecoverPassword = recovery?.let { store ->
+                            { email ->
+                                if (store.open(email)) {
+                                    auth.dismissFeedback()
+                                    recoveryLoginNotice = null
+                                    route = "recoverPassword"
+                                }
+                            }
+                        },
+                        recoveryNotice = recoveryLoginNotice,
+                    )
                     else GuestProfileScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
                         { route = "saved" }, { dialog = "settings" })
                     "detail" -> {
@@ -319,7 +361,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                 }
             }
         }
-        if (route != "detail" && route != "typography" && !authRoute && !editRoute && !verificationRoute)
+        if (route != "detail" && route != "typography" && !authRoute && !editRoute && !verificationRoute && !recoveryRoute)
             AtlasTabBar(route) { route = it }
     }
     val bookmarkFailure = bookmarks.failures.firstOrNull()

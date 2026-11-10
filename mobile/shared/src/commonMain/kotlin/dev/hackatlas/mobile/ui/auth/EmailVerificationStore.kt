@@ -257,7 +257,7 @@ class EmailVerificationStore internal constructor(
     }
 }
 
-private fun secondsLeft(until: Instant?, now: Instant): Int {
+internal fun secondsLeft(until: Instant?, now: Instant): Int {
     if (until == null || until <= now) return 0
     val remaining = until - now
     val seconds = remaining.inWholeSeconds
@@ -265,6 +265,6 @@ private fun secondsLeft(until: Instant?, now: Instant): Int {
     return rounded.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
 }
 
-private fun AuthError.outcomeUnknown(): Boolean =
+internal fun AuthError.outcomeUnknown(): Boolean =
     this == AuthError.Network || this == AuthError.Timeout || this == AuthError.InvalidResponse ||
         this is AuthError.Http && status >= 500

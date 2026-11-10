@@ -25,12 +25,15 @@ internal fun validateProfilePatch(patch: JsonObject) {
 }
 
 /** OpenAPI string lengths are Unicode code points; reject NUL/unpaired surrogates like B2. */
-internal fun profileTextLength(text:String):Int {
-    var index=0;var count=0
-    while(index<text.length) {
-        val char=text[index++]
-        if(char=='\u0000' || char.isLowSurrogate()) return -1
-        if(char.isHighSurrogate() && (index>=text.length || !text[index++].isLowSurrogate()))return -1
+internal fun profileTextLength(text: String): Int = contractTextLength(text)
+
+internal fun contractTextLength(text: String, allowNul: Boolean = false): Int {
+    var index = 0
+    var count = 0
+    while (index < text.length) {
+        val char = text[index++]
+        if ((!allowNul && char == '\u0000') || char.isLowSurrogate()) return -1
+        if (char.isHighSurrogate() && (index >= text.length || !text[index++].isLowSurrogate())) return -1
         count++
     }
     return count

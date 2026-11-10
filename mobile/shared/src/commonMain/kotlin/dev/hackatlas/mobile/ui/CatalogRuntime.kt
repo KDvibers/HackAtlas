@@ -5,6 +5,7 @@ import dev.hackatlas.mobile.data.network.*
 import dev.hackatlas.mobile.data.auth.*
 import dev.hackatlas.mobile.ui.auth.AuthStore
 import dev.hackatlas.mobile.ui.auth.EmailVerificationStore
+import dev.hackatlas.mobile.ui.auth.PasswordRecoveryStore
 import dev.hackatlas.mobile.data.saved.*
 import dev.hackatlas.mobile.ui.saved.AccountSavedStore
 import dev.hackatlas.mobile.ui.profile.ProfileEditStore
@@ -42,8 +43,9 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
             if (accessMode == AccountAccessMode.N2_REQUIRED) AuthProtocol.CLOSED_N2 else AuthProtocol.LEGACY,
             clearPrivateCaches = { clearAccountCopies(requireNotNull(savedCache), requireNotNull(applicationsCache)) }) else null
     private val auth = authClient?.let { AuthStore(it, scope) }
-    private val verification = authClient?.takeIf { it.protocol == AuthProtocol.CLOSED_N2 }
-        ?.let { EmailVerificationStore(N2AccountClient(it), it, scope) }
+    private val n2 = authClient?.takeIf { it.protocol == AuthProtocol.CLOSED_N2 }?.let(::N2AccountClient)
+    private val verification = if (n2 != null && authClient != null) EmailVerificationStore(n2, authClient, scope) else null
+    private val recovery = if (n2 != null && auth != null) PasswordRecoveryStore(n2, auth, scope) else null
     private val profileEditor=if(auth!=null && authClient!=null) ProfileEditStore(auth,authClient,scope) else null
     val state = AppState(source, scope, storageFactory, remoteRepositoryFactory = { remote ->
         val transport = createPlatformHttpEngine().also { engine = it }
@@ -57,20 +59,23 @@ class CatalogRuntime(source: CatalogSource?, storageFactory: (GuestStoreScope) -
         applicationsFactory = if(auth != null && authClient != null && applicationsCache != null)
             { -> ApplicationStore(auth,authClient,applicationsCache,scope,
                 onChanged = auth::refresh) } else null,
-        emailVerification = verification)
+        emailVerification = verification, passwordRecovery = recovery)
 
     fun onForeground() {
         auth?.onForeground()
+        if (n2 != null && authClient?.localIdentity?.value == null) return
         (state.state.value as? BootstrapState.Ready)?.accountSaved?.refresh()
         (state.state.value as? BootstrapState.Ready)?.applications?.refresh()
     }
     fun onBackground() {
         auth?.onBackground()
         verification?.onBackground()
+        recovery?.onBackground()
     }
 
     fun close() {
         verification?.close()
+        recovery?.close()
         scope.cancel()
         authClient?.close()
         client?.close()
