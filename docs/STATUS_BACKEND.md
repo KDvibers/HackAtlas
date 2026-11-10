@@ -313,6 +313,21 @@ git push origin feat/backend-recovery-archive
 Start-Process 'https://github.com/KDvibers/HackAtlas/pull/19/checks'
 ```
 
+## B4 — PostgreSQL Bookworm без gosu, 10 ноября 2026
+
+Локальный кандидат проверен в ветке `chore/b4-postgres-gosu-probe` от `main`
+`19ad561`. [PR #44](https://github.com/KDvibers/HackAtlas/pull/44) с исходным
+разбором открыт, его Backend CI прошёл. Кандидат построен от текущего pinned
+Bookworm, запускается от `999:999`, Go ELF в итоговой файловой системе не найден.
+На одной базе Trivy `CRITICAL` снизились с 4 до 3, `HIGH` с 117 до 92.
+Убрана запись Go `CVE-2025-68121`, находки по Debian совпали.
+
+Прошли 358 Maven-тестов на кандидате, 12 проверок B4 с HTTPS, backup,
+карантином и V6–V9 и перенос логической копии из исходного Bookworm.
+Штатный Trivy получил три отчёта. Правила допуска вернули код `2` из-за
+обязательного Go-инвентаря PostgreSQL. Ветка фиксирует эксперимент.
+[Подробности и критерии будущего включения](research/2026-11-10-postgres-bookworm-nogosu.md).
+
 ## B4 — обновление Caddy до 2.11.9, 10 ноября 2026
 
 Ветка `chore/b4-caddy-security-update` от `origin/main` `1f381a5`.
