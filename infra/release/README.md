@@ -29,6 +29,12 @@ file capability официального бинарника мешает зап�
 по фактическому образу. Java Dockerfile копирует только JAR из `backend/target`;
 исходники, Maven, `.env` и секреты в build context не попадают.
 
+В Java-образе `apt` и `libapt-pkg6.0t64` закреплены на `2.8.4ubuntu0.1`, версии
+с исправлением [CVE-2026-109518](https://ubuntu.com/security/CVE-2026-109518) для
+Ubuntu 24.04. Перед установкой источники APT переводятся на HTTPS. Пакеты
+устанавливаются из репозиториев Ubuntu с обычной проверкой подписей. После
+установки индексы APT удаляются из слоя.
+
 Источники проверки версий:
 [официальный Caddy tag](https://hub.docker.com/v2/repositories/library/caddy/tags/2.11.9-alpine),
 [официальный Temurin tag](https://hub.docker.com/v2/repositories/library/eclipse-temurin/tags/21.0.13_9-jre-noble),
