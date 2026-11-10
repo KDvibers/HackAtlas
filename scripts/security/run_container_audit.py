@@ -15,6 +15,7 @@ import tempfile
 import uuid
 
 from container_policy import SCANNER_IMAGE, SCANNER_VERSION, main as check_policy
+from postgres_no_go import BASE_REFERENCE, PROOF_FILE, produce_proof
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -67,6 +68,8 @@ def main():
     parser.add_argument("--rehearsal-report", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True, help="New evidence directory; never overwritten")
     parser.add_argument("--cache-volume", help="Resume an owned hackatlas-audit-<uuid> cache left by an interrupted run")
+    parser.add_argument("--postgres-without-gosu", action="store_true",
+                        help="Prove that the rehearsed Bookworm image removed only gosu from its filesystem")
     args = parser.parse_args()
     if os.name != "posix":
         raise ValueError("Run on Linux/WSL with the same Docker daemon as the rehearsal")
@@ -83,9 +86,14 @@ def main():
     for name, reference in references.items():
         if reference != project + "-" + name + ":local":
             raise ValueError("Unexpected rehearsed image reference")
-    references["postgres"] = postgres.pop()
-    if rehearsal["images"].get("postgres", {}).get("tag") != references["postgres"]:
+    pinned_postgres = postgres.pop()
+    rehearsed_postgres = rehearsal["images"].get("postgres", {}).get("tag")
+    if args.postgres_without_gosu:
+        if pinned_postgres != BASE_REFERENCE or not re.fullmatch(r"postgres:[a-z0-9][a-z0-9._-]*", rehearsed_postgres or ""):
+            raise ValueError("PostgreSQL no-Go proof requires the pinned Bookworm base and a rehearsed local tag")
+    elif rehearsed_postgres != pinned_postgres:
         raise ValueError("PostgreSQL reference changed since rehearsal; rerun the candidate")
+    references["postgres"] = rehearsed_postgres
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=False)
     cache = args.cache_volume or "hackatlas-audit-" + uuid.uuid4().hex
@@ -125,7 +133,8 @@ def main():
             if inspect["Id"] != rehearsal["images"][name]["id"]:
                 raise ValueError("Image changed since successful rehearsal")
             archive = Path(archives.name) / (name + ".tar")
-            save_scan_archive(reference, archive)
+            prove_postgres = name == "postgres" and args.postgres_without_gosu
+            save_scan_archive(inspect["Id"] if prove_postgres else reference, archive)
             with archive.open("rb") as stream:
                 archive_hash = hashlib.file_digest(stream, "sha256").hexdigest()
             image = {"reference": reference, "inspectedImageId": inspect["Id"],
@@ -149,6 +158,11 @@ def main():
                         "--offline-scan", "--no-progress", "--scanners", "vuln", "--format", "json",
                         "--input", "/input/image.tar"], output=report_path)
             image["reportSha256"] = hashlib.sha256(report_path.read_bytes()).hexdigest()
+            if prove_postgres:
+                image["rehearsedContainerImageId"] = rehearsal["images"][name]["containerImageId"]
+                proof = produce_proof(run, inspect, image, cache, Path(archives.name))
+                (output / PROOF_FILE).write_bytes(proof)
+                image["noGoProofSha256"] = hashlib.sha256(proof).hexdigest()
             manifest["images"][name] = image
             print("Scanned " + name + " " + image["configDigest"], flush=True)
         (output / "audit-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -171,6 +185,6 @@ def main():
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except (OSError, ValueError, RuntimeError, KeyError, TypeError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, RuntimeError, KeyError, TypeError, tarfile.TarError, subprocess.SubprocessError) as error:
         print("Container audit incomplete: " + type(error).__name__ + ": " + str(error), file=sys.stderr)
         sys.exit(2)

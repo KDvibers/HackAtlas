@@ -52,6 +52,35 @@ python scripts/security/run_container_audit.py --rehearsal-report backend/target
 python scripts/security/container_policy.py --evidence backend/target/container-audit
 ```
 
+### Локальный кандидат PostgreSQL без gosu
+
+Для [кандидата из PR #45](https://github.com/KDvibers/HackAtlas/pull/45) сначала
+нужен успешный B4-прогон с локальным тегом `postgres:…` в отдельной копии Compose.
+Обычный release Compose используется как источник закреплённого Bookworm.
+Проверка из основного checkout запускается так:
+
+```bash
+python scripts/security/run_container_audit.py \
+  --rehearsal-report backend/target/b4-pg-nogosu-rehearsal/report.json \
+  --output-dir backend/target/b4-pg-no-go-audit \
+  --postgres-without-gosu
+```
+
+Сканер сохраняет архив по ID образа из репетиции. Из двух временных контейнеров,
+созданных без запуска, он получает инвентари итоговых файловых систем базы и
+кандидата. Сравниваются пути, хеши файлов, права, владельцы и ссылки. У
+кандидата должен быть тот же закреплённый родитель, `USER 999:999` и только
+одно удаление, `/usr/local/bin/gosu`. В исходном инвентаре это единственный
+ELF с признаками Go, в кандидате таких записей нет.
+
+`postgres-no-go.json` сохраняется рядом с отчётами. При повторной проверке
+политика сверяет хеш доказательства, ID образа и контейнера из репетиции,
+config digest, SHA-256 архива и отчёта Trivy и заново сравнивает инвентари.
+Этот путь принимает отсутствие Go-инвентаря только при полном Debian-отчёте
+и корректном доказательстве. Для обычного PostgreSQL Go-инвентарь обязателен.
+Находки Debian продолжают блокировать выпуск. Связь артефактов основана на
+данных локального Docker daemon и хешах, отдельной подписи доказательства нет.
+
 Неполная повторная проверка заменяет прежний readiness-результат на blocked, чтобы устаревший PASS не сохранился после ошибки. Всегда учитывайте exit code и `checkedAt`.
 
 В GitHub Actions добавлен отдельный ручной workflow **External release readiness** (`workflow_dispatch`). Он выполняет Maven verify, OSV, локальный HTTPS/restore, container gate и аудит recovery tool; известные blockers завершают его ошибкой. JSON/log evidence сохраняются на 7 дней, в том числе при blocked. Workflow ничего не разворачивает. Обычный Backend CI проверяет также unit tests политики; его успешный статус не заменяет ручную проверку внешнего выпуска.
