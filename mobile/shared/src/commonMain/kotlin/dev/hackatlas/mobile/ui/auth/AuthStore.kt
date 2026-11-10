@@ -15,24 +15,44 @@ data class AuthUiState(
     val notice: AuthNotice? = null,
     val formRevision: Long = 0,
     val localIdentity: LocalSessionIdentity? = null,
+    val privateAccess: PrivateAccess? = null,
 ) {
     val canAuthenticate get() = busy == null && (session == AuthState.SignedOut || session == AuthState.SignInRequired)
+    val canReadPrivate get() = busy != AuthOperation.LOGOUT && (privateAccess?.canRead ?: (localIdentity != null))
+    val canWritePrivate get() = busy != AuthOperation.LOGOUT && (privateAccess?.canWrite
+        ?: (session is AuthState.Authenticated && localIdentity?.userId == session.user.id && error == null))
     override fun toString() = "AuthUiState(busy=$busy,error=$error,notice=$notice)"
 }
 
 /** Main-thread, process-owned coordinator. Never retains form values or touches guest storage. */
 class AuthStore(private val client: AuthSessionClient, private val scope: CoroutineScope) {
-    private val mutableState = MutableStateFlow(AuthUiState())
+    private val mutableState = MutableStateFlow(AuthUiState(privateAccess = client.view.value.access))
     val state = mutableState.asStateFlow()
     private var started = false
 
     init {
-        scope.launch { combine(client.state, client.localIdentity) { session, identity -> session to identity }.collect { (session, identity) ->
+        scope.launch { client.view.collect { view ->
             val current = mutableState.value
-            if (current.busy != AuthOperation.LOGOUT) mutableState.value = current.copy(
-                session = session, localIdentity = identity)
+            if (current.busy != AuthOperation.LOGOUT) mutableState.value = current.withView(view)
         } }
+        if (client.protocol == AuthProtocol.CLOSED_N2) scope.launch {
+            client.view.map { it.identity }.distinctUntilChanged().collectLatest { identity ->
+                while (identity != null && client.localIdentity.value == identity) {
+                    delay(client.millisUntilExpiry(identity))
+                    try { client.expire(identity) }
+                    catch (failure: AuthException) {
+                        mutableState.value = mutableState.value.copy(error = failure.error)
+                    }
+                }
+            }
+        }
     }
+
+    internal fun currentPrivateAccess(): PrivateAccess? =
+        client.currentPrivateAccess()?.takeUnless { mutableState.value.busy == AuthOperation.LOGOUT }
+
+    private fun AuthUiState.withView(view: SessionView) =
+        copy(session = view.state, localIdentity = view.identity, privateAccess = view.access)
 
     fun start() {
         if (started) return
@@ -63,6 +83,8 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
         perform(if (mode == AuthFormMode.LOGIN) AuthOperation.LOGIN else AuthOperation.REGISTER) {
             if (mode == AuthFormMode.LOGIN) client.login(email.trim(), password)
             else client.register(email.trim(), password, name.trim())
+            if (client.protocol == AuthProtocol.CLOSED_N2 && client.view.value.access?.trust == PrivateTrust.UNKNOWN)
+                client.profile()
         }
         return true
     }
@@ -76,7 +98,7 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
                 LogoutResult.NoLocalSession -> AuthNotice.DEVICE_LOGOUT
                 is LogoutResult.LocalOnly -> AuthNotice.LOCAL_ONLY_LOGOUT
             }
-            mutableState.value = mutableState.value.copy(notice = notice)
+            if (client.localIdentity.value == null) mutableState.value = mutableState.value.copy(notice = notice)
         }
     }
 
@@ -89,6 +111,8 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
         mutableState.value = previous.copy(
             session = if (operation == AuthOperation.LOGOUT) AuthState.NotLoaded else previous.session,
             localIdentity = if (operation == AuthOperation.LOGOUT) null else previous.localIdentity,
+            privateAccess = if (operation == AuthOperation.LOGOUT) previous.privateAccess?.copy(
+                identity = null, trust = PrivateTrust.UNKNOWN) else previous.privateAccess,
             busy = operation, error = null, fields = AuthFormErrors(), notice = null,
         )
         scope.launch {
@@ -99,8 +123,7 @@ class AuthStore(private val client: AuthSessionClient, private val scope: Corout
             } catch (failed: AuthException) {
                 mutableState.value = mutableState.value.copy(error = failed.error)
             } finally {
-                mutableState.value = mutableState.value.copy(session = client.state.value,
-                    localIdentity = client.localIdentity.value, busy = null)
+                mutableState.value = mutableState.value.withView(client.view.value).copy(busy = null)
             }
         }
     }

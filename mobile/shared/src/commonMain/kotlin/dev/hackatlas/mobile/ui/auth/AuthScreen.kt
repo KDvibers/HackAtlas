@@ -148,7 +148,7 @@ private fun authErrorText(error: AuthError): String = when (error) {
     AuthError.Timeout -> stringResource(Res.string.auth_timeout)
     AuthError.Storage -> stringResource(Res.string.auth_storage)
     AuthError.Unauthorized -> stringResource(Res.string.auth_expired)
-    AuthError.InvalidResponse -> stringResource(Res.string.auth_invalid_response)
+    AuthError.InvalidResponse, AuthError.UnsupportedServer -> stringResource(Res.string.auth_invalid_response)
     is AuthError.Http -> when (error.status) {
         400 -> stringResource(Res.string.auth_validation)
         401 -> stringResource(Res.string.auth_invalid_credentials)

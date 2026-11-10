@@ -76,7 +76,10 @@ class AppState(
                 else -> UnavailableCatalog
             }
             val details = DetailStore(repository, ownerScope)
-            val accountSaved = accountSavedFactory?.invoke(saved, repository, details::reset)
+            val accountSaved = accountSavedFactory?.invoke(saved, repository) {
+                if (auth?.state?.value?.privateAccess == null || (details.state.value as? DetailUiState.Content)?.snapshot != null)
+                    details.reset()
+            }
             mutableState.value = BootstrapState.Ready(demo, saved,
                 CatalogStore(repository, ownerScope,
                     initialSort = if (selected == CatalogSource.BundledDemo) CatalogSort.NEWEST else CatalogSort.DEADLINE_ASC,

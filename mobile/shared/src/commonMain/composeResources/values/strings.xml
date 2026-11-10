@@ -239,6 +239,8 @@
     <string name="account_copy_done">Гостевые закладки скопированы. Локальные копии сохранены.</string>
     <string name="account_unverified_profile">Сохранённая сессия</string>
     <string name="account_unverified_body">Профиль пока не подтверждён сервером. Закладки и календарь показывают только копию этого аккаунта.</string>
+    <string name="n2_private_pending">Подтверди почту, чтобы открыть данные аккаунта.</string>
+    <string name="n2_private_unknown">Данные аккаунта откроются после проверки сессии сервером.</string>
     <string name="calendar_subtitle">События и дедлайны из сохранённого</string>
     <string name="calendar_empty">Сохраните первое событие</string>
     <string name="calendar_empty_body">Здесь появятся даты проведения и дедлайны ваших сохранённых хакатонов.</string>

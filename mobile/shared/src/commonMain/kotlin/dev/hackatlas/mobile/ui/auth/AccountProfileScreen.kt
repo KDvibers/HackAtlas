@@ -61,9 +61,11 @@ fun AccountProfileScreen(profile: ProfileDto, state: AuthUiState, snapshots: Lis
                 }
                 Text(stringResource(Res.string.auth_account_stats), color = AtlasColors.TextMuted, style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.fillMaxWidth()) {
-                    ProfileStat(profile.stats.appliedCount, stringResource(Res.string.applied_stat), Modifier.weight(1f))
+                    if (state.privateAccess == null || state.canReadPrivate)
+                        ProfileStat(profile.stats.appliedCount, stringResource(Res.string.applied_stat), Modifier.weight(1f))
                     ProfileStat(profile.stats.interestsCount, stringResource(Res.string.interests_stat), Modifier.weight(1f))
-                    ProfileStat(profile.stats.savedCount, stringResource(Res.string.saved_stat), Modifier.weight(1f))
+                    if (state.privateAccess == null || state.canReadPrivate)
+                        ProfileStat(profile.stats.savedCount, stringResource(Res.string.saved_stat), Modifier.weight(1f))
                 }
                 Text(stringResource(Res.string.profile_motto), color = AtlasColors.Cyan, style = MaterialTheme.typography.labelSmall)
                 if(onEdit!=null) TextButton(onClick=onEdit,enabled=state.busy==null && state.error==null,modifier=Modifier.fillMaxWidth()) {

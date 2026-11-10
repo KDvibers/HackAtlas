@@ -1,0 +1,148 @@
+{
+  "reviewBase": "dec07cc8e015c203aadbbfa5f4473b189b988940",
+  "branch": "chore/mobile-n2-compat-review",
+  "scope": "Documents and compatibility review; no product code/API changes or lifecycle approval",
+  "canonicalVersion": "0.1.1",
+  "candidateVersion": "0.2.0-test.1",
+  "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+  "checks": {
+    "canonicalValidator": "PASS:6 legacy+7 lifecycle fixtures",
+    "contractTransition": {
+      "tests": 13,
+      "failures": 0,
+      "result": "PASS"
+    },
+    "lifecyclePython": {
+      "tests": 11,
+      "failures": 0,
+      "result": "PASS"
+    },
+    "schemaAudit": {
+      "baseCommit": "dec07cc8e015c203aadbbfa5f4473b189b988940",
+      "canonicalVersion": "0.1.1",
+      "candidateVersion": "0.2.0-test.1",
+      "contractSha256": "1117ed0f79e6d428903b1dd5d276436a366e5de893d64078486c2839550bbb52",
+      "matrixOperations": 22,
+      "pendingGuardOperations": 9,
+      "new403ResponseChecks": [
+        {
+          "method": "delete",
+          "path": "/me/applications/{id}",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "delete",
+          "path": "/me/saved/{id}",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "get",
+          "path": "/me/applications",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "get",
+          "path": "/me/saved",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "patch",
+          "path": "/me",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "post",
+          "path": "/auth/login",
+          "status": 403,
+          "code": "PASSWORD_RESET_REQUIRED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "post",
+          "path": "/hackathons/{id}/reports",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "post",
+          "path": "/suggestions",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "put",
+          "path": "/me/applications/{id}",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        },
+        {
+          "method": "put",
+          "path": "/me/saved/{id}",
+          "status": 403,
+          "code": "EMAIL_NOT_VERIFIED",
+          "canonicalAccepts": false,
+          "candidateAccepts": true
+        }
+      ],
+      "canonicalProblemUnchanged": true,
+      "securitySchemeUnchanged": true,
+      "canonicalFileUnchanged": true,
+      "newOperationStatuses": {
+        "/auth/email-verification/confirm": "test-only",
+        "/auth/email-verification/request": "test-only",
+        "/auth/password-reset/confirm": "test-only",
+        "/auth/password-reset/request": "test-only",
+        "/auth/password-reset/verify": "test-only"
+      },
+      "execution": "Schema/source review only; no server, emulator or mail started"
+    },
+    "dtoReplay": {
+      "profileCases": 6,
+      "problemCases": 3,
+      "flagIgnored": true,
+      "result": "PASS",
+      "scope": "Current precompiled unchanged Kotlin DTOs only; not auth/stores/UI or live HTTP",
+      "profileSourceSha256": "31204596aa476eb28bfb30cc7fb9756383673ff2bc3825269af3cbf61a5dbc8a"
+    },
+    "gitleaksFindings": 0,
+    "gitScope": "PASS:only mobile status, review report and verification JSON",
+    "reportLocalLinks": 16
+  },
+  "conclusion": "Canonical legacy0.1.1 preserved; current client cannot be accepted for required N2",
+  "decisionsNotApproved": [
+    "strict canonical0.2",
+    "pending private-cache policy",
+    "required offline cold-start policy",
+    "new lifecycle mobile implementation",
+    "deployment/cutover"
+  ],
+  "limits": [
+    "No Docker/backend/SMTP/device launched",
+    "No new MockEngine auth/store replay; auth/store compatibility assessed from current source",
+    "DTO replay is not lifecycle behavior coverage",
+    "Previous268mobile/10Android M3 checks are legacy evidence, not N2 acceptance"
+  ],
+  "mutations": "Review report, mobile status and this evidence JSON only; no staging, commit, push or merge"
+}

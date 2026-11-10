@@ -22,6 +22,7 @@ data class AccountCacheDocument(
     val version: Int = 1, val apiBaseUrl: String, val userId: String,
     val cachedAt: String? = null, val entries: List<SavedGuestEvent> = emptyList(),
     val imported: Set<String> = emptySet(),
+    val generation: String? = null,
 )
 
 /** Separate private schema; the legacy guest document is never read, rewritten or migrated. */
@@ -29,14 +30,16 @@ class AccountCache(val apiBaseUrl: String, private val storage: AccountCacheStor
     private val mutex = Mutex()
     private val json = Json { encodeDefaults = true }
 
-    suspend fun open(userId: String): AccountCacheDocument = mutex.withLock { guarded {
+    suspend fun open(userId: String, generation: String? = null): AccountCacheDocument = mutex.withLock { guarded {
         require(USER_ID.matches(userId))
-        val text = storage.read() ?: return@guarded AccountCacheDocument(apiBaseUrl = apiBaseUrl, userId = userId)
+        val empty = AccountCacheDocument(apiBaseUrl = apiBaseUrl, userId = userId, generation = generation)
+        val text = storage.read() ?: return@guarded empty
         val doc = json.decodeFromString<AccountCacheDocument>(text)
         validate(doc)
+        if (doc.generation != generation || generation != null && doc.userId != userId) return@guarded empty
         if (doc.userId != userId) {
             withContext(NonCancellable) { storage.clear() }
-            AccountCacheDocument(apiBaseUrl = apiBaseUrl, userId = userId)
+            empty
         } else doc
     } }
 
@@ -44,14 +47,23 @@ class AccountCache(val apiBaseUrl: String, private val storage: AccountCacheStor
         validate(doc)
         if (!current()) return@guarded false
         // A canceled owner must finish its atomic write before cleanup may delete it.
-        withContext(NonCancellable) { storage.write(json.encodeToString(doc)) }
-        current()
+        withContext(NonCancellable) {
+            val previous = if (doc.generation != null) storage.read() else null
+            if (!current()) return@withContext false
+            storage.write(json.encodeToString(doc))
+            val accepted = current()
+            if (!accepted && doc.generation != null) {
+                if (previous == null) storage.clear() else storage.write(previous)
+            }
+            accepted
+        }
     } }
 
     suspend fun clear() = mutex.withLock { guarded { withContext(NonCancellable) { storage.clear() } } }
 
     private fun validate(doc: AccountCacheDocument) {
         require(doc.version == 1 && doc.apiBaseUrl == apiBaseUrl && USER_ID.matches(doc.userId))
+        require(doc.generation == null || USER_ID.matches(doc.generation))
         doc.cachedAt?.let(Instant::parse)
         require(doc.entries.map { it.key }.distinct().size == doc.entries.size)
         doc.entries.forEach { require(USER_ID.matches(it.key.id)); Instant.parse(it.savedAt) }

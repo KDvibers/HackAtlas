@@ -23,9 +23,15 @@ fun AccountSavedStatus(store: AccountSavedStore, state: AccountSavedUiState, gue
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         when(state.mode) {
             SavedMode.CHECKING, SavedMode.CLEARING -> {
-                LinearProgressIndicator(Modifier.fillMaxWidth(), color = AtlasColors.Primary, trackColor = AtlasColors.Border)
-                Text(stringResource(if(state.mode == SavedMode.CLEARING) Res.string.account_clearing else Res.string.account_checking),
-                    color = AtlasColors.TextSecondary, style = MaterialTheme.typography.bodySmall)
+                if (state.mode == SavedMode.CHECKING && state.access?.identity != null) {
+                    Text(stringResource(if (state.access.trust == PrivateTrust.PENDING) Res.string.n2_private_pending
+                        else Res.string.n2_private_unknown), color = AtlasColors.TextSecondary)
+                    TextButton(onClick = store::refresh) { Text(stringResource(Res.string.account_refresh)) }
+                } else {
+                    LinearProgressIndicator(Modifier.fillMaxWidth(), color = AtlasColors.Primary, trackColor = AtlasColors.Border)
+                    Text(stringResource(if(state.mode == SavedMode.CLEARING) Res.string.account_clearing else Res.string.account_checking),
+                        color = AtlasColors.TextSecondary, style = MaterialTheme.typography.bodySmall)
+                }
             }
             SavedMode.BLOCKED -> StatePanel(stringResource(Res.string.account_saved_title), stringResource(Res.string.account_storage_error),
                 stringResource(Res.string.account_retry_storage), store::retryCleanup)
@@ -72,7 +78,8 @@ fun UnverifiedAccountProfile(auth: AuthStore, state: AuthUiState, onLogout: () -
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         PixelHeading(stringResource(Res.string.profile))
         Text(stringResource(Res.string.account_unverified_profile), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(Res.string.account_unverified_body), color = AtlasColors.TextSecondary)
+        Text(stringResource(if (state.privateAccess == null) Res.string.account_unverified_body
+            else Res.string.n2_private_unknown), color = AtlasColors.TextSecondary)
         AuthFeedback(state)
         TextButton(onClick = auth::refresh, enabled = state.busy == null) { Text(stringResource(Res.string.auth_retry_session)) }
         TextButton(onClick = onLogout, enabled = state.busy == null) { Text(stringResource(Res.string.auth_logout_device)) }

@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.data.auth.AuthError
+import dev.hackatlas.mobile.data.auth.PrivateTrust
 import dev.hackatlas.mobile.design.AtlasColors
 import dev.hackatlas.mobile.resources.*
 import dev.hackatlas.mobile.ui.DisplayFormat
@@ -28,6 +29,11 @@ fun ApplicationStatus(id: String, state: ApplicationUiState?, format: DisplayFor
         when {
             bundled -> Text(stringResource(Res.string.application_demo_hint),color = AtlasColors.TextSecondary,fontSize = 12.sp)
             state == null -> Text(stringResource(Res.string.application_unavailable),color = AtlasColors.TextSecondary,fontSize = 12.sp)
+            state.mode == ApplicationMode.CHECKING && state.access?.identity != null -> {
+                Text(stringResource(if (state.access.trust == PrivateTrust.PENDING) Res.string.n2_private_pending
+                    else Res.string.n2_private_unknown), color = AtlasColors.TextSecondary, fontSize = 12.sp)
+                TextButton(onClick = onRefresh) { Text(stringResource(Res.string.application_refresh)) }
+            }
             state.mode == ApplicationMode.CHECKING || state.mode == ApplicationMode.CLEARING ->
                 Text(stringResource(Res.string.application_checking),color = AtlasColors.TextSecondary,fontSize = 12.sp)
             state.mode == ApplicationMode.GUEST -> {
@@ -90,7 +96,7 @@ private fun applicationError(failure: ApplicationFailure): String = when(failure
         AuthError.Timeout -> stringResource(Res.string.auth_timeout)
         AuthError.Storage -> stringResource(Res.string.auth_storage)
         AuthError.Unauthorized -> stringResource(Res.string.auth_expired)
-        AuthError.InvalidResponse -> stringResource(Res.string.auth_invalid_response)
+        AuthError.InvalidResponse, AuthError.UnsupportedServer -> stringResource(Res.string.auth_invalid_response)
         is AuthError.Http -> when(error.status) {
             403 -> stringResource(Res.string.auth_forbidden)
             404 -> stringResource(Res.string.application_not_found)

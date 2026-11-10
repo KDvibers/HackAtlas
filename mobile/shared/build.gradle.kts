@@ -8,6 +8,23 @@ plugins {
     alias(libs.plugins.compose.compiler)
 }
 
+fun kotlinString(value: String): String = buildString {
+    append('"')
+    value.forEach { character ->
+        append(when (character) {
+            '\\' -> "\\\\"
+            '"' -> "\\\""
+            '$' -> "\\$"
+            '\n' -> "\\n"
+            '\r' -> "\\r"
+            '\t' -> "\\t"
+            in '\uD800'..'\uDFFF' -> "\\u${character.code.toString(16).padStart(4, '0')}"
+            else -> character.toString()
+        })
+    }
+    append('"')
+}
+
 val canonicalExamples = rootProject.layout.projectDirectory.dir("../api/examples")
 val generateCanonicalTestFixtures by tasks.registering {
     val inputsTree = fileTree(canonicalExamples) { include("*.json") }
@@ -15,21 +32,6 @@ val generateCanonicalTestFixtures by tasks.registering {
     inputs.files(inputsTree)
     outputs.dir(outputDir)
     doLast {
-        fun kotlinString(value: String): String = buildString {
-            append('"')
-            value.forEach { character ->
-                append(when (character) {
-                    '\\' -> "\\\\"
-                    '"' -> "\\\""
-                    '$' -> "\\$"
-                    '\n' -> "\\n"
-                    '\r' -> "\\r"
-                    '\t' -> "\\t"
-                    else -> character.toString()
-                })
-            }
-            append('"')
-        }
         val entries = inputsTree.files.sortedBy { it.name }.joinToString(",\n") {
             "        ${kotlinString(it.name)} to ${kotlinString(it.readText(Charsets.UTF_8))}"
         }
@@ -43,6 +45,32 @@ val generateCanonicalTestFixtures by tasks.registering {
                 )
             }
         """.trimIndent())
+    }
+}
+
+val n2Examples = rootProject.layout.projectDirectory.dir("test-fixtures/n2")
+val n2FixtureSources = layout.buildDirectory.dir("generated/n2TestFixtures")
+val generateN2TestFixtures by tasks.registering {
+    val captures = listOf("all-responses.json", "delete-password-same-session.json").map(n2Examples::file)
+    inputs.files(captures)
+    outputs.dir(n2FixtureSources)
+    doLast {
+        val entries = captures.joinToString(",\n") { capture ->
+            val file = capture.asFile
+            // The full archive response file exceeds the JVM constant-pool string limit.
+            val chunks = file.readText(Charsets.UTF_8).chunked(8_192).joinToString(",\n", transform = ::kotlinString)
+            "        ${kotlinString(file.name)} to listOf(\n$chunks\n).joinToString(\"\")"
+        }
+        val target = n2FixtureSources.get().file("dev/hackatlas/mobile/data/auth/N2FixtureFiles.kt").asFile
+        target.parentFile.mkdirs()
+        target.writeText("""
+            package dev.hackatlas.mobile.data.auth
+            internal object N2FixtureFiles {
+                val files: Map<String, String> = mapOf(
+            $entries
+                )
+            }
+        """.trimIndent(), Charsets.UTF_8)
     }
 }
 
@@ -78,6 +106,7 @@ kotlin {
         }
         commonTest {
             kotlin.srcDir(generateCanonicalTestFixtures.map { layout.buildDirectory.dir("generated/canonicalTestFixtures").get() })
+            kotlin.srcDir(generateN2TestFixtures.map { n2FixtureSources.get() })
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.test)
