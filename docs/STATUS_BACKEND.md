@@ -1538,3 +1538,54 @@ changed/new docs —0 findings; новых ignore exceptions нет. Diff whites
 requestId при повторе. Друг продолжает Task1 с сохранением Problem.code и scope;
 backend fix без доказанной причины не готовить. Canonical0.1.1, opaque auth,
 runtime/SQL/mobile source и согласованные N2 границы сохранены.
+
+## Серверная приёмка закрытого N2 — 10 ноября 2026
+
+База `origin/main` `1f381a5` включает отчёт диагностики (PR #36) и мобильную
+реализацию HTTP и поколений сессии (PR #35 и #37). Для приёмки создана ветка
+`chore/n2-backend-acceptance`. В [инструкцию стенда](../infra/lifecycle-test/README.md#серверная-приёмка-перед-мобильным-прогоном)
+добавлена последовательность для повторения на свежей БД. Объём PR — инструкция
+и этот отчёт. HTTP-матрица взята из отдельного кандидата `0.2.0-test.1`.
+
+Сборка выполнена на Java 21 в WSL от UID 1000 с временной группой Docker.
+`bash ./mvnw --batch-mode --no-transfer-progress verify` из `backend/` собрал
+JAR и завершился успешно. **47 unit + 311 IT** прошли без ошибок и пропусков.
+В том числе интеграционный тест сверил сохранение `expiresAt` после подтверждения
+почты. SHA-256 JAR `a890e4b983dde184a28ce1d8aa25498dd0d5b7a610945766cb9777f7b1601b30`.
+
+Из корня проекта выполнены `python scripts/validate_contract.py` (OpenAPI 0.1.1 и
+13 fixtures), `python -m unittest discover -s scripts -p test_contract_transition.py`
+(13 тестов) и `python -m unittest discover -s scripts/lifecycle -p 'test_*.py'`
+(15 тестов). После `python scripts/lifecycle/render_test_contract.py` валидатор
+`scripts/lifecycle/validate_http.py` принял 127 свежих N2 HTTP-ответов из Maven.
+`backend/src/test/resources/validate_http_contract.py` принял 593 ответа B1–B3
+по канонической схеме (139 + 348 + 106).
+
+Тот же JAR запущен через `python3 scripts/lifecycle/local.py` (`prepare`, `up`,
+`serve --demo`) с отдельным временным state-dir, реальными системными часами,
+PostgreSQL и Mailpit. Flyway применил V1–V9 к пустой БД. **48 HTTP-проверок**
+прошли на живом процессе. Каталог показал пять DEMO-событий. Pending получил все
+девять `403 EMAIL_NOT_VERIFIED`. После кода из Mailpit исходный Bearer увидел
+`emailVerified=true`. Неверный пароль удаления дал `401 INVALID_CREDENTIALS`,
+после него `/me` с тем же Bearer дал `200`.
+
+Быстрый reset после verification вернул `429 RATE_LIMITED`, `Retry-After: 60`.
+После паузы `request → verify → confirm` прошли без `Authorization`.
+Два прежних Bearer получили `401` на `/me` и обоих личных списках. Новый вход
+с новым паролем вернул те же saved и application mark. Windows localhost увидел
+health, DEMO-каталог и три сообщения Mailpit: два кода и уведомление о смене
+пароля. Первые две попытки выявили неверные ожидания локального проверочного
+скрипта о немедленном reset и количестве писем. В финальном прогоне проверены
+`Retry-After` и все три темы писем на отдельном свежем стенде.
+
+Локальный драйвер и сводка находятся в ignored `backend/target/`:
+`run-n2-backend-acceptance.py` и `n2-backend-acceptance.json`. Сводка содержит
+методы, шаблоны путей, статусы и проверенные коды. Тестовый процесс остановлен,
+одноразовый compose-проект завершён. Прежний стенд и данные не использовались.
+
+Ближайшая передача напарнику — закрытый сценарий подтверждения почты (Task 3),
+затем recovery и debug wiring (Task 4–5). Полная проверка клиента относится к
+[Task 6](superpowers/plans/2026-11-07-mobile-closed-n2.md), где проверяются реальные
+экраны, offline и кеши. Исходное наблюдение PR #32 остаётся `OPEN_NOT_REPRODUCED`.
+Отдельные условия общего выпуска перечислены в [плане](ROADMAP.md#условия-перед-публичным-запуском)
+и [предложении по legacy recovery](superpowers/specs/2026-11-07-legacy-account-recovery-design.md).
