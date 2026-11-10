@@ -1,5 +1,6 @@
 package dev.hackatlas.mobile.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,13 +24,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.design.*
@@ -65,37 +75,40 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
         if (search.text.toString() != next.query) search.setTextAndPlaceCursorAtEnd(next.query)
         submitQuery(next)
     }
-    LazyColumn(Modifier.fillMaxSize(), state = scrollState, contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 6.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        Modifier.fillMaxSize().background(CatalogueColors.Background),
+        state = scrollState,
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
         item(key = "heading") {
-            Box {
-                CircuitDecoration(Modifier.matchParentSize())
-                Column {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            OutlineIcon(AtlasIcon.ChevronRight, Modifier.size(23.dp), AtlasColors.Cyan)
-                            Text(stringResource(Res.string.tech_explore), color = AtlasColors.Cyan, fontSize = 8.sp, lineHeight = 9.sp, letterSpacing = 1.sp)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (bundled) DemoBadge(onDemo)
-                            Text(stringResource(Res.string.tech_ideas), color = AtlasColors.Primary.copy(alpha = .74f), fontSize = 7.sp, lineHeight = 9.sp, letterSpacing = 1.sp)
-                        }
+            Column {
+                CatalogueBrand(bundled, onDemo)
+                Spacer(Modifier.height(7.dp))
+                Text(
+                    stringResource(Res.string.hackathons),
+                    Modifier.semantics { heading() },
+                    color = CatalogueColors.Text,
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp, lineHeight = 41.sp),
+                )
+                Text(
+                    stringResource(Res.string.home_subtitle),
+                    color = CatalogueColors.Muted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Spacer(Modifier.height(16.dp))
+                SearchField(search)
+                Spacer(Modifier.height(6.dp))
+                val labels = listOf(Res.string.all, Res.string.online, Res.string.offline, Res.string.open_registration, Res.string.kazakhstan)
+                val active = listOf(query == CatalogQuery(query = query.query, sort = query.sort, size = query.size),
+                    query.format == EventFormat.ONLINE, query.format == EventFormat.OFFLINE,
+                    query.registrationStatus == RegistrationStatus.OPEN, query.countryCode == "KZ")
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    QuickFilter.entries.forEachIndexed { index, filter ->
+                        CatalogueChip(stringResource(labels[index]), active[index], HeaderChips) { onQuery(query.toggleQuickFilter(filter)) }
                     }
-                    Spacer(Modifier.height(12.dp))
-                    PixelHeading(stringResource(Res.string.hackathons), fontSize = 29.sp)
-                    Spacer(Modifier.height(8.dp))
-                    Text(stringResource(Res.string.home_subtitle), color = AtlasColors.TextSecondary, fontSize = 12.sp)
-                    Spacer(Modifier.height(18.dp))
-                    SearchField(search)
-                    Spacer(Modifier.height(7.dp))
-                    val labels = listOf(Res.string.all, Res.string.online, Res.string.offline, Res.string.open_registration, Res.string.kazakhstan)
-                    val active = listOf(query == CatalogQuery(query = query.query, sort = query.sort, size = query.size),
-                        query.format == EventFormat.ONLINE, query.format == EventFormat.OFFLINE,
-                        query.registrationStatus == RegistrationStatus.OPEN, query.countryCode == "KZ")
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        QuickFilter.entries.forEachIndexed { index, filter ->
-                            CatalogueChip(stringResource(labels[index]), active[index]) { onQuery(query.toggleQuickFilter(filter)) }
-                        }
-                        CatalogueChip(stringResource(Res.string.filters_sort), query.topic != null || query.city != null || query.sort != CatalogSort.DEADLINE_ASC) { filtersOpen = true }
+                    CatalogueChip(stringResource(Res.string.filters_sort), query.topic != null || query.city != null || query.sort != CatalogSort.DEADLINE_ASC, HeaderChips) {
+                        filtersOpen = true
                     }
                 }
             }
@@ -111,7 +124,7 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
             }
         }
         items(state.items, key = { it.savedKey().listKey() }) { event ->
-            HackathonCard(event, event.savedKey() in savedKeys, format, { onOpen(event) }, { onBookmark(event) },
+            CatalogueCard(event, event.savedKey() in savedKeys, format, { onOpen(event) }, { onBookmark(event) },
                 bookmarkEnabled = event.savedKey() !in pendingKeys)
         }
         if (state.loadingMore) item(key = "loading-more") { LoadingPanel() }
@@ -183,22 +196,122 @@ private fun CatalogFiltersSheet(state: CatalogUiState, onQuery: (CatalogQuery) -
     }
 }
 @Composable
-private fun SearchField(state: TextFieldState) {
-    val keyboard = LocalSoftwareKeyboardController.current
-    val label = stringResource(Res.string.search_label)
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(13.dp)).background(AtlasColors.SurfaceRaised).border(1.dp, AtlasColors.Border.copy(alpha = .7f), RoundedCornerShape(13.dp)).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlineIcon(AtlasIcon.Search, Modifier.size(19.dp), AtlasColors.TextSecondary)
-        Spacer(Modifier.width(9.dp))
-        BasicTextField(state, Modifier.weight(1f).padding(vertical = 13.dp).semantics { contentDescription = label }, textStyle = MaterialTheme.typography.bodyMedium.copy(color = AtlasColors.TextPrimary, fontSize = 12.sp), lineLimits = TextFieldLineLimits.SingleLine, inputTransformation = InputTransformation.maxLength(120), cursorBrush = SolidColor(AtlasColors.Primary), keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), onKeyboardAction = { keyboard?.hide() }, decorator = { inner ->
-            Box { if (state.text.isEmpty()) Text(stringResource(Res.string.search_hint), fontSize = 11.sp, color = AtlasColors.TextMuted, maxLines = 1); inner() }
-        })
-        if (state.text.isNotEmpty()) IconAction(AtlasIcon.Close, stringResource(Res.string.close), { state.setTextAndPlaceCursorAtEnd("") }, modifier = Modifier.size(40.dp))
+private fun CatalogueBrand(bundled: Boolean, onDemo: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(
+            Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+        ) {
+            Canvas(Modifier.size(28.dp)) {
+                val x = size.width
+                val y = size.height
+                val strokeWidth = x * .22f
+                val left = x * .16f
+                val right = x * .84f
+                val top = y * .17f
+                val bottom = y * .83f
+                drawLine(CatalogueColors.Lime, Offset(left, top), Offset(left, bottom), strokeWidth, StrokeCap.Round)
+                drawLine(CatalogueColors.Lime, Offset(right, top), Offset(right, bottom), strokeWidth, StrokeCap.Round)
+                val step = Path().apply {
+                    moveTo(left, y * .57f)
+                    lineTo(x * .45f, y * .57f)
+                    lineTo(x * .55f, y * .43f)
+                    lineTo(right, y * .43f)
+                }
+                drawPath(step, CatalogueColors.Lime, style = Stroke(strokeWidth, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+            Text(
+                stringResource(Res.string.app_name), color = CatalogueColors.Text,
+                style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (bundled) {
+            val badgeShape = RoundedCornerShape(24.dp)
+            Box(
+                Modifier.heightIn(min = 48.dp).clip(badgeShape).clickable(role = Role.Button, onClick = onDemo),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    stringResource(Res.string.demo_label),
+                    Modifier.border(1.dp, CatalogueColors.Border, badgeShape).padding(horizontal = 12.dp, vertical = 5.dp),
+                    color = CatalogueColors.Text, style = MaterialTheme.typography.labelMedium,
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun CatalogueChip(text: String, active: Boolean, onClick: () -> Unit) {
-    Box(Modifier.heightIn(min = 48.dp).clickable(role = Role.Checkbox, onClick = onClick).semantics { selected = active }, contentAlignment = Alignment.Center) {
-        Text(text, Modifier.clip(RoundedCornerShape(13.dp)).background(if (active) AtlasColors.Primary else AtlasColors.Surface).border(1.dp, if (active) AtlasColors.Primary else AtlasColors.Border, RoundedCornerShape(13.dp)).padding(horizontal = 13.dp, vertical = 10.dp), fontSize = 11.sp, color = if (active) AtlasColors.Background else AtlasColors.TextPrimary)
+private fun SearchField(state: TextFieldState) {
+    val keyboard = LocalSoftwareKeyboardController.current
+    val label = stringResource(Res.string.search_label)
+    val shape = RoundedCornerShape(22.dp)
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(shape).background(CatalogueColors.Surface)
+            .border(1.dp, CatalogueColors.Border, shape).padding(horizontal = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlineIcon(AtlasIcon.Search, Modifier.size(19.dp), CatalogueColors.Muted)
+        Spacer(Modifier.width(9.dp))
+        BasicTextField(
+            state,
+            Modifier.weight(1f).padding(vertical = 12.dp).semantics { contentDescription = label },
+            textStyle = MaterialTheme.typography.bodySmall.copy(color = CatalogueColors.Text, fontSize = 13.sp),
+            lineLimits = TextFieldLineLimits.SingleLine,
+            inputTransformation = InputTransformation.maxLength(120),
+            cursorBrush = SolidColor(CatalogueColors.Lime),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            onKeyboardAction = { keyboard?.hide() },
+            decorator = { inner ->
+                Box {
+                    if (state.text.isEmpty()) {
+                        Text(
+                            stringResource(Res.string.search_hint),
+                            color = CatalogueColors.Muted, style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    inner()
+                }
+            },
+        )
+        if (state.text.isNotEmpty()) {
+            IconAction(
+                AtlasIcon.Close, stringResource(Res.string.close), { state.setTextAndPlaceCursorAtEnd("") },
+                tint = CatalogueColors.Muted, modifier = Modifier.size(40.dp),
+            )
+        }
+    }
+}
+
+private data class CatalogueChipStyle(
+    val surface: Color,
+    val active: Color,
+    val border: Color,
+    val radius: Dp,
+)
+
+private val HeaderChips = CatalogueChipStyle(CatalogueColors.Surface, CatalogueColors.Lime, CatalogueColors.Border, 24.dp)
+private val SheetChips = CatalogueChipStyle(AtlasColors.Surface, AtlasColors.Primary, AtlasColors.Border, 13.dp)
+
+@Composable
+private fun CatalogueChip(text: String, active: Boolean, style: CatalogueChipStyle = SheetChips, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(style.radius)
+    Box(
+        Modifier.heightIn(min = 48.dp).clickable(role = Role.Checkbox, onClick = onClick).semantics { selected = active },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            Modifier.clip(shape).background(if (active) style.active else style.surface)
+                .border(1.dp, if (active) style.active else style.border, shape)
+                .padding(horizontal = 13.dp, vertical = 10.dp),
+            fontSize = 11.sp, color = if (active) AtlasColors.Background else AtlasColors.TextPrimary,
+        )
     }
 }

@@ -14,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -105,35 +104,6 @@ fun MetaLine(icon: AtlasIcon, text: String, modifier: Modifier = Modifier, color
     Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         OutlineIcon(icon, Modifier.size(15.dp), AtlasColors.Violet)
         Text(text, style = MaterialTheme.typography.bodySmall, color = color, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-    }
-}
-
-@Composable
-fun HackathonCard(event: Hackathon, saved: Boolean, format: DisplayFormat, onOpen: () -> Unit, onBookmark: () -> Unit, bookmarkEnabled: Boolean = true) {
-    val shape = RoundedCornerShape(14.dp)
-    Box(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border, shape)
-        .clickable(role = Role.Button, onClick = onOpen)) {
-        Box(Modifier.matchParentSize()) {
-            CircuitDecoration(Modifier.matchParentSize())
-            ArtworkView(event.artwork, Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(163.dp).padding(top = 7.dp, end = 4.dp, bottom = 3.dp), .83f)
-            Box(Modifier.matchParentSize().background(Brush.horizontalGradient(0f to AtlasColors.Surface, .40f to AtlasColors.Surface.copy(alpha = .91f), .82f to Color.Transparent)))
-        }
-        Column(Modifier.padding(start = 14.dp, top = 11.dp, end = 12.dp, bottom = 12.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            TechLabel("— ${event.topics.firstOrNull()?.label?.uppercase().orEmpty()} —" + if (event.isDemo) " · ${stringResource(Res.string.demo_label)}" else "", Modifier.padding(end = 40.dp))
-            Text(event.title, Modifier.fillMaxWidth(.84f), style = MaterialTheme.typography.titleLarge, color = AtlasColors.TextPrimary, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            MetaLine(AtlasIcon.Calendar, format.range(event), Modifier.fillMaxWidth(.76f))
-            MetaLine(AtlasIcon.Pin, format.location(event), Modifier.fillMaxWidth(.7f))
-            MetaLine(AtlasIcon.Trophy, format.prize(event.prize), Modifier.fillMaxWidth(.7f), AtlasColors.TextPrimary)
-            Text("${stringResource(Res.string.deadline_short)} ${format.date(event.registrationDeadline, false)}", Modifier.fillMaxWidth(.73f), color = AtlasColors.TextMuted, style = MaterialTheme.typography.labelSmall, fontSize = 10.sp)
-        }
-        IconAction(AtlasIcon.Bookmark, stringResource(if (!bookmarkEnabled) Res.string.saving else if (saved) Res.string.unsave_event else Res.string.save_event), onBookmark,
-            if (saved) AtlasColors.Primary else AtlasColors.TextSecondary, Modifier.align(Alignment.TopEnd), enabled = bookmarkEnabled)
-        Text(stringResource(when (event.artwork) {
-            Artwork.FINTECH_CITY -> Res.string.card_fintech_kicker
-            Artwork.GAMEPAD -> Res.string.card_gamedev_kicker
-            Artwork.GREENTECH -> Res.string.card_green_kicker
-            else -> Res.string.card_ai_kicker
-        }), Modifier.align(Alignment.BottomEnd).padding(9.dp).background(AtlasColors.Background.copy(alpha = .6f), RoundedCornerShape(3.dp)).padding(2.dp), color = AtlasColors.Cyan.copy(alpha = .85f), fontSize = 7.sp, lineHeight = 8.sp, letterSpacing = .5.sp)
     }
 }
 
