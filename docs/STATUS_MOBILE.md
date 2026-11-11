@@ -1017,6 +1017,23 @@ iOS compile/link/resources/device; физические Android-телефоны
 - Прогон на Android API 36 использовал отдельный идентификатор приложения через временный `--init-script` и локальный HTTP-стенд. Проверены ошибки пустых полей, показ и скрытие пароля, сообщения при ответах 401 и 409, перенос email в восстановление, переключение форм и возврат к гостю. На 360 dp при масштабе шрифта 1,3 проверены заголовок регистрации и доступ к кнопке с открытой клавиатурой.
 - Снимки Android находятся в `mobile/artifacts/auth-redesign/screenshots/`. Приёмка успешной авторизации на серверном стенде и визуальная проверка iOS остаются следующими шагами.
 
+## Редизайн восстановления пароля — 12 ноября 2026
+
+Ветка `feat/mobile-password-recovery-redesign` от `main` `2f5a46b`.
+
+- `PasswordRecoveryScreen.kt` оформляет запрос кода, ввод кода и установку пароля в стиле входа. Срок действия кода и время на установку пароля показаны рядом с полями. Таймер повторной отправки расположен рядом с кнопкой запроса.
+- `AuthScreen.kt` предоставляет общие компоненты для шапки, панели формы, полей, кнопок и сообщений. Пиксельный заголовок переносится по словам на узком экране. Восстановление использует существующий `PasswordRecoveryStore` и контракт закрытого N2.
+
+Проверки Gradle выполнены из `mobile` с Android Studio JDK и SDK.
+
+```powershell
+.\gradlew.bat --no-daemon --no-parallel --max-workers=2 --console=plain '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process' '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:18774/api/v1/' '-Phackatlas.allowDebugHttp=true' '-Phackatlas.debugAccountMode=N2_REQUIRED' :shared:testDebugUnitTest :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures
+```
+
+- Прошёл 321 тест, lint без замечаний, debug-сборка и проверка release без DEMO. `scripts/validate_contract.py` принял OpenAPI и 13 примеров.
+- На Android API 36 проверены вход в восстановление, запрос кода, таймер повторной отправки, ошибка неверного кода, ввод нового пароля с открытой клавиатурой и возврат ко входу с подтверждением. Прогон выполнен на локальном стенде в отдельной установке N2 Debug. Для устойчивого соединения тестовый APK пересобран с адресом `http://127.0.0.1:18774/api/v1/` и подключён через `adb reverse tcp:18774 tcp:18774`.
+- Снимки трёх шагов находятся в `mobile/artifacts/password-recovery-redesign/screenshots/`. Код и новый пароль проверены при 360 dp и масштабе шрифта 1,3. Приёмка на серверном стенде с почтой и визуальная проверка iOS остаются открытыми. Следующий экран по редизайну — подтверждение email.
+
 ## Пилот редизайна каталога — 10 ноября 2026
 
 Ветка `feat/mobile-catalog-redesign` в отдельном worktree основана на `main` `19ad561` после PR #42. Первый результат для визуального ревью — главная. За основу взят согласованный в чате макет с лаймовым знаком H и карточками в одну колонку.
