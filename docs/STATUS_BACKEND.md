@@ -555,6 +555,23 @@ GitHub после публикации ветки. Канонический Open
 Следующая проверка после публикации ветки — `External release readiness`
 на GitHub с холодной сборкой образов.
 
+## B4 — повторный аудит main и три PostgreSQL CRITICAL, 11 ноября 2026
+
+[External release readiness](https://github.com/KDvibers/HackAtlas/actions/runs/43064745401)
+на `main` `ba262f0` после PR #52. Maven, тесты аудита и 12 проверок
+репетиции, включая HTTPS и восстановление, прошли. В backend-образе
+нет находок APT и нет `CRITICAL`, `HIGH` или `UNKNOWN`.
+Контейнерный аудит принял доказательство отсутствия Go-бинарников в
+точном образе PostgreSQL. Выпуск блокируют PostgreSQL (3 `CRITICAL`,
+108 `HIGH`, 11 `UNKNOWN`), Caddy (2 `HIGH`, 2 `UNKNOWN`) и отдельный аудит
+restic (23 `HIGH`, 2 `UNKNOWN` и неполный инвентарь Go).
+
+[Сравнение образов и пробный перенос](research/2026-11-11-postgres-critical-followup.md)
+показали 3 `CRITICAL` у свежего Bookworm, 1 у Trixie и 0 у Alpine при
+сканировании системных пакетов. Alpine восстановил синтетический backup,
+но изменил порядок сортировки. Следующий шаг — проверить его с полной
+релизной репетицией, включая совместимость запросов, томов и отката.
+
 ## B4.5 — локальный шифрованный архив реализован; эксплуатация заблокирована
 
 [PR #17](https://github.com/KDvibers/HackAtlas/pull/17) слит в main
