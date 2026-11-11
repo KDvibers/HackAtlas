@@ -44,6 +44,7 @@ val generateDebugFixtures = tasks.register<GenerateDebugFixtureAssets>("generate
 
 val debugSource = providers.gradleProperty("hackatlas.debugSource").getOrElse("DEMO")
 val debugApiUrl = providers.gradleProperty("hackatlas.debugApiBaseUrl").getOrElse("")
+val debugAccountMode = providers.gradleProperty("hackatlas.debugAccountMode").getOrElse("LEGACY")
 val releaseApiUrl = providers.gradleProperty("hackatlas.releaseApiBaseUrl").getOrElse("")
 val allowDebugHttp = providers.gradleProperty("hackatlas.allowDebugHttp").getOrElse("false").toBooleanStrictOrNull() == true
 val debugPageSize = providers.gradleProperty("hackatlas.debugPageSize").getOrElse("20").toIntOrNull()
@@ -85,10 +86,11 @@ android {
     buildFeatures { compose = true; buildConfig = true }
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = if (debugAccountMode == "N2_REQUIRED") ".debug.n2" else ".debug"
             versionNameSuffix = "-debug"
             buildConfigField("String", "CATALOG_SOURCE", buildConfigString(debugSource))
             buildConfigField("String", "API_BASE_URL", buildConfigString(debugApiUrl))
+            buildConfigField("String", "ACCOUNT_ACCESS_MODE", buildConfigString(debugAccountMode))
             buildConfigField("boolean", "ALLOW_DEBUG_HTTP", allowDebugHttp.toString())
             buildConfigField("int", "CATALOG_PAGE_SIZE", debugPageSize.toString())
         }
@@ -97,6 +99,7 @@ android {
             isDebuggable = false
             buildConfigField("String", "CATALOG_SOURCE", "\"REMOTE\"")
             buildConfigField("String", "API_BASE_URL", buildConfigString(releaseApiUrl))
+            buildConfigField("String", "ACCOUNT_ACCESS_MODE", "\"LEGACY\"")
             buildConfigField("boolean", "ALLOW_DEBUG_HTTP", "false")
             buildConfigField("int", "CATALOG_PAGE_SIZE", "20")
         }

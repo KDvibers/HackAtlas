@@ -96,6 +96,45 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme HackAtlas \
 
 Swift — минимальная оболочка `ComposeUIViewController`, экраны остаются общими. Debug-only Xcode phase копирует canonical fixtures в app bundle; Release выбирает REMOTE и не копирует JSON. На Windows эти iOS команды не выполнялись. Проверьте ресурсные пути, Swift bridge и запуск на Mac до утверждения iOS-готовности.
 
+## Закрытый N2 Debug
+
+Обычные Android Debug и iOS `HackAtlas` сохраняют legacy. Закрытая сборка
+использует `dev.hackatlas.mobile.debug.n2` на обеих платформах. Её гостевые
+закладки, токен и обе частные копии находятся в отдельном контейнере.
+Для N2 нужен явно заданный REMOTE с адресом `/api/v1/`. Если конфигурация
+некорректна, приложение показывает ошибку настройки каталога.
+
+Android со стендом из [инструкции backend](../infra/lifecycle-test/WINDOWS_ANDROID.md), из `mobile/`:
+
+```powershell
+.\gradlew.bat :androidApp:assembleDebug '-Phackatlas.debugSource=REMOTE' `
+  '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:8081/api/v1/' `
+  '-Phackatlas.allowDebugHttp=true' '-Phackatlas.debugAccountMode=N2_REQUIRED'
+```
+
+Сборка лежит в `androidApp/build/outputs/apk/debug/androidApp-debug.apk`.
+Скопируйте её под отдельным именем перед следующей сборкой `assembleDebug`,
+которая использует тот же выходной путь. Для HTTPS уберите `allowDebugHttp`.
+Android Release читает только свой HTTPS URL и использует legacy даже при
+передаче всех N2 debug-флагов.
+
+iOS на Mac, из `mobile/`, с доступным HTTPS-адресом закрытого стенда:
+
+```sh
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme HackAtlasN2 \
+  -configuration Debug-N2 -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO \
+  HACKATLAS_ACCOUNT_MODE=N2_REQUIRED \
+  HACKATLAS_API_BASE_URL=https://YOUR_N2_HOST/api/v1/ build
+```
+
+`Debug-N2` выбирает REMOTE и debug-фреймворк Kotlin. В Xcode укажите те же
+значения в Build Settings конфигурации `Debug-N2`. Для `HackAtlas` Debug
+и для Release Swift использует legacy. Для iOS требуется HTTPS с доверенным
+сертификатом. На Mac ещё нужно собрать и запустить обе схемы, проверить
+возврат из фона, повторный запуск, изоляцию Keychain и обеих частных копий,
+а также сборку Release с переданным N2-флагом.
+
 ## M2 Task 4: подключение источника
 
 `CatalogRuntime` владеет process scope, одним AppState, клиентом и engine. Android использует OkHttp, iOS — Darwin той же версии Ktor 3.3.3. Поворот/пересоздание host не создаёт второго владельца файла. Закрытие процесса освобождает runtime; сохранение не привязано к жизненному циклу composable.

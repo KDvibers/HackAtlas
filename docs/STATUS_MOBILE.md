@@ -1,5 +1,25 @@
 # MOBILE: M0 / M1 и независимая часть M2
 
+## N2. Задача 5 — закрытые debug-сборки
+
+Ветка `feat/mobile-n2-debug-hosts` основана на `main` (`799bcd1`). Android
+включает N2 через `hackatlas.debugAccountMode=N2_REQUIRED`, iOS использует
+схему `HackAtlasN2` и конфигурацию `Debug-N2`. Идентификатор закрытой сборки
+на обеих платформах — `dev.hackatlas.mobile.debug.n2`. Для N2 нужен валидный
+REMOTE URL. Обычный Debug использует legacy, и Release остаётся в legacy
+даже при передаче N2-флага.
+
+321 Android unit-тест прошёл, включая 4 новых. Android lint, debug, release
+с переданными N2-флагами и валидатор API 0.1.1 прошли. На эмуляторе API 36
+проверены обычный DEMO, legacy REMOTE, экран входа в закрытой сборке,
+ошибочный URL и разные песочницы двух установок.
+[Инструкция сборки](../mobile/README.md#закрытый-n2-debug) и
+[отчёт проверки](../mobile/artifacts/n2-debug-hosts-task5/REVIEW.md).
+
+На Mac остаются сборка и запуск обеих схем, проверка Keychain, lifecycle,
+обеих частных копий и Release с переданным N2-флагом. Следующий этап —
+Android-приёмка на стенде API 36 и Mailpit у бэкендчика в задаче 6.
+
 ## N2. Задача 4 — восстановление пароля
 
 Ветка `feat/mobile-n2-password-recovery` основана на `main` после PR #42.
