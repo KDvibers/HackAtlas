@@ -3,6 +3,7 @@
 <plist version="1.0"><dict>
     <key>HackAtlasCatalogSource</key><string>$(HACKATLAS_SOURCE)</string>
     <key>HackAtlasApiBaseUrl</key><string>$(HACKATLAS_API_BASE_URL)</string>
+    <key>HackAtlasAccountMode</key><string>$(HACKATLAS_ACCOUNT_MODE)</string>
     <key>CFBundleDevelopmentRegion</key><string>ru</string>
     <key>CFBundleDisplayName</key><string>HackAtlas</string>
     <key>CFBundleExecutable</key><string>$(EXECUTABLE_NAME)</string>
