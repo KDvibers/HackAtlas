@@ -32,7 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 RELEASE = ROOT / "infra/release"
 sys.path.insert(0, str(RELEASE / "ops"))
 from restore_review import approval_sql
-from restic_tool import verify_binary
+from restic_tool import BINARY_SHA256, DEFAULT_BINARY, verify_binary
 sys.path.insert(0, str(ROOT / "scripts/security"))
 from postgres_no_go import ALPINE_BASE_REFERENCE
 from recovery_archive_checks import RecoveryArchiveChecks
@@ -787,8 +787,9 @@ def main():
     require(args.timeout >= 30, "Readiness timeout must be at least 30 seconds")
     for executable in ("docker", "java", "javac"):
         require(shutil.which(executable), executable + " is required")
-    verify_binary(ROOT / 'backend/target/restic-0.19.1')
+    verify_binary(ROOT / DEFAULT_BINARY)
     rehearsal = Rehearsal(args.jar.resolve(strict=True), args.output_dir.resolve(), args.timeout)
+    rehearsal.report["resticBinarySha256"] = BINARY_SHA256
     started = time.monotonic()
     try:
         rehearsal.setup()

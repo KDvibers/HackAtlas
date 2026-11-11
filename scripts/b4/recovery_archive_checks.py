@@ -6,6 +6,8 @@ from pathlib import Path
 import secrets
 import sys
 
+from restic_tool import DEFAULT_BINARY
+
 ROOT = Path(__file__).resolve().parents[2]
 OPS = ROOT / 'infra/release/ops'
 
@@ -19,7 +21,7 @@ class RecoveryArchiveChecks:
         self.password.chmod(0o600)
         rehearsal.redactions.append(self.password.read_text().strip())
         self.command = [sys.executable, str(OPS / 'recovery_archive.py'), '--restic',
-                        str(ROOT / 'backend/target/restic-0.19.1'), '--repository',
+                        str(ROOT / DEFAULT_BINARY), '--repository',
                         str(rehearsal.temp / 'restic-repository'), '--password-file', str(self.password)]
         self.source = ['--source-project', rehearsal.project, '--source-database', 'hackatlas']
 

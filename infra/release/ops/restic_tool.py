@@ -1,6 +1,5 @@
-"""Official restic 0.19.1 Linux amd64 pin; no PATH lookup or automatic upgrades."""
+"""Pin the verified rebuild of restic 0.19.1 for Linux amd64."""
 
-import bz2
 import hashlib
 import os
 from pathlib import Path
@@ -10,17 +9,15 @@ import stat
 from restore_review import require
 
 VERSION = '0.19.1'
-ASSET = 'restic_0.19.1_linux_amd64.bz2'
-URL = 'https://github.com/restic/restic/releases/download/v0.19.1/' + ASSET
-ARCHIVE_SHA256 = 'f415415624dcc452f2a02b8c33641791a8c6d6d3b65bbb3543fcf9a25151585c'
-BINARY_SHA256 = '20d4142678d0d95ec11a4759def1b73fd9190abc9ca19e4b62d067c0b387e639'
+GO_VERSION = '1.27.4'
+DEFAULT_BINARY = Path('backend/target/restic-0.19.1-rebuilt')
+BINARY_SIZE = 42897568
+BINARY_SHA256 = 'bb5ed103331524cf8a9f2a735456f250a5373be1635e7fcc5ac5c77125253ce6'
 
 
-def verify_download(raw):
-    require(hashlib.sha256(raw).hexdigest() == ARCHIVE_SHA256, 'Restic download checksum mismatch.')
-    binary = bz2.decompress(raw)
-    require(hashlib.sha256(binary).hexdigest() == BINARY_SHA256, 'Restic binary checksum mismatch.')
-    return binary
+def verify_build(binary):
+    require(len(binary) == BINARY_SIZE and hashlib.sha256(binary).hexdigest() == BINARY_SHA256,
+            'Restic build checksum mismatch.')
 
 
 def verify_binary(value):
@@ -30,7 +27,7 @@ def verify_binary(value):
     descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     with os.fdopen(descriptor, 'rb') as source:
         attributes = os.fstat(source.fileno())
-        require(stat.S_ISREG(attributes.st_mode) and attributes.st_size == 30941346,
+        require(stat.S_ISREG(attributes.st_mode) and attributes.st_size == BINARY_SIZE,
                 'Unexpected restic binary file.')
         require(hashlib.file_digest(source, 'sha256').hexdigest() == BINARY_SHA256,
                 'Restic binary does not match the approved pin.')

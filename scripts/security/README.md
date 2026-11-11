@@ -86,22 +86,21 @@ config digest, SHA-256 архива и отчёта Trivy и заново сра
 
 ## Операторский инструмент B4.5
 
-`audit_recovery_tool.py` проверяет закреплённый restic binary, а не исходники Java
-и не контейнеры приложения. Использует тот же pinned Trivy, `rootfs` для Go binary,
-свежую advisory DB, read-only input, offline scan без Docker socket и отдельный
-owned cache с проверяемой очисткой. `filesystem` scan без Go inventory не считается
-успешной проверкой. Версии main module/stdlib и findings должны присутствовать в
-достаточном inventory; unversioned packages не получают молчаливого исключения.
+`audit_recovery_tool.py` проверяет SHA-256 установленной пересборки restic.
+Закреплённый Trivy сканирует бинарник в режиме `rootfs` с input только для
+чтения, без сети и Docker socket. Перед проверкой загружается свежая база
+уязвимостей. Политика требует полный инвентарь и версии `v0.19.1` для
+модуля restic и `v1.27.4` для Go stdlib.
 
 ```bash
 python scripts/security/audit_recovery_tool.py \
-  --restic backend/target/restic-0.19.1 \
+  --restic backend/target/restic-0.19.1-rebuilt \
   --output-dir backend/target/recovery-tool-audit-unique
 ```
 
-Exit 0 — dependency gate, 1 — findings/inventory gap, 2 — незавершённая процедура.
-`publicReleaseReady` всегда false: этот audit не разрешает deployment. Новый output
-directory обязателен, старое evidence не перезаписывается. Restic 0.19.1 сейчас
-заблокирован для реальных данных: [фактический отчёт](../../docs/research/2026-10-31-recovery-tool-security.md).
-Manual workflow запускает этот audit и при провале предыдущего container gate;
-только package evidence попадает в artifacts. Private snapshots/ключи не публикуются.
+Код 0 означает, что аудит зависимостей прошёл. Код 1 означает
+блокирующие находки или расхождение инвентаря, код 2 — незавершённую
+проверку. Для каждого запуска нужен новый каталог отчёта. Ручной
+workflow проверяет тот же бинарник, который использовался в репетиции,
+даже при ошибке контейнерного аудита. В артефакты входят отчёты и
+сводки пакетов. Допуск к staging рассматривается отдельно.

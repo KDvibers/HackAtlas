@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'infra/release/ops'))
 from recovery_bundle import stage_bundle, validate_bundle
 from recovery_archive import Archive
-from restic_tool import verify_download
+from restic_tool import DEFAULT_BINARY
 
 
 class PrivateFixtures:
@@ -163,15 +163,11 @@ class RecoveryBundleTests(PrivateFixtures, unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validate()
 
-    def test_untrusted_download_refused(self):
-        with self.assertRaises(ValueError):
-            verify_download(b'not the official compressed binary')
-
 
 class ResticArchiveTests(PrivateFixtures, unittest.TestCase):
     def setUp(self):
         super().setUp()
-        self.binary = ROOT / 'backend/target/restic-0.19.1'
+        self.binary = ROOT / DEFAULT_BINARY
         self.repo = self.root / 'repository'
         self.password = self.root / 'archive-password'
         self.password.write_text('synthetic-archive-key-' + os.urandom(24).hex() + '\n')
