@@ -3,6 +3,8 @@
 import unittest
 from pathlib import Path
 import tempfile
+from subprocess import CompletedProcess
+from unittest.mock import patch
 
 import run_rehearsal
 from run_rehearsal import Rehearsal, RehearsalFailure, fingerprint, sql_value, validate_bindings, validate_owned
@@ -68,6 +70,34 @@ class RehearsalSafetyTests(unittest.TestCase):
         self.assertEqual(sql_value("x'); DROP TABLE users; --"), "'x''); DROP TABLE users; --'")
         self.assertEqual(sql_value(None), "NULL")
         self.assertEqual(sql_value(True), "true")
+
+    def test_failed_build_records_both_redacted_streams(self):
+        rehearsal = object.__new__(Rehearsal)
+        rehearsal.env = {}
+        rehearsal.redactions = ["disposable-secret"]
+        failure = CompletedProcess(["docker"], 1, "APT failed resolving disposable-secret", "exit 100")
+        with tempfile.TemporaryDirectory() as temporary:
+            rehearsal.output = Path(temporary)
+            with patch("run_rehearsal.subprocess.run", return_value=failure):
+                with self.assertRaises(RehearsalFailure):
+                    rehearsal.run("Build application", ["docker"], log_stdout_on_failure=True)
+            logged = (rehearsal.output / "commands.log").read_text(encoding="utf-8")
+            self.assertIn("APT failed resolving [REDACTED]", logged)
+            self.assertIn("exit 100", logged)
+            self.assertNotIn("disposable-secret", logged)
+
+    def test_other_failed_commands_keep_stdout_out_of_the_artifact(self):
+        rehearsal = object.__new__(Rehearsal)
+        rehearsal.env = {}
+        rehearsal.redactions = []
+        failure = CompletedProcess(["docker"], 1, "private query output", "command failed")
+        with tempfile.TemporaryDirectory() as temporary:
+            rehearsal.output = Path(temporary)
+            with patch("run_rehearsal.subprocess.run", return_value=failure):
+                rehearsal.run("Run query", ["docker"], allow_failure=True)
+            logged = (rehearsal.output / "commands.log").read_text(encoding="utf-8")
+            self.assertNotIn("private query output", logged)
+            self.assertIn("command failed", logged)
 
     def test_failure_log_redaction_handles_overlapping_credentials(self):
         rehearsal = object.__new__(Rehearsal)
