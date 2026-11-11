@@ -352,7 +352,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
                     "saved" -> SavedScreen(snapshots, format, openSnapshot, { changeBookmark(it.detail.hackathon, true) },
                         { route = "home" }, { dialog = "about" }, bundled, accountMode = accountMode,
                         showEmpty = !accountMode || (cacheVisible && savedState?.cachedAt != null && !savedState.syncing),
-                        removeEnabled = canWrite, statusContent = savedStatus)
+                        removeEnabled = canWrite, pendingKeys = pendingKeys, statusContent = savedStatus)
                     "calendar" -> CalendarScreen(snapshots, format, openSnapshot, { route = "home" }, savedStatus)
                     "typography" -> TypographyScreen(back)
                     else -> CatalogueScreen(catalog, savedKeys, pendingKeys, format, onQuery, catalogueScroll,

@@ -125,7 +125,7 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
         }
         items(state.items, key = { it.savedKey().listKey() }) { event ->
             CatalogueCard(event, event.savedKey() in savedKeys, format, { onOpen(event) }, { onBookmark(event) },
-                bookmarkEnabled = event.savedKey() !in pendingKeys)
+                bookmarkPending = event.savedKey() in pendingKeys)
         }
         if (state.loadingMore) item(key = "loading-more") { LoadingPanel() }
         else if (state.appendError != null) item(key = "append-error") {
