@@ -19,7 +19,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -108,24 +107,60 @@ fun MetaLine(icon: AtlasIcon, text: String, modifier: Modifier = Modifier, color
 }
 
 @Composable
-fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Unit, onRemove: () -> Unit, showDemoLabel: Boolean = true, removeEnabled: Boolean = true) {
-    val shape = RoundedCornerShape(11.dp)
-    Box(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border.copy(alpha = .65f), shape).clickable(role = Role.Button, onClick = onOpen)) {
-        ArtworkView(event.artwork, Modifier.align(Alignment.CenterEnd).width(105.dp).height(75.dp).padding(end = 28.dp), .66f)
-        Row(Modifier.fillMaxWidth().padding(start = 11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f).padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                if (showDemoLabel && event.isDemo) Text(stringResource(Res.string.demo_label), color = AtlasColors.Primary, fontSize = 9.sp)
-                Text(event.title, Modifier.fillMaxWidth(.84f), style = MaterialTheme.typography.titleMedium, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
-                Text("${format.range(event)} · ${format.location(event)}", Modifier.fillMaxWidth(.82f), color = AtlasColors.TextSecondary, fontSize = 10.sp, lineHeight = 14.sp)
-            }
-            IconAction(AtlasIcon.Bookmark, stringResource(Res.string.unsave_event), onRemove, AtlasColors.Primary, enabled = removeEnabled)
+fun HackathonMiniCard(
+    event: Hackathon,
+    format: DisplayFormat,
+    onOpen: () -> Unit,
+    onRemove: () -> Unit,
+    showDemoLabel: Boolean = true,
+    removeEnabled: Boolean = true,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val colors = eventCardColors(event.artwork)
+    Row(
+        Modifier.fillMaxWidth().clip(shape).background(CatalogueColors.Surface)
+            .border(1.dp, CatalogueColors.Border.copy(alpha = .65f), shape)
+            .clickable(role = Role.Button, onClick = onOpen).padding(start = 10.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(50.dp).background(colors.surface, RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            EventArtwork(event.artwork, colors.accent, Modifier.size(width = 38.dp, height = 31.dp))
         }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (showDemoLabel && event.isDemo) {
+                Text(
+                    stringResource(Res.string.demo_label), color = CatalogueColors.Turquoise,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+            Text(
+                event.title, color = CatalogueColors.Text, style = MaterialTheme.typography.titleSmall,
+                maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                format.range(event) + " · " + format.location(event),
+                color = CatalogueColors.Muted, style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        IconAction(
+            AtlasIcon.Bookmark, stringResource(Res.string.unsave_event), onRemove,
+            tint = CatalogueColors.Lime, enabled = removeEnabled,
+        )
     }
 }
 
 @Composable
 fun InterestChip(label: String) {
-    Text(label, Modifier.border(1.dp, AtlasColors.Border, RoundedCornerShape(20.dp)).background(AtlasColors.Primary.copy(alpha = .055f), RoundedCornerShape(20.dp)).padding(horizontal = 13.dp, vertical = 7.dp), fontSize = 12.sp, lineHeight = 17.sp, color = AtlasColors.TextPrimary)
+    val shape = RoundedCornerShape(20.dp)
+    Text(
+        label, Modifier.background(CatalogueColors.Surface, shape).border(1.dp, CatalogueColors.Border, shape)
+            .padding(horizontal = 13.dp, vertical = 7.dp),
+        color = CatalogueColors.Text, style = MaterialTheme.typography.labelMedium,
+    )
 }
 
 @Composable
