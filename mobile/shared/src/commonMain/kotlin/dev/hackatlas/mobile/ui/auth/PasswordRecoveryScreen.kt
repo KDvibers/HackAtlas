@@ -1,78 +1,108 @@
 package dev.hackatlas.mobile.ui.auth
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.data.auth.AuthError
 import dev.hackatlas.mobile.data.auth.N2HttpAction
 import dev.hackatlas.mobile.data.auth.contractTextLength
-import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.resources.*
-import dev.hackatlas.mobile.ui.IconAction
+import dev.hackatlas.mobile.ui.CatalogueColors
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun PasswordRecoveryScreen(store: PasswordRecoveryStore, state: PasswordRecoveryState, onLogin: () -> Unit) {
     val focus = LocalFocusManager.current
     val busy = state.busy != null
-    val request = { if (state.canRequest) { focus.clearFocus(); store.requestCode() } }
-    val verify = { if (state.canVerify) { focus.clearFocus(); store.verifyCode() } }
-    val confirm = { if (state.canReset) { focus.clearFocus(); store.resetPassword() } }
+    val request = {
+        if (state.canRequest) {
+            focus.clearFocus()
+            store.requestCode()
+        }
+    }
+    val verify = {
+        if (state.canVerify) {
+            focus.clearFocus()
+            store.verifyCode()
+        }
+    }
+    val confirm = {
+        if (state.canReset) {
+            focus.clearFocus()
+            store.resetPassword()
+        }
+    }
+    val restart = {
+        focus.clearFocus()
+        store.restart()
+    }
+    val close = {
+        focus.clearFocus()
+        onLogin()
+    }
+    val fieldColors = authFormFieldColors()
+    val resendHint = state.resendSeconds.takeIf { it > 0 }?.let {
+        stringResource(Res.string.verification_resend_in, it)
+    }
+    val retryHint = state.retrySeconds.takeIf { it > 0 }?.let {
+        stringResource(Res.string.auth_rate_limit_seconds, it)
+    }
+    val hintStyle = MaterialTheme.typography.bodySmall
 
-    Column(
-        Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        IconAction(AtlasIcon.Back, stringResource(Res.string.back), onLogin)
-        TechLabel(stringResource(Res.string.auth_kicker))
-        PixelHeading(stringResource(Res.string.recovery_title), fontSize = 24.sp)
+    AuthScreenLayout(stringResource(Res.string.recovery_title), close) {
         RecoveryFeedback(state)
 
         when (state.step) {
-            RecoveryStep.EMAIL -> {
+            RecoveryStep.EMAIL -> AuthFormPanel {
                 RecoveryText(stringResource(Res.string.recovery_email_body))
                 val emailError = if (state.email.isNotEmpty() && !isPlausibleAuthEmail(state.email))
                     stringResource(Res.string.auth_email_invalid) else null
                 AuthField(
                     state.email, store::changeEmail, stringResource(Res.string.auth_email), emailError, !busy,
                     KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done, autoCorrectEnabled = false),
-                    KeyboardActions(onDone = { request() }),
+                    KeyboardActions(onDone = { request() }), colors = fieldColors,
                 )
-                NeonButton(stringResource(Res.string.verification_request), request, Modifier.fillMaxWidth(), state.canRequest)
+                if (resendHint != null) RecoveryText(resendHint, hintStyle)
+                AuthPrimaryAction(stringResource(Res.string.verification_request), request, state.canRequest)
             }
             RecoveryStep.CODE -> {
-                RecoveryText(stringResource(Res.string.recovery_code_body))
-                AuthField(
-                    state.code, store::changeCode, stringResource(Res.string.verification_code), null, !busy,
-                    KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
-                    KeyboardActions(onDone = { verify() }), visual = PasswordVisualTransformation(),
-                )
-                RecoveryText(stringResource(Res.string.verification_ttl, state.proofSeconds))
-                NeonButton(stringResource(Res.string.recovery_verify_code), verify, Modifier.fillMaxWidth(), state.canVerify)
-                TextButton(onClick = request, enabled = state.canRequest, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(Res.string.verification_resend))
+                AuthFormPanel {
+                    RecoveryText(stringResource(Res.string.recovery_code_body))
+                    AuthField(
+                        state.code, store::changeCode, stringResource(Res.string.verification_code), null, !busy,
+                        KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
+                        KeyboardActions(onDone = { verify() }), visual = PasswordVisualTransformation(),
+                        colors = fieldColors,
+                    )
+                    RecoveryText(stringResource(Res.string.verification_ttl, state.proofSeconds), hintStyle)
+                    if (retryHint != null) RecoveryText(retryHint, hintStyle)
+                    AuthPrimaryAction(stringResource(Res.string.recovery_verify_code), verify, state.canVerify)
                 }
-                TextButton(onClick = store::restart, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(Res.string.recovery_change_email))
+                Column {
+                    RecoveryLink(stringResource(Res.string.verification_resend), request, state.canRequest)
+                    if (resendHint != null) {
+                        Text(
+                            resendHint, Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                            color = CatalogueColors.Muted, style = hintStyle, textAlign = TextAlign.Center,
+                        )
+                    }
+                    RecoveryLink(stringResource(Res.string.recovery_change_email), restart, !busy)
                 }
             }
-            RecoveryStep.PASSWORD -> {
+            RecoveryStep.PASSWORD -> AuthFormPanel {
                 val length = contractTextLength(state.password, allowNul = true)
                 val passwordError = when {
                     length < 0 -> stringResource(Res.string.auth_password_invalid_characters)
@@ -83,25 +113,25 @@ internal fun PasswordRecoveryScreen(store: PasswordRecoveryStore, state: Passwor
                     state.password, store::changePassword, stringResource(Res.string.recovery_new_password), passwordError, !busy,
                     KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, autoCorrectEnabled = false),
                     KeyboardActions(onDone = { confirm() }), visual = PasswordVisualTransformation(),
+                    colors = fieldColors,
                 )
-                RecoveryText(stringResource(Res.string.auth_password_hint))
-                RecoveryText(stringResource(Res.string.recovery_grant_ttl, state.proofSeconds))
-                NeonButton(stringResource(Res.string.recovery_set_password), confirm, Modifier.fillMaxWidth(), state.canReset)
+                RecoveryText(stringResource(Res.string.auth_password_hint), hintStyle)
+                RecoveryText(stringResource(Res.string.recovery_grant_ttl, state.proofSeconds), hintStyle)
+                if (retryHint != null) RecoveryText(retryHint, hintStyle)
+                AuthPrimaryAction(stringResource(Res.string.recovery_set_password), confirm, state.canReset)
             }
             RecoveryStep.UNCERTAIN -> {
-                RecoveryText(stringResource(Res.string.recovery_confirm_unknown))
-                NeonButton(stringResource(Res.string.auth_login), onLogin, Modifier.fillMaxWidth())
-                TextButton(onClick = store::restart, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(Res.string.recovery_restart))
+                AuthFormPanel {
+                    RecoveryText(stringResource(Res.string.recovery_confirm_unknown))
+                    AuthPrimaryAction(stringResource(Res.string.auth_login), close)
                 }
+                RecoveryLink(stringResource(Res.string.recovery_restart), restart)
             }
-            RecoveryStep.UNAVAILABLE -> RecoveryText(stringResource(Res.string.recovery_unavailable))
+            RecoveryStep.UNAVAILABLE -> AuthFormPanel {
+                RecoveryText(stringResource(Res.string.recovery_unavailable))
+            }
             RecoveryStep.CLOSED, RecoveryStep.COMPLETE -> Unit
         }
-        if (state.resendSeconds > 0 && (state.step == RecoveryStep.EMAIL || state.step == RecoveryStep.CODE))
-            RecoveryText(stringResource(Res.string.verification_resend_in, state.resendSeconds))
-        if (state.retrySeconds > 0 && (state.step == RecoveryStep.CODE || state.step == RecoveryStep.PASSWORD))
-            RecoveryText(stringResource(Res.string.auth_rate_limit_seconds, state.retrySeconds))
     }
 }
 
@@ -122,14 +152,22 @@ private fun RecoveryFeedback(state: PasswordRecoveryState) {
         error != null && state.step != RecoveryStep.UNAVAILABLE -> authErrorText(error)
         else -> null
     } ?: return
-    Text(
-        message, Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-        color = if (error == null) AtlasColors.Cyan else AtlasColors.Danger,
-        style = MaterialTheme.typography.bodyMedium,
-    )
+    AuthStatusPanel(message, busy = state.busy != null, isError = error != null)
 }
 
 @Composable
-private fun RecoveryText(message: String) {
-    Text(message, color = AtlasColors.TextSecondary, style = MaterialTheme.typography.bodyMedium)
+private fun RecoveryLink(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+    TextButton(
+        onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        colors = ButtonDefaults.textButtonColors(
+            contentColor = CatalogueColors.Turquoise, disabledContentColor = CatalogueColors.Muted.copy(alpha = .65f),
+        ),
+    ) {
+        Text(label)
+    }
+}
+
+@Composable
+private fun RecoveryText(message: String, style: TextStyle = MaterialTheme.typography.bodyMedium) {
+    Text(message, color = CatalogueColors.Muted, style = style)
 }

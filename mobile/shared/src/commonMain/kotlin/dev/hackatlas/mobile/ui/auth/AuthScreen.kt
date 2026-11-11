@@ -68,12 +68,9 @@ fun AuthScreen(
         focus.clearFocus()
         onBack()
     }
-    Column(
-        Modifier.fillMaxSize().background(CatalogueColors.Background).imePadding().verticalScroll(rememberScrollState())
-            .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    AuthScreenLayout(
+        stringResource(if (register) Res.string.auth_register_title else Res.string.auth_login_title), close,
     ) {
-        AuthScreenHeader(stringResource(if (register) Res.string.auth_register_title else Res.string.auth_login_title), close)
         if (!register && recoveryNotice != null) {
             Text(
                 stringResource(
@@ -90,13 +87,8 @@ fun AuthScreen(
             progressColor = CatalogueColors.Lime, messageColor = CatalogueColors.Turquoise,
         )
         if (state.canAuthenticate || submitting) {
-            val fieldColors = authScreenFieldColors()
-            Column(
-                Modifier.fillMaxWidth().clip(WaveCardShape).background(CatalogueColors.Surface)
-                    .border(1.dp, CatalogueColors.Border.copy(alpha = .65f), WaveCardShape)
-                    .padding(horizontal = 16.dp, vertical = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
+            val fieldColors = authFormFieldColors()
+            AuthFormPanel {
                 if (register) {
                     AuthField(
                         name, { name = it }, stringResource(Res.string.auth_name),
@@ -209,6 +201,33 @@ fun AuthScreen(
 }
 
 @Composable
+internal fun AuthScreenLayout(
+    title: String,
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        Modifier.fillMaxSize().background(CatalogueColors.Background).imePadding().verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        AuthScreenHeader(title, onBack)
+        content()
+    }
+}
+
+@Composable
+internal fun AuthFormPanel(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(WaveCardShape).background(CatalogueColors.Surface)
+            .border(1.dp, CatalogueColors.Border.copy(alpha = .65f), WaveCardShape)
+            .padding(horizontal = 16.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        content = content,
+    )
+}
+
+@Composable
 private fun AuthScreenHeader(title: String, onBack: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -219,17 +238,19 @@ private fun AuthScreenHeader(title: String, onBack: () -> Unit) {
             val typography = MaterialTheme.typography
             val measurer = rememberTextMeasurer()
             val availableWidth = with(LocalDensity.current) { maxWidth.roundToPx() }
-            val titleStyle = listOf(typography.displayLarge, typography.displayMedium, typography.displaySmall)
+            val longestWord = AnnotatedString(title.split(' ', '\n').maxByOrNull { it.length }.orEmpty())
+            val compact = typography.displaySmall.copy(fontSize = 21.sp, lineHeight = 29.sp)
+            val titleStyle = listOf(typography.displayLarge, typography.displayMedium, typography.displaySmall, compact)
                 .firstOrNull {
-                    measurer.measure(AnnotatedString(title), it, softWrap = false, maxLines = 1).size.width <= availableWidth
-                } ?: typography.displaySmall
+                    measurer.measure(longestWord, it, softWrap = false, maxLines = 1).size.width <= availableWidth
+                } ?: compact
             Text(title, Modifier.semantics { heading() }, color = CatalogueColors.Text, style = titleStyle)
         }
     }
 }
 
 @Composable
-private fun AuthPrimaryAction(label: String, onClick: () -> Unit, enabled: Boolean = true) {
+internal fun AuthPrimaryAction(label: String, onClick: () -> Unit, enabled: Boolean = true) {
     Button(
         onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
         shape = RoundedCornerShape(16.dp),
@@ -245,7 +266,7 @@ private fun AuthPrimaryAction(label: String, onClick: () -> Unit, enabled: Boole
 }
 
 @Composable
-private fun authScreenFieldColors() = OutlinedTextFieldDefaults.colors(
+internal fun authFormFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = CatalogueColors.Background, unfocusedContainerColor = CatalogueColors.Background,
     disabledContainerColor = CatalogueColors.Background, errorContainerColor = CatalogueColors.Background,
     focusedBorderColor = CatalogueColors.Lime, unfocusedBorderColor = AuthOutline,
@@ -305,16 +326,29 @@ private fun AuthFeedback(
         })
         else -> null
     } ?: return
+    AuthStatusPanel(text, state.busy != null, state.error != null, containerColor, borderColor, progressColor, messageColor)
+}
+
+@Composable
+internal fun AuthStatusPanel(
+    message: String,
+    busy: Boolean,
+    isError: Boolean,
+    containerColor: Color = CatalogueColors.Surface,
+    borderColor: Color = CatalogueColors.Border,
+    progressColor: Color = CatalogueColors.Lime,
+    messageColor: Color = CatalogueColors.Turquoise,
+) {
     val shape = RoundedCornerShape(AtlasDimensions.CardRadius)
     Column(
         Modifier.fillMaxWidth().background(containerColor, shape).border(1.dp, borderColor, shape).padding(16.dp)
             .semantics { liveRegion = LiveRegionMode.Polite },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        if (state.busy != null) {
+        if (busy) {
             LinearProgressIndicator(Modifier.fillMaxWidth(), color = progressColor, trackColor = borderColor)
         }
-        Text(text, color = if (state.error != null) AtlasColors.Danger else messageColor, style = MaterialTheme.typography.bodyMedium)
+        Text(message, color = if (isError) AtlasColors.Danger else messageColor, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
