@@ -1000,6 +1000,23 @@ iOS compile/link/resources/device; физические Android-телефоны
 - Прогон выполнен с временным `--init-script` для отдельного идентификатора приложения. Обычный APK собран отдельным запуском `:androidApp:assembleDebug`. На Android API 36 проверены настройки, открытие сохранённой копии, возврат, переход в обновлённое «Сохранённое» и снятие закладки из профиля. Подписи счётчиков проверены при 360 dp и масштабе шрифта 1,3 и при 320 dp и масштабе 1,5.
 - Снимки Android находятся в `mobile/artifacts/profile-redesign/screenshots/`. Следующий шаг приёмки — гостевой режим, реальный аккаунт и iOS.
 
+## Редизайн входа и регистрации — 11 ноября 2026
+
+Ветка `feat/mobile-auth-redesign` от `main` `eca4c13`.
+
+- `ui/auth/AuthScreen.kt` использует логотип HackAtlas, пиксельный заголовок, волнистую панель полей и лаймовую кнопку отправки. Размер заголовка подбирается по доступной ширине. Контур и подпись поля обозначают фокус и ошибку, форму можно прокручивать с открытой клавиатурой.
+- В `values/strings.xml` убраны пояснения, которые повторяли назначение форм. Проверка ввода и отправка идут через существующий `AuthStore` и API 0.1.1. Форма входа ведёт к восстановлению в закрытом N2 и позволяет вернуться к гостевому профилю.
+
+Проверки Gradle выполнены из `mobile` с Android Studio JDK и SDK.
+
+```powershell
+.\gradlew.bat --no-daemon --no-parallel --max-workers=2 --console=plain '-Dorg.gradle.jvmargs=-Xmx1536m -Dfile.encoding=UTF-8' '-Pkotlin.compiler.execution.strategy=in-process' '-Phackatlas.debugSource=REMOTE' '-Phackatlas.debugApiBaseUrl=http://10.0.2.2:18773/api/v1/' '-Phackatlas.allowDebugHttp=true' '-Phackatlas.debugAccountMode=N2_REQUIRED' :shared:testDebugUnitTest :androidApp:assembleDebug :androidApp:lintDebug :androidApp:verifyReleaseNoDemoFixtures
+```
+
+- Прошёл 321 тест, lint без замечаний, Android debug-сборка и проверка release без DEMO. `scripts/validate_contract.py` принял OpenAPI и 13 примеров.
+- Прогон на Android API 36 использовал отдельный идентификатор приложения через временный `--init-script` и локальный HTTP-стенд. Проверены ошибки пустых полей, показ и скрытие пароля, сообщения при ответах 401 и 409, перенос email в восстановление, переключение форм и возврат к гостю. На 360 dp при масштабе шрифта 1,3 проверены заголовок регистрации и доступ к кнопке с открытой клавиатурой.
+- Снимки Android находятся в `mobile/artifacts/auth-redesign/screenshots/`. Приёмка успешной авторизации на серверном стенде и визуальная проверка iOS остаются следующими шагами.
+
 ## Пилот редизайна каталога — 10 ноября 2026
 
 Ветка `feat/mobile-catalog-redesign` в отдельном worktree основана на `main` `19ad561` после PR #42. Первый результат для визуального ревью — главная. За основу взят согласованный в чате макет с лаймовым знаком H и карточками в одну колонку.

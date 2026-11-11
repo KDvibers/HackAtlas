@@ -164,8 +164,6 @@
     <string name="auth_login_title">Вход</string>
     <string name="auth_register_title">Регистрация</string>
     <string name="auth_kicker">HACKATLAS / ACCOUNT_</string>
-    <string name="auth_login_body">Вернитесь к своему профилю. Каталог всегда открыт без входа.</string>
-    <string name="auth_register_body">Ваш профиль в сообществе хакатонов. Начнём со знакомства.</string>
     <string name="auth_name">Имя в профиле</string>
     <string name="auth_email">Email</string>
     <string name="auth_password">Пароль</string>
