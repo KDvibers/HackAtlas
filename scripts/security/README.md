@@ -23,7 +23,10 @@ python3 scripts/security/check_maven_dependencies.py --dependencies backend/targ
 
 ```bash
 python scripts/b4/run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/release-rehearsal
-python scripts/security/run_container_audit.py --rehearsal-report backend/target/release-rehearsal/report.json --output-dir backend/target/container-audit
+python scripts/security/run_container_audit.py \
+  --rehearsal-report backend/target/release-rehearsal/report.json \
+  --output-dir backend/target/container-audit \
+  --postgres-without-gosu
 ```
 
 Для повторного запуска выбирайте новые output directories. Предыдущие evidence не перезаписываются. `.env`, реальные БД и Docker socket внутрь сканера не передаются. Scanner/DB загружаются по сети, затем три архива `docker save` сканируются с `--network none`, read-only input, без root capabilities. Архивы создаются во временном каталоге `0700`; каждый отдельный файл доступен сканеру для чтения через bind mount. Кэш DB находится в собственном Linux volume; Java index распаковывается на диск, поскольку tmpfs 1 GiB недостаточен. После завершения удаляются только созданные этим запуском cache volume и архивы; JSON и диагностические логи сохраняются.
@@ -52,19 +55,15 @@ python scripts/security/run_container_audit.py --rehearsal-report backend/target
 python scripts/security/container_policy.py --evidence backend/target/container-audit
 ```
 
-### Локальный кандидат PostgreSQL без gosu
+### Релизный PostgreSQL без gosu
 
-Для [кандидата из PR #45](https://github.com/KDvibers/HackAtlas/pull/45) сначала
-нужен успешный B4-прогон с локальным тегом `postgres:…` в отдельной копии Compose.
-Обычный release Compose используется как источник закреплённого Bookworm.
-Проверка из основного checkout запускается так:
-
-```bash
-python scripts/security/run_container_audit.py \
-  --rehearsal-report backend/target/b4-pg-nogosu-rehearsal/report.json \
-  --output-dir backend/target/b4-pg-no-go-audit \
-  --postgres-without-gosu
-```
+B4 собирает [образ PostgreSQL](../../infra/release/postgres/Dockerfile) из
+закреплённого Bookworm и запускает его с локальным тегом
+`<проект-репетиции>-postgres:local`. Для этого тега требуется
+`--postgres-without-gosu`. Workflow `External release readiness` передаёт
+флаг автоматически и сохраняет `postgres-no-go.json` вместе с отчётами.
+Для повторного аудита отчётов старых экспериментов остаются доступны их
+локальные теги `postgres:…` с той же проверкой доказательства.
 
 Сканер сохраняет архив по ID образа из репетиции. Из двух временных контейнеров,
 созданных без запуска, он получает инвентари итоговых файловых систем базы и

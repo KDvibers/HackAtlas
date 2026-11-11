@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 import tempfile
 
+import run_rehearsal
 from run_rehearsal import Rehearsal, RehearsalFailure, fingerprint, sql_value, validate_bindings, validate_owned
 
 
@@ -30,6 +31,19 @@ class RehearsalSafetyTests(unittest.TestCase):
     def test_database_port_publication_is_rejected_even_on_loopback(self):
         with self.assertRaises(RehearsalFailure):
             validate_bindings({"services": {"postgres": {"ports": [{"host_ip": "127.0.0.1"}]}}})
+
+    def test_database_and_initializer_require_the_built_local_image(self):
+        tag = "hackatlas-b4-123456789abc-postgres:local"
+        image = {"image": tag, "pull_policy": "never"}
+        config = {"services": {"postgres": dict(image), "init-volumes": dict(image)}}
+        run_rehearsal.validate_postgres_image(config, tag)
+        for service, override in (("init-volumes", {"image": "postgres:17"}),
+                                  ("postgres", {"pull_policy": "always"})):
+            with self.subTest(service=service, override=override):
+                config["services"][service] = {**image, **override}
+                with self.assertRaises(RehearsalFailure):
+                    run_rehearsal.validate_postgres_image(config, tag)
+                config["services"][service] = dict(image)
 
     def test_cleanup_requires_project_service_and_release_ownership(self):
         item = {"Config": {"Labels": {"com.docker.compose.project": "owned",

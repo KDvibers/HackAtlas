@@ -6,17 +6,17 @@
 и совместная приёмка M4 остаются отдельными пунктами B4.
 
 **Внешний выпуск требует проверки `External release readiness`.** Эта конфигурация
-используется для локальных репетиций. Предыдущий Trivy scan выявил блокирующие
-находки. Ручной прогон на новом Caddy подтвердил HTTPS и восстановление, а
-сканирование образов остановилось при чтении временного архива. После исправления
-нужен повтор на GitHub. [Результат обновления и проверок](../../docs/STATUS_BACKEND.md#b4--обновление-caddy-до-2119-10-ноября-2026).
+используется для локальных репетиций. Workflow сканирует те же образы, на
+которых проверяет HTTPS и восстановление, и сохраняет доказательство
+отсутствия Go-бинарников в PostgreSQL. Блокирующие находки Trivy по-прежнему
+закрывают допуск. [Правила аудита](../../scripts/security/README.md#проверка-образов-и-готовности-внешнего-выпуска).
 
 ## Состав и закреплённые образы
 
 | Компонент | Источник образа | Назначение |
 |---|---|---|
 | Java runtime | `eclipse-temurin:21.0.13_9-jre-noble@sha256:03fedab2c0d7355868b5ba5330d64088b956a0bfac48f904e5c57207e261e2c9` | Только JRE и уже проверенный JAR |
-| PostgreSQL | `postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5` | База, клиенты backup/restore и подготовка собственных volumes |
+| PostgreSQL | [Локальный образ](postgres/Dockerfile) на базе `postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5` | База под UID/GID 999, клиенты backup/restore и подготовка томов |
 | Caddy base | `caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee` | HTTPS и reverse proxy |
 
 Digest фиксирует содержимое, tag показывает версию. Caddy собирается из этого
@@ -39,7 +39,11 @@ file capability официального бинарника мешает зап�
 доступен: закреплена публикация от 29 октября. Прямое `java -version` подтвердило
 `Temurin-21.0.13+9`; host SDK не менялся. Trivy не распознаёт установленный из tar
 JRE как отдельный пакет, поэтому реальная версия runtime по-прежнему проверяется
-отдельно. PostgreSQL 17.11 закреплён на пересборке от 28 октября.
+отдельно. PostgreSQL 17.11 закреплён на пересборке от 28 октября. Локальный
+Dockerfile удаляет `/usr/local/bin/gosu` и задаёт `USER 999:999`. Оба сервиса
+получают один тег из `HACKATLAS_POSTGRES_IMAGE` с `pull_policy: never`.
+`init-volumes` запускает только свой shell entrypoint с доступом для
+подготовки корней томов, затем PostgreSQL работает от `999:999`.
 
 Caddy 2.11.9 включает исправления [2.11.8](https://github.com/caddyserver/caddy/releases/tag/v2.11.8)
 и [2.11.9](https://github.com/caddyserver/caddy/releases/tag/v2.11.9). Официальный
@@ -118,6 +122,7 @@ Spring читает password через configtree `/run/secrets/`, не чер�
 ```bash
 export HACKATLAS_APP_IMAGE=hackatlas-backend:b4-local
 export HACKATLAS_PROXY_IMAGE=hackatlas-proxy:b4-local
+export HACKATLAS_POSTGRES_IMAGE=hackatlas-postgres:b4-local
 export HACKATLAS_SECRET_DIR=/absolute/private/new-release-secrets
 export HACKATLAS_SITE=localhost
 export HACKATLAS_HTTP_PORT=18080
@@ -127,6 +132,8 @@ release_project=hackatlas-b4-local
 
 compose=(docker compose --env-file /dev/null --project-name "$release_project"
   -f infra/release/compose.yaml -f infra/release/compose.local.yaml)
+docker pull postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+docker build --network none --tag "$HACKATLAS_POSTGRES_IMAGE" infra/release/postgres
 "${compose[@]}" config --quiet
 "${compose[@]}" build app proxy
 "${compose[@]}" up --detach --wait postgres
@@ -134,6 +141,8 @@ compose=(docker compose --env-file /dev/null --project-name "$release_project"
 "${compose[@]}" up --detach --wait app proxy
 ```
 
+Для команд backup, restore и миграций оставляйте тот же
+`HACKATLAS_POSTGRES_IMAGE`. Продолжайте запуск только после успешной сборки образов.
 Не запускать runtime до успешного `migrate`. Его сбой — основание остановить выпуск
 и разобраться с причиной, сохранив предыдущий backup и существующую БД. Повторный
 успешный Flyway запуск должен подтвердить отсутствие pending migrations. Если

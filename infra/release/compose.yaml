@@ -7,6 +7,9 @@ x-logging: &logging
     max-file: "3"
 x-labels: &labels
   hackatlas.release: "true"
+x-postgres-image: &postgres-image
+  image: ${HACKATLAS_POSTGRES_IMAGE:?Set an explicit local PostgreSQL image tag}
+  pull_policy: never
 x-app-env: &app-env
   SPRING_PROFILES_ACTIVE: prod,release
   HACKATLAS_BIND_ADDRESS: 0.0.0.0
@@ -37,7 +40,7 @@ x-app: &app
 
 services:
   init-volumes:
-    image: postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+    <<: *postgres-image
     user: "0:0"
     entrypoint: ["/bin/sh", "-ec"]
     command:
@@ -62,7 +65,7 @@ services:
     labels: *labels
 
   postgres:
-    image: postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
+    <<: *postgres-image
     user: "999:999"
     read_only: true
     cap_drop: [ALL]
