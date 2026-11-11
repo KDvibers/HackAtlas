@@ -19,12 +19,14 @@
 | PostgreSQL | [Локальный образ](postgres/Dockerfile) на базе `postgres:17.11-alpine3.24@sha256:4717f90960a225c2d1c5dac50508c401230f693ff626e06e84e6db0a68ded508` для Linux amd64 | База под UID/GID 70, клиенты backup/restore и подготовка томов |
 | Caddy base | `caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee` | HTTPS и reverse proxy |
 
-Digest фиксирует содержимое, tag показывает версию. Caddy собирается из этого
-официального образа с точечными обновлениями `brotli-libs=1.2.1-r0`,
-`curl=8.23.0-r0` и `libcurl=8.23.0-r0` из подписанных Alpine repositories
-(CVE-2026-111497 и curl advisories, включая CVE-2026-92392), а также `setcap -r /usr/bin/caddy`:
-file capability официального бинарника мешает запуску с `cap_drop: ALL`.
-Внутри контейнера используются непривилегированные порты 8080/8443. Alpine может
+Digest фиксирует содержимое, tag показывает версию. Runtime Caddy сохраняет
+официальный базовый образ и обновления `brotli-libs=1.2.1-r0`,
+`curl=8.23.0-r0` и `libcurl=8.23.0-r0` из подписанных репозиториев Alpine
+(CVE-2026-111497 и curl advisories, включая CVE-2026-92392). Бинарник
+Caddy 2.11.9 собирается стандартным набором модулей на Go 1.27.4 из
+закреплённого builder-образа. В runtime копируется бинарник без file
+capabilities. Внутри контейнера используются порты 8080/8443 и
+`cap_drop: ALL`. Alpine может
 обновить зависимости закреплённых пакетов при сборке. Итоговые версии проверяются
 по фактическому образу. Java Dockerfile копирует только JAR из `backend/target`;
 исходники, Maven, `.env` и секреты в build context не попадают.
@@ -58,7 +60,13 @@ JRE как отдельный пакет, поэтому реальная вер
 Caddy 2.11.9 включает исправления [2.11.8](https://github.com/caddyserver/caddy/releases/tag/v2.11.8)
 и [2.11.9](https://github.com/caddyserver/caddy/releases/tag/v2.11.9). Официальный
 Linux amd64 manifest `sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424`.
-В собранном бинарнике проверены Go `1.27.3` и `golang.org/x/net` `v0.60.0`.
+Сборка проверяет контрольные суммы из [go.sum](proxy/caddy-build/go.sum).
+Версии `golang.org/x/net v0.62.0` и `golang.org/x/crypto v0.59.0`
+закреплены в [go.mod](proxy/caddy-build/go.mod). Переход на
+`go-jose/v4 v4.1.9` использует Smallstep crypto `v0.92.0` и
+псевдоверсию Smallstep Certificates, закреплённую на коммите upstream.
+[Go 1.27.4](https://go.dev/doc/devel/release#go1.27.minor),
+[Smallstep Certificates](https://github.com/smallstep/certificates/commit/6d5a251fbe010383c93ead1ab451a329986b80ca).
 
 Для переноса с Bookworm используйте отдельный Compose project с новым томом
 Alpine и логический backup старой БД. Для источника используйте команды
