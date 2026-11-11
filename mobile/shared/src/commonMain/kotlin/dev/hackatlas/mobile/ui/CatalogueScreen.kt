@@ -83,7 +83,7 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
     ) {
         item(key = "heading") {
             Column {
-                CatalogueBrand(bundled, onDemo)
+                HackAtlasBrand(bundled, onDemo)
                 Spacer(Modifier.height(7.dp))
                 Text(
                     stringResource(Res.string.hackathons),
@@ -196,7 +196,7 @@ private fun CatalogFiltersSheet(state: CatalogUiState, onQuery: (CatalogQuery) -
     }
 }
 @Composable
-private fun CatalogueBrand(bundled: Boolean, onDemo: () -> Unit) {
+internal fun HackAtlasBrand(showDemo: Boolean, onDemo: (() -> Unit)? = null) {
     Row(
         Modifier.fillMaxWidth().heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -230,10 +230,12 @@ private fun CatalogueBrand(bundled: Boolean, onDemo: () -> Unit) {
                 style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
-        if (bundled) {
+        if (showDemo) {
             val badgeShape = RoundedCornerShape(24.dp)
+            val badge = Modifier.heightIn(min = 48.dp).clip(badgeShape)
+            val demoBadge = if (onDemo == null) badge else badge.clickable(role = Role.Button, onClick = onDemo)
             Box(
-                Modifier.heightIn(min = 48.dp).clip(badgeShape).clickable(role = Role.Button, onClick = onDemo),
+                demoBadge,
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
