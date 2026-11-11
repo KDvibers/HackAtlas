@@ -100,10 +100,12 @@ internal fun CatalogueCard(
     format: DisplayFormat,
     onOpen: () -> Unit,
     onBookmark: () -> Unit,
-    bookmarkEnabled: Boolean,
+    bookmarkPending: Boolean,
+    bookmarkEnabled: Boolean = true,
+    showDemoLabel: Boolean = true,
 ) {
     val colors = eventCardColors(event.artwork)
-    val demoLabel = if (event.isDemo) stringResource(Res.string.demo_label) else null
+    val demoLabel = if (showDemoLabel && event.isDemo) stringResource(Res.string.demo_label) else null
     val topic = event.topics.firstOrNull()?.label?.takeIf { it.isNotBlank() }?.uppercase()
     val label = listOfNotNull(topic, demoLabel).joinToString(" · ")
     val deadline = stringResource(Res.string.deadline_short)
@@ -162,7 +164,7 @@ internal fun CatalogueCard(
             }
         }
         val bookmarkLabel = when {
-            !bookmarkEnabled -> Res.string.saving
+            bookmarkPending -> Res.string.saving
             saved -> Res.string.unsave_event
             else -> Res.string.save_event
         }
@@ -170,7 +172,7 @@ internal fun CatalogueCard(
             AtlasIcon.Bookmark, stringResource(bookmarkLabel), onBookmark,
             tint = if (saved) colors.accent else colors.text,
             modifier = Modifier.align(Alignment.TopEnd).padding(top = 4.dp, end = 4.dp),
-            enabled = bookmarkEnabled,
+            enabled = bookmarkEnabled && !bookmarkPending,
         )
     }
 }
