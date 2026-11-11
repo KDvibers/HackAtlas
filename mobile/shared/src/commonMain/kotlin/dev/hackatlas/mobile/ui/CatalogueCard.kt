@@ -25,9 +25,11 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.design.AtlasIcon
@@ -48,13 +50,29 @@ internal object CatalogueColors {
     val Turquoise = Color(0xFF79F1ED)
 }
 
-private data class CardColors(val surface: Color, val text: Color, val accent: Color)
+internal data class EventCardColors(val surface: Color, val text: Color, val accent: Color)
 
-private val AiCard = CardColors(CatalogueColors.Lime, CatalogueColors.Ink, Color(0xFF5C2ABD))
-private val FintechCard = CardColors(CatalogueColors.Violet, CatalogueColors.Text, CatalogueColors.Lime)
-private val GraphiteCard = CardColors(Color(0xFF38394C), CatalogueColors.Text, CatalogueColors.Turquoise)
+private val AiCard = EventCardColors(CatalogueColors.Lime, CatalogueColors.Ink, Color(0xFF5C2ABD))
+private val FintechCard = EventCardColors(CatalogueColors.Violet, CatalogueColors.Text, CatalogueColors.Lime)
+private val GraphiteCard = EventCardColors(Color(0xFF38394C), CatalogueColors.Text, CatalogueColors.Turquoise)
 
-private val WaveCardShape = GenericShape { size, _ ->
+internal fun eventCardColors(artwork: Artwork): EventCardColors = when (artwork) {
+    Artwork.AI_BUST -> AiCard
+    Artwork.FINTECH_CITY -> FintechCard
+    else -> GraphiteCard
+}
+
+@Composable
+internal fun showEventArtwork(title: String, titleStyle: TextStyle, cardWidth: Dp, textWidth: Dp): Boolean {
+    val density = LocalDensity.current
+    if (cardWidth.value / density.fontScale < 310f) return false
+    val longestWord = title.split(' ', '\n', '\t').maxByOrNull { it.length }.orEmpty()
+    val measurer = rememberTextMeasurer()
+    val wordWidth = measurer.measure(AnnotatedString(longestWord), titleStyle, softWrap = false, maxLines = 1).size.width
+    return wordWidth <= with(density) { textWidth.roundToPx() }
+}
+
+internal val WaveCardShape = GenericShape { size, _ ->
     val (width, height) = size
     val radius = minOf(width * .075f, height * .17f)
     val wave = minOf(width * .022f, height * .045f)
@@ -84,19 +102,12 @@ internal fun CatalogueCard(
     onBookmark: () -> Unit,
     bookmarkEnabled: Boolean,
 ) {
-    val colors = when (event.artwork) {
-        Artwork.AI_BUST -> AiCard
-        Artwork.FINTECH_CITY -> FintechCard
-        else -> GraphiteCard
-    }
+    val colors = eventCardColors(event.artwork)
     val demoLabel = if (event.isDemo) stringResource(Res.string.demo_label) else null
     val topic = event.topics.firstOrNull()?.label?.takeIf { it.isNotBlank() }?.uppercase()
     val label = listOfNotNull(topic, demoLabel).joinToString(" · ")
     val deadline = stringResource(Res.string.deadline_short)
     val titleStyle = MaterialTheme.typography.displaySmall.copy(fontSize = 21.sp, lineHeight = 26.sp)
-    val density = LocalDensity.current
-    val measurer = rememberTextMeasurer()
-    val longestWord = event.title.split(' ', '\n', '\t').maxByOrNull { it.length }.orEmpty()
 
     BoxWithConstraints(
         Modifier.fillMaxWidth().heightIn(min = 174.dp).clip(WaveCardShape).background(colors.surface)
@@ -107,10 +118,7 @@ internal fun CatalogueCard(
         val artworkGap = 10.dp
         val artworkWidth = minOf(maxWidth * .33f, 132.dp)
         val textWidthBesideArtwork = maxWidth - artworkWidth - horizontalPadding * 2 - artworkGap
-        val showArtwork = maxWidth.value / density.fontScale >= 310f && with(density) {
-            val wordWidth = measurer.measure(AnnotatedString(longestWord), titleStyle, softWrap = false, maxLines = 1).size.width
-            wordWidth <= textWidthBesideArtwork.roundToPx()
-        }
+        val showArtwork = showEventArtwork(event.title, titleStyle, maxWidth, textWidthBesideArtwork)
         Row(
             Modifier.fillMaxWidth().padding(horizontal = horizontalPadding, vertical = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(artworkGap),
@@ -150,7 +158,7 @@ internal fun CatalogueCard(
                 Text(format.prize(event.prize), color = colors.text, style = metadataStyle)
             }
             if (showArtwork) {
-                CatalogueArtwork(event.artwork, colors.accent, Modifier.width(artworkWidth).aspectRatio(1.25f))
+                EventArtwork(event.artwork, colors.accent, Modifier.width(artworkWidth).aspectRatio(1.25f))
             }
         }
         val bookmarkLabel = when {
@@ -168,7 +176,7 @@ internal fun CatalogueCard(
 }
 
 @Composable
-private fun CatalogueArtwork(artwork: Artwork, accent: Color, modifier: Modifier) {
+internal fun EventArtwork(artwork: Artwork, accent: Color, modifier: Modifier) {
     Canvas(modifier) {
         scale(size.width / 100f, size.height / 80f, pivot = Offset.Zero) {
             val stroke = Stroke(width = 2.5f, cap = StrokeCap.Round, join = StrokeJoin.Round)

@@ -14,6 +14,7 @@ import dev.hackatlas.mobile.data.auth.AuthError
 import dev.hackatlas.mobile.data.auth.PrivateTrust
 import dev.hackatlas.mobile.design.AtlasColors
 import dev.hackatlas.mobile.resources.*
+import dev.hackatlas.mobile.ui.CatalogueColors
 import dev.hackatlas.mobile.ui.DisplayFormat
 import dev.hackatlas.mobile.ui.SectionTitle
 import org.jetbrains.compose.resources.stringResource
@@ -22,23 +23,25 @@ import org.jetbrains.compose.resources.stringResource
 fun ApplicationStatus(id: String, state: ApplicationUiState?, format: DisplayFormat, bundled: Boolean,
     onRefresh: () -> Unit, onRecover: () -> Unit, onChange: (Boolean) -> Unit, onSignIn: (() -> Unit)?) {
     val shape = RoundedCornerShape(14.dp)
-    Column(Modifier.fillMaxWidth().background(AtlasColors.Surface,shape)
-        .border(1.dp,AtlasColors.Border,shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth().background(CatalogueColors.Surface,shape)
+        .border(1.dp,CatalogueColors.Border,shape).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionTitle(stringResource(Res.string.application_title))
-        Text(stringResource(Res.string.application_hint),color = AtlasColors.TextMuted,fontSize = 12.sp,lineHeight = 17.sp)
+        Text(stringResource(Res.string.application_hint),color = CatalogueColors.Muted,fontSize = 12.sp,lineHeight = 17.sp)
         when {
-            bundled -> Text(stringResource(Res.string.application_demo_hint),color = AtlasColors.TextSecondary,fontSize = 12.sp)
-            state == null -> Text(stringResource(Res.string.application_unavailable),color = AtlasColors.TextSecondary,fontSize = 12.sp)
+            bundled -> Text(stringResource(Res.string.application_demo_hint),color = CatalogueColors.Muted,fontSize = 12.sp)
+            state == null -> Text(stringResource(Res.string.application_unavailable),color = CatalogueColors.Muted,fontSize = 12.sp)
             state.mode == ApplicationMode.CHECKING && state.access?.identity != null -> {
                 Text(stringResource(if (state.access.trust == PrivateTrust.PENDING) Res.string.n2_private_pending
-                    else Res.string.n2_private_unknown), color = AtlasColors.TextSecondary, fontSize = 12.sp)
-                TextButton(onClick = onRefresh) { Text(stringResource(Res.string.application_refresh)) }
+                    else Res.string.n2_private_unknown), color = CatalogueColors.Muted, fontSize = 12.sp)
+                TextButton(onClick = onRefresh) {
+                    Text(stringResource(Res.string.application_refresh), color = CatalogueColors.Lime)
+                }
             }
             state.mode == ApplicationMode.CHECKING || state.mode == ApplicationMode.CLEARING ->
-                Text(stringResource(Res.string.application_checking),color = AtlasColors.TextSecondary,fontSize = 12.sp)
+                Text(stringResource(Res.string.application_checking),color = CatalogueColors.Muted,fontSize = 12.sp)
             state.mode == ApplicationMode.GUEST -> {
                 if(onSignIn != null) ApplicationButton(stringResource(Res.string.application_sign_in),true,onSignIn)
-                else Text(stringResource(Res.string.application_unavailable),color = AtlasColors.TextSecondary,fontSize = 12.sp)
+                else Text(stringResource(Res.string.application_unavailable),color = CatalogueColors.Muted,fontSize = 12.sp)
             }
             state.mode == ApplicationMode.BLOCKED -> {
                 Text(stringResource(Res.string.application_storage_error),color = AtlasColors.Danger,fontSize = 12.sp,lineHeight = 17.sp)
@@ -52,13 +55,13 @@ fun ApplicationStatus(id: String, state: ApplicationUiState?, format: DisplayFor
                     !state.known -> stringResource(if(state.syncing) Res.string.application_checking else Res.string.application_unknown)
                     mark != null -> stringResource(Res.string.application_confirmed,format.snapshotTimestamp(mark.markedAt))
                     else -> stringResource(Res.string.application_none)
-                },color = if(mark != null && !uncertain) AtlasColors.Cyan else AtlasColors.TextSecondary,fontSize = 13.sp,lineHeight = 18.sp)
+                },color = if(mark != null && !uncertain) CatalogueColors.Turquoise else CatalogueColors.Muted,fontSize = 13.sp,lineHeight = 18.sp)
                 if(state.fromCache && state.known) {
-                    Text(stringResource(Res.string.application_copy),color = AtlasColors.TextMuted,fontSize = 11.sp,lineHeight = 16.sp)
+                    Text(stringResource(Res.string.application_copy),color = CatalogueColors.Muted,fontSize = 11.sp,lineHeight = 16.sp)
                     state.cachedAt?.let { Text(stringResource(Res.string.snapshot_captured,format.snapshotTimestamp(it)),
-                        color = AtlasColors.TextMuted,fontSize = 11.sp) }
+                        color = CatalogueColors.Muted,fontSize = 11.sp) }
                 }
-                if(state.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(),color = AtlasColors.Primary,trackColor = AtlasColors.Border)
+                if(state.syncing) LinearProgressIndicator(Modifier.fillMaxWidth(),color = CatalogueColors.Lime,trackColor = CatalogueColors.Border)
                 if(state.known && !uncertain) {
                     val label = if(state.pendingId?.equals(id,ignoreCase = true) == true)
                         if(mark != null) Res.string.application_removing else Res.string.application_saving
@@ -66,11 +69,11 @@ fun ApplicationStatus(id: String, state: ApplicationUiState?, format: DisplayFor
                     ApplicationButton(stringResource(label),state.writable && !state.syncing) { onChange(mark != null) }
                 }
                 if(!state.writable && !state.syncing && state.error == null)
-                    Text(stringResource(Res.string.application_read_only),color = AtlasColors.TextMuted,fontSize = 12.sp,lineHeight = 17.sp)
+                    Text(stringResource(Res.string.application_read_only),color = CatalogueColors.Muted,fontSize = 12.sp,lineHeight = 17.sp)
                 state.error?.let { Text(applicationError(it),color = AtlasColors.Danger,fontSize = 12.sp,lineHeight = 17.sp) }
                 if(!state.writable || state.fromCache || state.error != null)
                     TextButton(onClick = onRefresh,enabled = !state.syncing) {
-                        Text(stringResource(Res.string.application_refresh),color = if(state.syncing) AtlasColors.TextMuted else AtlasColors.Primary)
+                        Text(stringResource(Res.string.application_refresh),color = if(state.syncing) CatalogueColors.Muted else CatalogueColors.Lime)
                     }
             }
         }
@@ -80,8 +83,8 @@ fun ApplicationStatus(id: String, state: ApplicationUiState?, format: DisplayFor
 @Composable
 private fun ApplicationButton(label: String,enabled: Boolean,onClick: () -> Unit) {
     OutlinedButton(onClick = onClick,enabled = enabled,modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        shape = RoundedCornerShape(12.dp),border = BorderStroke(1.dp,if(enabled) AtlasColors.Primary else AtlasColors.Border),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = AtlasColors.Primary,disabledContentColor = AtlasColors.TextMuted)) {
+        shape = RoundedCornerShape(12.dp),border = BorderStroke(1.dp,if(enabled) CatalogueColors.Lime else CatalogueColors.Border),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = CatalogueColors.Lime,disabledContentColor = CatalogueColors.Muted)) {
         Text(label,fontSize = 14.sp)
     }
 }
