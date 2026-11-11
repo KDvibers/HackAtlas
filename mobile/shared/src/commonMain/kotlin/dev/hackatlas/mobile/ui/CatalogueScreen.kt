@@ -32,19 +32,25 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.resources.*
+import dev.hackatlas.mobile.ui.auth.AuthPrimaryAction
+import dev.hackatlas.mobile.ui.auth.AuthSecondaryAction
+import dev.hackatlas.mobile.ui.auth.AuthStatusPanel
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -139,59 +145,132 @@ fun CatalogueScreen(state: CatalogUiState, savedKeys: Set<SavedEventKey>, pendin
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun CatalogFiltersSheet(state: CatalogUiState, onQuery: (CatalogQuery) -> Unit, onRetryMetadata: () -> Unit, onClose: () -> Unit) {
+private fun CatalogFiltersSheet(
+    state: CatalogUiState,
+    onQuery: (CatalogQuery) -> Unit,
+    onRetryMetadata: () -> Unit,
+    onClose: () -> Unit,
+) {
     val query = state.query
-    ModalBottomSheet(onDismissRequest = onClose, containerColor = AtlasColors.SurfaceRaised, contentColor = AtlasColors.TextPrimary,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-        Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SectionTitle(stringResource(Res.string.filters_sort))
-            Text(stringResource(Res.string.filter_and_note), color = AtlasColors.TextSecondary, fontSize = 12.sp, lineHeight = 17.sp)
-            SectionTitle(stringResource(Res.string.sort))
-            val sorts = listOf(Res.string.sort_deadline, Res.string.sort_start, Res.string.sort_newest)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                CatalogSort.entries.forEachIndexed { index, value ->
-                    CatalogueChip(stringResource(sorts[index]), query.sort == value) { onQuery(query.copy(sort = value)) }
-                }
-            }
-            CatalogueChip(stringResource(Res.string.individual_application), query.individualApplicationAllowed == true) {
-                onQuery(query.copy(individualApplicationAllowed = if (query.individualApplicationAllowed == true) null else true))
-            }
-            if (state.metadataLoading) LoadingPanel()
-            else if (state.metadataError != null) StatePanel(stringResource(Res.string.filters_unavailable),
-                catalogErrorText(state.metadataError), stringResource(Res.string.retry), onRetryMetadata)
-            state.metadata?.let { metadata ->
-                SectionTitle(stringResource(Res.string.format))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    CatalogueChip(stringResource(Res.string.all), query.format == null) { onQuery(query.copy(format = null)) }
-                    metadata.formats.forEach { tag ->
-                        EventFormat.entries.firstOrNull { it.name == tag.id && it != EventFormat.UNSUPPORTED }?.let { value ->
-                            CatalogueChip(tag.label, query.format == value) { onQuery(query.copy(format = value)) }
+    ModalBottomSheet(
+        onDismissRequest = onClose,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = CatalogueColors.Background,
+        contentColor = CatalogueColors.Text,
+        dragHandle = { BottomSheetDefaults.DragHandle(color = CatalogueColors.Border) },
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Column(
+                Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    stringResource(Res.string.filters_sort), Modifier.semantics { heading() },
+                    color = CatalogueColors.Text, style = MaterialTheme.typography.displaySmall,
+                )
+                Text(
+                    stringResource(Res.string.filter_and_note),
+                    color = CatalogueColors.Muted, style = MaterialTheme.typography.bodySmall,
+                )
+                ProfilePanel {
+                    CatalogueFilterGroup(stringResource(Res.string.sort)) {
+                        val labels = listOf(Res.string.sort_deadline, Res.string.sort_start, Res.string.sort_newest)
+                        CatalogSort.entries.forEachIndexed { index, value ->
+                            CatalogueChip(stringResource(labels[index]), query.sort == value) {
+                                onQuery(query.copy(sort = value))
+                            }
                         }
                     }
                 }
-                SectionTitle(stringResource(Res.string.country))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    CatalogueChip(stringResource(Res.string.all), query.countryCode == null) { onQuery(query.copy(countryCode = null, city = null)) }
-                    metadata.countries.forEach { country ->
-                        CatalogueChip(country.label, query.countryCode == country.code) { onQuery(query.copy(countryCode = country.code, city = null)) }
+                ProfilePanel {
+                    val individual = query.individualApplicationAllowed == true
+                    CatalogueChip(stringResource(Res.string.individual_application), individual) {
+                        onQuery(query.copy(individualApplicationAllowed = if (individual) null else true))
                     }
-                }
-                val cities = metadata.cities.filter { it.countryCode == query.countryCode }
-                if (cities.isNotEmpty()) {
-                    SectionTitle(stringResource(Res.string.city))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        CatalogueChip(stringResource(Res.string.all), query.city == null) { onQuery(query.copy(city = null)) }
-                        cities.forEach { city -> CatalogueChip(city.name, query.city == city.name) { onQuery(query.copy(city = city.name)) } }
+                    val metadataError = state.metadataError
+                    when {
+                        state.metadataLoading -> AuthStatusPanel(
+                            stringResource(Res.string.loading), busy = true, isError = false,
+                        )
+                        metadataError != null -> {
+                            Text(
+                                stringResource(Res.string.filters_unavailable),
+                                Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                                color = CatalogueColors.Text, style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                catalogErrorText(metadataError),
+                                color = CatalogueColors.Muted, style = MaterialTheme.typography.bodySmall,
+                            )
+                            AuthSecondaryAction(stringResource(Res.string.retry), onRetryMetadata)
+                        }
                     }
-                }
-                SectionTitle(stringResource(Res.string.topics))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    CatalogueChip(stringResource(Res.string.all), query.topic == null) { onQuery(query.copy(topic = null)) }
-                    metadata.topics.forEach { tag -> CatalogueChip(tag.label, query.topic == tag.id) { onQuery(query.copy(topic = tag.id)) } }
+                    state.metadata?.let { metadata -> CatalogMetadataFilters(metadata, query, onQuery) }
                 }
             }
-            TextButton(onClick = { onQuery(CatalogQuery(query = query.query)) }) { Text(stringResource(Res.string.reset_filters), color = AtlasColors.Cyan) }
-            NeonButton(stringResource(Res.string.show_results), onClose, Modifier.fillMaxWidth())
+            HorizontalDivider(color = CatalogueColors.Border)
+            Column(Modifier.padding(top = 4.dp, bottom = 12.dp)) {
+                AuthSecondaryAction(
+                    stringResource(Res.string.reset_filters),
+                    onClick = { onQuery(CatalogQuery(query = query.query)) },
+                )
+                AuthPrimaryAction(stringResource(Res.string.show_results), onClose)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CatalogueFilterGroup(title: String, content: @Composable FlowRowScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            title, Modifier.semantics { heading() },
+            color = CatalogueColors.Text, style = MaterialTheme.typography.titleMedium,
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            content = content,
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CatalogMetadataFilters(metadata: FilterMetadata, query: CatalogQuery, onQuery: (CatalogQuery) -> Unit) {
+    CatalogueFilterGroup(stringResource(Res.string.format)) {
+        CatalogueChip(stringResource(Res.string.all), query.format == null) { onQuery(query.copy(format = null)) }
+        metadata.formats.forEach { tag ->
+            EventFormat.entries.firstOrNull { it.name == tag.id && it != EventFormat.UNSUPPORTED }?.let { value ->
+                CatalogueChip(tag.label, query.format == value) { onQuery(query.copy(format = value)) }
+            }
+        }
+    }
+    CatalogueFilterGroup(stringResource(Res.string.country)) {
+        CatalogueChip(stringResource(Res.string.all), query.countryCode == null) {
+            onQuery(query.copy(countryCode = null, city = null))
+        }
+        metadata.countries.forEach { country ->
+            CatalogueChip(country.label, query.countryCode == country.code) {
+                onQuery(query.copy(countryCode = country.code, city = null))
+            }
+        }
+    }
+    val cities = metadata.cities.filter { it.countryCode == query.countryCode }
+    if (cities.isNotEmpty()) {
+        CatalogueFilterGroup(stringResource(Res.string.city)) {
+            CatalogueChip(stringResource(Res.string.all), query.city == null) { onQuery(query.copy(city = null)) }
+            cities.forEach { city ->
+                CatalogueChip(city.name, query.city == city.name) { onQuery(query.copy(city = city.name)) }
+            }
+        }
+    }
+    CatalogueFilterGroup(stringResource(Res.string.topics)) {
+        CatalogueChip(stringResource(Res.string.all), query.topic == null) { onQuery(query.copy(topic = null)) }
+        metadata.topics.forEach { tag ->
+            CatalogueChip(tag.label, query.topic == tag.id) { onQuery(query.copy(topic = tag.id)) }
         }
     }
 }
@@ -296,10 +375,11 @@ private data class CatalogueChipStyle(
     val active: Color,
     val border: Color,
     val radius: Dp,
+    val fontSize: TextUnit = 11.sp,
 )
 
 private val HeaderChips = CatalogueChipStyle(CatalogueColors.Surface, CatalogueColors.Lime, CatalogueColors.Border, 24.dp)
-private val SheetChips = CatalogueChipStyle(AtlasColors.Surface, AtlasColors.Primary, AtlasColors.Border, 13.dp)
+private val SheetChips = CatalogueChipStyle(CatalogueColors.Background, CatalogueColors.Lime, CatalogueColors.Border, 24.dp, 13.sp)
 
 @Composable
 private fun CatalogueChip(text: String, active: Boolean, style: CatalogueChipStyle = SheetChips, onClick: () -> Unit) {
@@ -313,7 +393,7 @@ private fun CatalogueChip(text: String, active: Boolean, style: CatalogueChipSty
             Modifier.clip(shape).background(if (active) style.active else style.surface)
                 .border(1.dp, if (active) style.active else style.border, shape)
                 .padding(horizontal = 13.dp, vertical = 10.dp),
-            fontSize = 11.sp, color = if (active) AtlasColors.Background else AtlasColors.TextPrimary,
+            fontSize = style.fontSize, color = if (active) AtlasColors.Background else AtlasColors.TextPrimary,
         )
     }
 }
