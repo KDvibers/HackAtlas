@@ -1,9 +1,11 @@
 """Safety-boundary tests; these tests never start Docker or touch an existing stack."""
 
+import os
+import shlex
 import unittest
 from pathlib import Path
 import tempfile
-from subprocess import CompletedProcess
+from subprocess import CompletedProcess, run
 from unittest.mock import patch
 
 import run_rehearsal
@@ -46,6 +48,24 @@ class RehearsalSafetyTests(unittest.TestCase):
                 with self.assertRaises(RehearsalFailure):
                     run_rehearsal.validate_postgres_image(config, tag)
                 config["services"][service] = dict(image)
+
+    @unittest.skipUnless(os.name == "posix", "Release volume setup uses a Linux shell")
+    def test_existing_unmarked_database_volume_is_refused_before_chmod(self):
+        compose = run_rehearsal.yaml.safe_load((run_rehearsal.RELEASE / "compose.yaml").read_text(encoding="utf-8"))
+        init = compose["services"]["init-volumes"]
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            command = init["command"][0].replace("$$", "$")
+            for name in ("postgres-data", "caddy-data", "caddy-config"):
+                (root / name).mkdir(mode=0o755)
+                command = command.replace("/" + name, shlex.quote(str(root / name)))
+            data = root / "postgres-data"
+            (data / "PG_VERSION").write_text("17\n", encoding="ascii")
+            mode = data.stat().st_mode
+            result = run([*init["entrypoint"], command], capture_output=True, text=True, check=False)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("separate Alpine volume", result.stderr)
+            self.assertEqual(mode, data.stat().st_mode)
 
     def test_cleanup_requires_project_service_and_release_ownership(self):
         item = {"Config": {"Labels": {"com.docker.compose.project": "owned",

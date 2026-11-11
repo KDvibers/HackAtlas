@@ -63,7 +63,11 @@ def cleanup_cache(cache):
     run(["docker", "volume", "rm", cache])
 
 
-def validate_postgres_reference(project, reference, *, with_proof):
+def validate_postgres_reference(project, reference, *, with_proof, alpine=False):
+    if alpine:
+        if reference != project + "-postgres:local":
+            raise ValueError("Alpine PostgreSQL must use the release rehearsal's image tag")
+        return
     if with_proof:
         if reference == project + "-postgres:local":
             return
@@ -72,7 +76,7 @@ def validate_postgres_reference(project, reference, *, with_proof):
             return
         raise ValueError("PostgreSQL no-Go proof requires the rehearsed local image tag")
     if reference != BASE_REFERENCE:
-        raise ValueError("A local PostgreSQL image requires --postgres-without-gosu")
+        raise ValueError("A local PostgreSQL image requires its no-Go proof option")
 
 
 def main():
@@ -80,8 +84,11 @@ def main():
     parser.add_argument("--rehearsal-report", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True, help="New evidence directory; never overwritten")
     parser.add_argument("--cache-volume", help="Resume an owned hackatlas-audit-<uuid> cache left by an interrupted run")
-    parser.add_argument("--postgres-without-gosu", action="store_true",
-                        help="Prove that the rehearsed Bookworm image removed only gosu from its filesystem")
+    proof_mode = parser.add_mutually_exclusive_group()
+    proof_mode.add_argument("--postgres-without-gosu", action="store_true",
+                            help="Audit a previous Bookworm rehearsal with its original no-Go proof")
+    proof_mode.add_argument("--postgres-alpine-without-gosu", action="store_true",
+                            help="Audit the rehearsed Alpine image and its package stage")
     args = parser.parse_args()
     if os.name != "posix":
         raise ValueError("Run on Linux/WSL with the same Docker daemon as the rehearsal")
@@ -95,9 +102,16 @@ def main():
     for name, reference in references.items():
         if reference != project + "-" + name + ":local":
             raise ValueError("Unexpected rehearsed image reference")
-    rehearsed_postgres = rehearsal["images"].get("postgres", {}).get("tag")
-    validate_postgres_reference(project, rehearsed_postgres, with_proof=args.postgres_without_gosu)
-    references["postgres"] = rehearsed_postgres
+    postgres = rehearsal["images"].get("postgres", {})
+    validate_postgres_reference(project, postgres.get("tag"), with_proof=args.postgres_without_gosu,
+                                alpine=args.postgres_alpine_without_gosu)
+    references["postgres"] = postgres["tag"]
+    packages = None
+    if args.postgres_alpine_without_gosu:
+        packages_tag = project + "-postgres-packages:local"
+        packages = json.loads(run(["docker", "image", "inspect", packages_tag]))[0]
+        if packages["Id"] != postgres.get("packagesImageId"):
+            raise ValueError("Alpine package image changed since the successful rehearsal")
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=False)
     cache = args.cache_volume or "hackatlas-audit-" + uuid.uuid4().hex
@@ -137,7 +151,7 @@ def main():
             if inspect["Id"] != rehearsal["images"][name]["id"]:
                 raise ValueError("Image changed since successful rehearsal")
             archive = Path(archives.name) / (name + ".tar")
-            prove_postgres = name == "postgres" and args.postgres_without_gosu
+            prove_postgres = name == "postgres" and (args.postgres_without_gosu or args.postgres_alpine_without_gosu)
             save_scan_archive(inspect["Id"] if prove_postgres else reference, archive)
             with archive.open("rb") as stream:
                 archive_hash = hashlib.file_digest(stream, "sha256").hexdigest()
@@ -164,7 +178,9 @@ def main():
             image["reportSha256"] = hashlib.sha256(report_path.read_bytes()).hexdigest()
             if prove_postgres:
                 image["rehearsedContainerImageId"] = rehearsal["images"][name]["containerImageId"]
-                proof = produce_proof(run, inspect, image, cache, Path(archives.name))
+                if packages is not None:
+                    image["packagesImageId"] = packages["Id"]
+                proof = produce_proof(run, inspect, image, cache, Path(archives.name), packages=packages)
                 (output / PROOF_FILE).write_bytes(proof)
                 image["noGoProofSha256"] = hashlib.sha256(proof).hexdigest()
             manifest["images"][name] = image

@@ -45,8 +45,16 @@ services:
     entrypoint: ["/bin/sh", "-ec"]
     command:
       - >-
+        contents=$$(ls -A /postgres-data);
+        if [ -n "$$contents" ] && {
+          [ ! -f /postgres-data/.hackatlas-alpine-volume ] ||
+          [ "$$(stat -c '%u:%g' /postgres-data)" != "70:70" ];
+        }; then
+          echo 'Existing PostgreSQL data requires a separate Alpine volume and a logical restore.' >&2;
+          exit 1;
+        fi;
         chmod 0700 /postgres-data /caddy-data /caddy-config;
-        chown 999:999 /postgres-data;
+        chown 70:70 /postgres-data;
         chown 10001:10001 /caddy-data /caddy-config
     read_only: true
     network_mode: none
@@ -66,7 +74,7 @@ services:
 
   postgres:
     <<: *postgres-image
-    user: "999:999"
+    user: "70:70"
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -97,8 +105,8 @@ services:
       - migrator-password
       - runtime-password
     tmpfs:
-      - /var/run/postgresql:rw,nosuid,noexec,size=16m,uid=999,gid=999,mode=3775
-      - /tmp:rw,nosuid,noexec,size=16m,uid=999,gid=999,mode=1770
+      - /var/run/postgresql:rw,nosuid,noexec,size=16m,uid=70,gid=70,mode=3775
+      - /tmp:rw,nosuid,noexec,size=16m,uid=70,gid=70,mode=1770
     networks: [database]
     depends_on:
       init-volumes:
