@@ -266,6 +266,32 @@ internal fun AuthPrimaryAction(label: String, onClick: () -> Unit, enabled: Bool
 }
 
 @Composable
+internal fun AuthSecondaryAction(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    hint: String? = null,
+) {
+    Column {
+        TextButton(
+            onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = CatalogueColors.Turquoise,
+                disabledContentColor = CatalogueColors.Muted.copy(alpha = .65f),
+            ),
+        ) {
+            Text(label)
+        }
+        if (hint != null) {
+            Text(
+                hint, Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                color = CatalogueColors.Muted, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
 internal fun authFormFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedContainerColor = CatalogueColors.Background, unfocusedContainerColor = CatalogueColors.Background,
     disabledContainerColor = CatalogueColors.Background, errorContainerColor = CatalogueColors.Background,

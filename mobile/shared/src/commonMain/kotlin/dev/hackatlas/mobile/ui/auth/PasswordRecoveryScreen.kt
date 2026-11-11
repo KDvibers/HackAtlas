@@ -1,21 +1,16 @@
 package dev.hackatlas.mobile.ui.auth
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import dev.hackatlas.mobile.data.auth.AuthError
 import dev.hackatlas.mobile.data.auth.N2HttpAction
 import dev.hackatlas.mobile.data.auth.contractTextLength
@@ -92,14 +87,10 @@ internal fun PasswordRecoveryScreen(store: PasswordRecoveryStore, state: Passwor
                     AuthPrimaryAction(stringResource(Res.string.recovery_verify_code), verify, state.canVerify)
                 }
                 Column {
-                    RecoveryLink(stringResource(Res.string.verification_resend), request, state.canRequest)
-                    if (resendHint != null) {
-                        Text(
-                            resendHint, Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                            color = CatalogueColors.Muted, style = hintStyle, textAlign = TextAlign.Center,
-                        )
-                    }
-                    RecoveryLink(stringResource(Res.string.recovery_change_email), restart, !busy)
+                    AuthSecondaryAction(
+                        stringResource(Res.string.verification_resend), request, state.canRequest, hint = resendHint,
+                    )
+                    AuthSecondaryAction(stringResource(Res.string.recovery_change_email), restart, !busy)
                 }
             }
             RecoveryStep.PASSWORD -> AuthFormPanel {
@@ -125,7 +116,7 @@ internal fun PasswordRecoveryScreen(store: PasswordRecoveryStore, state: Passwor
                     RecoveryText(stringResource(Res.string.recovery_confirm_unknown))
                     AuthPrimaryAction(stringResource(Res.string.auth_login), close)
                 }
-                RecoveryLink(stringResource(Res.string.recovery_restart), restart)
+                AuthSecondaryAction(stringResource(Res.string.recovery_restart), restart)
             }
             RecoveryStep.UNAVAILABLE -> AuthFormPanel {
                 RecoveryText(stringResource(Res.string.recovery_unavailable))
@@ -153,18 +144,6 @@ private fun RecoveryFeedback(state: PasswordRecoveryState) {
         else -> null
     } ?: return
     AuthStatusPanel(message, busy = state.busy != null, isError = error != null)
-}
-
-@Composable
-private fun RecoveryLink(label: String, onClick: () -> Unit, enabled: Boolean = true) {
-    TextButton(
-        onClick = onClick, enabled = enabled, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        colors = ButtonDefaults.textButtonColors(
-            contentColor = CatalogueColors.Turquoise, disabledContentColor = CatalogueColors.Muted.copy(alpha = .65f),
-        ),
-    ) {
-        Text(label)
-    }
 }
 
 @Composable
