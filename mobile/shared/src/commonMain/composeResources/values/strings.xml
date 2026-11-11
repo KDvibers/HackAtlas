@@ -55,8 +55,6 @@
     <string name="settings">Настройки</string>
     <string name="edit_profile">Редактировать профиль</string>
     <string name="profile_edit_title">Мой профиль</string>
-    <string name="profile_edit_kicker">HACKATLAS / IDENTITY_</string>
-    <string name="profile_edit_body">Расскажите о себе. Изменения появятся после подтверждения сервера.</string>
     <string name="profile_city">Город</string>
     <string name="profile_country">Код страны</string>
     <string name="profile_role">Подпись профиля</string>
@@ -80,7 +78,7 @@
     <string name="profile_discard">Отменить изменения</string>
     <string name="profile_continue_edit">Продолжить редактирование</string>
     <string name="profile_check_saved">Проверить профиль на сервере</string>
-    <string name="profile_readonly_email">Email меняется отдельным процессом и здесь недоступен.</string>
+    <string name="profile_readonly_email">Адрес почты доступен только для просмотра.</string>
     <string name="profile_save_inflight">Запрос выполняется. Возврат к профилю не отменяет уже отправленные изменения.</string>
     <string name="edit">Изменить</string>
     <string name="interests">Мои интересы</string>

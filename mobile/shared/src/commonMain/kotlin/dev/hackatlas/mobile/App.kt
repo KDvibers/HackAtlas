@@ -404,11 +404,16 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             text = { Text(body, color = AtlasColors.TextSecondary) }, containerColor = AtlasColors.SurfaceRaised,
             titleContentColor = AtlasColors.TextPrimary,
             confirmButton = { TextButton(onClick = acknowledge) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
-    } else if(dialog=="discardProfile") {
-        AlertDialog(onDismissRequest={dialog=null},title={Text(stringResource(Res.string.profile_discard_title))},
-            text={Text(stringResource(Res.string.profile_discard_body))},containerColor=AtlasColors.SurfaceRaised,titleContentColor=AtlasColors.TextPrimary,
-            confirmButton={TextButton(onClick={dialog=null;editor?.close();route="profile"}){Text(stringResource(Res.string.profile_discard))}},
-            dismissButton={TextButton(onClick={dialog=null}){Text(stringResource(Res.string.profile_continue_edit))}})
+    } else if (dialog == "discardProfile") {
+        ProfileEditDiscardDialog(
+            confirmLabel = stringResource(Res.string.profile_discard),
+            onConfirm = {
+                dialog = null
+                editor?.close()
+                route = "profile"
+            },
+            onDismiss = { dialog = null },
+        )
     } else if (dialog == "logout" && auth != null) {
         AlertDialog(onDismissRequest = { dialog = null },
             title = { Text(stringResource(Res.string.auth_logout_title)) },
