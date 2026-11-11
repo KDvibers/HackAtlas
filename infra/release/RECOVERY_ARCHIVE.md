@@ -1,22 +1,22 @@
 # B4.5: локальный шифрованный архив
 
-Этот этап проверяет **только синтетические данные в локальной лаборатории**.
-Restic 0.19.1 имеет [открытые security findings](../../docs/research/2026-10-31-recovery-tool-security.md)
-и пока не принят для реальных данных. Облако, cron, production retention и ключи
-эксплуатации не выбраны. API и текущие команды [backup/restore/review](README.md)
-сохранены; новый инструмент не обращается к PostgreSQL и не выдаёт runtime CONNECT.
+Инструкция проверена на **синтетических данных в локальной лаборатории**
+с пересобранным [restic 0.19.1](../../docs/research/2026-11-12-restic-release-candidate.md).
+Процедура [backup/restore/review](README.md) по-прежнему требует
+подтверждения оператора. Облако, расписание, сроки хранения и ключи
+эксплуатации согласовываются для отдельного staging.
 
 ## Установка и ключ
 
-Нужны Linux amd64/WSL, Python 3.11+, native Linux filesystem и один операторский
-Unix user. Права на `/mnt/c` могут не обеспечивать private modes — файлы данных
+Нужны Linux amd64/WSL, Docker, Python 3.11+, native Linux filesystem и один
+операторский Unix user. Права на `/mnt/c` могут не обеспечивать private modes — файлы данных
 хранить в Linux home. На Windows напрямую helpers отказывают.
 
 Из корня checkout после сборки backend:
 
 ```bash
-python3 scripts/b4/install_restic.py --output backend/target/restic-0.19.1
-backend/target/restic-0.19.1 version
+python3 scripts/b4/install_restic.py
+backend/target/restic-0.19.1-rebuilt version
 recovery_private="$HOME/recovery-private"
 install -d -m 0700 "$recovery_private" "$recovery_private/keys" "$recovery_private/input"
 python3 - "$recovery_private/keys/archive-password" <<'PY'
@@ -28,16 +28,17 @@ with os.fdopen(fd, 'w') as output:
     os.fsync(output.fileno())
 PY
 archive=(python3 infra/release/ops/recovery_archive.py
-  --restic "$PWD/backend/target/restic-0.19.1"
+  --restic "$PWD/backend/target/restic-0.19.1-rebuilt"
   --repository "$recovery_private/restic-repository"
   --password-file "$recovery_private/keys/archive-password")
 "${archive[@]}" init
 ```
 
-Installer проверяет SHA256 официального `.bz2` и распакованного binary по
-[pin](ops/restic_tool.py), TLS validation включена. Уже существующий правильный
-binary только проверяется; неправильный не перезаписывается. Ничего не ставится
-глобально. Лицензия — [BSD-2-Clause](https://github.com/restic/restic/blob/v0.19.1/LICENSE).
+Установщик собирает restic в закреплённом контейнере Go 1.27.4 и сверяет
+размер и SHA-256 с [pin](ops/restic_tool.py). Сборка читает закреплённые
+`go.mod` и `go.sum` из checkout и проверяет модули через Go checksum database.
+Повторная установка проверяет уже существующий файл. Для другого пути
+используйте `--output`. Лицензия — [BSD-2-Clause](https://github.com/restic/restic/blob/v0.19.1/LICENSE).
 
 Пароль не выводится и не включается в snapshot. Private key-файл находится вне
 repository, а входы — вне него и вне самого key-файла. Credentials не передаются
@@ -149,17 +150,18 @@ python3 scripts/b4/run_rehearsal.py \
   --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar \
   --output-dir backend/target/b45-unique-rehearsal
 python3 scripts/security/audit_recovery_tool.py \
-  --restic backend/target/restic-0.19.1 \
+  --restic backend/target/restic-0.19.1-rebuilt \
   --output-dir backend/target/b45-unique-tool-audit
 ```
 
-Сейчас последняя команда **ожидаемо блокирует** готовность: код 1 при findings или
-unversioned inventory, 2 при неполной/неудачной процедуре. Это не пройденный gate.
-Обычный Backend CI проверяет функциональность; manual External release readiness
-дополнительно запускает аудит restic даже при провале контейнерного gate.
-Workflow автоматически не запускается и ничего не публикует.
+Аудит сверяет версии модуля restic и Go с pin сборки. Код 0 означает,
+что проверка зависимостей прошла. Код 1 означает блокирующую находку или
+расхождение инвентаря, код 2 — незавершённую проверку. Обычный Backend CI
+устанавливает тот же бинарник и проверяет функциональность. Ручной
+`External release readiness` запускает аудит restic даже при провале
+контейнерного аудита.
 
-До реальных данных нужны исправленный/проверенный инструмент, выбранное независимое
+До реальных данных нужны проверка на согласованном staging, независимое
 хранилище, отдельные права на запись/чтение/удаление, аварийное хранение ключа,
 расписание/оповещение об ошибках и согласованные сроки всех backups/exports/reviews.
 Локальные durations не являются production RPO/RTO. Шифрование не защищает от
