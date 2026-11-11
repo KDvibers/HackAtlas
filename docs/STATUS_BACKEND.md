@@ -313,6 +313,38 @@ git push origin feat/backend-recovery-archive
 Start-Process 'https://github.com/KDvibers/HackAtlas/pull/19/checks'
 ```
 
+## B4 — обновление APT в Java-образе, 10 ноября 2026
+
+PR #41 вошёл в `main` в `2ca0eb4`. На этой базе создана ветка
+`fix/release-apt-security-update`. В [отчёте PR #41](https://github.com/KDvibers/HackAtlas/actions/runs/42847580232)
+Trivy отметил `apt` и `libapt-pkg6.0t64` версии `2.8.3` по одному advisory
+`CVE-2026-109518`. В [Dockerfile](../backend/Dockerfile) оба пакета обновлены до
+`2.8.4ubuntu0.1` по [рекомендации Canonical](https://ubuntu.com/security/CVE-2026-109518).
+Источники Ubuntu переводятся на HTTPS до первой операции обновления. Сборка
+установила ровно два обновления и удалила индексы APT. Runtime работает от UID 10001.
+
+На Java 21 от обычного пользователя выполнен
+`bash ./mvnw --batch-mode --no-transfer-progress verify` из `backend/`.
+Прошли 47 модульных и 311 интеграционных тестов. Прошли 28 тестов аудита,
+валидация канонического OpenAPI и 13 примеров.
+
+`python scripts/b4/run_rehearsal.py --jar backend/target/hackatlas-backend-0.1.0-SNAPSHOT.jar --output-dir backend/target/b4-apt-rehearsal` — **12 проверок PASS за 202,972 с**.
+Пройдены HTTPS с проверкой сертификата, HSTS, редирект 308, публичные запросы по
+канонической схеме, backup, восстановление в карантин с учётом удалений и
+миграции V6–V9. Сравнение `dpkg-query` в старом и испытанном новом образах
+показало только две смены версий. В новом образе проверены UID 10001, SHA-256
+JAR из репетиции, HTTPS-источники APT и пустой каталог индексов.
+
+Trivy 0.76.1 повторно обнаружил две записи `CVE-2026-109518` в старом образе.
+Затем штатный `scripts/security/run_container_audit.py` проверил все три образа
+из новой репетиции с той же базой advisories и свежим Java-индексом.
+`evidenceComplete=true`. В испытанном Java-образе обе записи исчезли. Всего
+**0 CRITICAL, 0 HIGH, 32 MEDIUM, 4 LOW, 0 UNKNOWN**. Общий контейнерный допуск
+остаётся закрыт: у Caddy 2 HIGH и 1 UNKNOWN, у PostgreSQL 4 CRITICAL, 117 HIGH и
+26 UNKNOWN. Отдельный аудит restic в этом этапе не повторялся. Артефакты
+сохранены в `backend/target/b4-apt-rehearsal/`, `b4-apt-os-audit/` и
+`b4-apt-full-audit/`. Следующий серверный шаг — разобрать критические находки PostgreSQL.
+
 ## B4 — разбор PostgreSQL CRITICAL, 10 ноября 2026
 
 От `main` `19ad561` создана ветка `chore/b4-postgres-critical-review`. PR #43
