@@ -124,18 +124,6 @@ fun HackathonMiniCard(event: Hackathon, format: DisplayFormat, onOpen: () -> Uni
 }
 
 @Composable
-fun InfoItem(icon: AtlasIcon, title: String, value: String, note: String? = null, modifier: Modifier = Modifier) {
-    Row(modifier.padding(vertical = 11.dp, horizontal = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlineIcon(icon, Modifier.padding(top = 3.dp).size(19.dp), AtlasColors.Primary)
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, color = AtlasColors.TextMuted, fontSize = 10.sp, lineHeight = 13.sp)
-            Text(value, color = AtlasColors.TextPrimary, fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium)
-            if (note != null) Text(note, color = AtlasColors.TextSecondary, fontSize = 9.sp, lineHeight = 13.sp)
-        }
-    }
-}
-
-@Composable
 fun InterestChip(label: String) {
     Text(label, Modifier.border(1.dp, AtlasColors.Border, RoundedCornerShape(20.dp)).background(AtlasColors.Primary.copy(alpha = .055f), RoundedCornerShape(20.dp)).padding(horizontal = 13.dp, vertical = 7.dp), fontSize = 12.sp, lineHeight = 17.sp, color = AtlasColors.TextPrimary)
 }
