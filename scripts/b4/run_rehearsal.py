@@ -177,14 +177,16 @@ class Rehearsal:
             text = text.replace(value, "[REDACTED]")
         return text
 
-    def run(self, label, command, *, input_text=None, timeout=180, allow_failure=False):
+    def run(self, label, command, *, input_text=None, timeout=180, allow_failure=False, log_stdout_on_failure=False):
         started = time.monotonic()
         result = subprocess.run(command, input=input_text, text=True, capture_output=True, cwd=ROOT,
                                 env=self.env, timeout=timeout)
         with (self.output / "commands.log").open("a", encoding="utf-8") as log:
             log.write(f"{label}: exit={result.returncode}, seconds={time.monotonic()-started:.3f}\n")
-            if result.returncode and result.stderr:
-                log.write(self.redact(result.stderr[-12000:]) + "\n")
+            if result.returncode:
+                for stream in (result.stdout if log_stdout_on_failure else "", result.stderr):
+                    if stream:
+                        log.write(self.redact(stream)[-12000:] + "\n")
         require(allow_failure or result.returncode == 0, label + " failed; see redacted commands.log")
         return result
 
@@ -215,7 +217,8 @@ class Rehearsal:
         # Build directly so Compose does not add image labels to the base configuration.
         self.run("Build PostgreSQL without gosu", ["docker", "build", "--network", "none",
                  "--tag", postgres_tag, str(RELEASE / "postgres")], timeout=900)
-        self.dc("Build exact tested application and proxy images", "build", "app", "proxy", timeout=900)
+        self.dc("Build exact tested application and proxy images", "--progress", "plain", "build", "app", "proxy",
+                timeout=900, log_stdout_on_failure=True)
         self.report["images"] = {}
         for service, variable in (("app", "HACKATLAS_APP_IMAGE"), ("proxy", "HACKATLAS_PROXY_IMAGE"),
                                   ("postgres", "HACKATLAS_POSTGRES_IMAGE")):
