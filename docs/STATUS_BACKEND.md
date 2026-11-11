@@ -1007,6 +1007,31 @@ git push -u origin fix/backend-release-security
 Start-Process 'https://github.com/KDvibers/HackAtlas/compare/main...fix/backend-release-security?expand=1'
 ```
 
+## B4 — подготовка внешнего staging, 12 ноября 2026
+
+Из `origin/main` (`0e5b462`) создана ветка `chore/staging-readme`. В
+[корневом README](../README.md) обновлены команда, статус, команды запуска
+и точки входа для разработчиков. [Инструкция staging](../infra/release/STAGING.md)
+фиксирует запуск, HTTPS smoke, backup, карантин, откат и передачу стенда на M4.
+
+GitHub подтвердил, что PostgreSQL Alpine и Caddy в `main`. [PR #62](https://github.com/KDvibers/HackAtlas/pull/62)
+с restic открыт на `fix/release-caddy-go-dependencies`, его [Backend CI](https://github.com/KDvibers/HackAtlas/actions/runs/43090416799)
+прошёл. Проверка дерева для текущего `main` и restic `94676a4` прошла без
+конфликтов. Релизные входы совпали с `a88fb91` из [External release readiness](https://github.com/KDvibers/HackAtlas/actions/runs/43088840175),
+где прошли HTTPS, шифрованный backup, проверка чтения архива, восстановление
+и аудит образов/restic. Trivy для restic сообщил одну LOW-находку.
+
+Локально в WSL под UID 1000 проверены базовый Compose и loopback-вариант:
+порты 80/443 публикует только Caddy, сети PostgreSQL и приложения внутренние,
+права Flyway и runtime разделены, регистрация и DEMO закрыты. `caddy validate`
+прошёл на образе из локальной релизной репетиции (`sha256:29003b76e84b3ac6857619efdd108d0ff09524fc5efb13d526259929a2c30bcf`)
+в контейнере без сети. Данные существующих окружений не использовались.
+
+Следующие условия B4 — интеграция restic в `main`, повторный запуск проверки
+на SHA staging, согласованный хост, DNS и независимое хранилище. На стенде
+предстоит проверить HTTPS с устройства, восстановление с фактическими RPO/RTO
+и совместный smoke с M4. Внешнего запуска в этом этапе не было.
+
 ## B4 — подготовка и локальная проверка выполнены; внешнего staging нет
 
 **Текущая согласованная часть B4 выполнена. Полный B4 по ROADMAP ещё не закрыт.** Пользователь ответил: «Пока только подготовка и локальные проверки». Хостинг, бюджет, регион и домен не выбирались, deployment/DNS/публикация не выполнялись. Публичная регистрация закрыта; реальный HTTPS staging, M4 и предрелизные условия остаются отдельной работой.
