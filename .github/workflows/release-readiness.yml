@@ -37,6 +37,7 @@ jobs:
           scripts/b1/.venv/bin/python -m pip install --disable-pip-version-check -r scripts/b1/requirements.txt
           scripts/b1/.venv/bin/python -m pip check
           scripts/b1/.venv/bin/python scripts/b4/install_restic.py --output backend/target/restic-0.19.1
+          scripts/b1/.venv/bin/python -m unittest discover -s scripts/b4 -p 'test_rehearsal.py'
           scripts/b1/.venv/bin/python -m unittest discover -s scripts/security -p 'test_*.py'
           scripts/b1/.venv/bin/python scripts/security/check_maven_dependencies.py --dependencies backend/target/runtime-dependencies.txt --output backend/target/dependency-audit.json
       - name: Rehearse local HTTPS and recovery
@@ -49,7 +50,7 @@ jobs:
           scripts/b1/.venv/bin/python scripts/security/run_container_audit.py
           --rehearsal-report backend/target/release-rehearsal/report.json
           --output-dir backend/target/container-audit
-          --postgres-without-gosu
+          --postgres-alpine-without-gosu
       - name: Audit recovery operator tool and block unresolved findings
         if: always()
         run: >-

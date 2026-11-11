@@ -1,4 +1,4 @@
-"""Record and verify the filesystem difference for the Bookworm image without gosu."""
+"""Record and verify the filesystem difference for a pinned image without gosu."""
 
 import hashlib
 import json
@@ -10,8 +10,17 @@ import tarfile
 BASE_REFERENCE = (
     "postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5"
 )
+ALPINE_BASE_REFERENCE = (
+    "postgres:17.11-alpine3.24@sha256:4717f90960a225c2d1c5dac50508c401230f693ff626e06e84e6db0a68ded508"
+)
+ALPINE_BASE_IDS = {
+    ALPINE_BASE_REFERENCE.split("@")[1],
+    "sha256:aac5ed9e090c8b3e134bf1dcf3f9fe0787a29cecdf7867de8b53b5d8abc3eef2",
+}
+ALPINE_PACKAGES = {"krb5-libs": "1.22.3-r0", "libxslt": "1.1.43-r4", "zlib": "1.4-r0"}
 PROOF_FILE = "postgres-no-go.json"
 METHOD = "postgres-bookworm-rootfs-diff-v1"
+ALPINE_METHOD = "postgres-alpine-rootfs-diff-v2"
 GOSU = "usr/local/bin/gosu"
 GO_MARKERS = (b"\xff Go buildinf:", b".note.go.buildid")
 BINDINGS = ("inspectedImageId", "rehearsedContainerImageId", "configDigest", "archiveSha256", "reportSha256")
@@ -86,11 +95,14 @@ def validate_inventory(files):
 
 
 def validate_proof(proof, image):
-    require(isinstance(proof, dict) and type(proof.get("formatVersion")) is int
-            and proof["formatVersion"] == 1 and proof.get("method") == METHOD, "Unsupported PostgreSQL proof")
-    require(proof.get("baseReference") == BASE_REFERENCE and matches(IMAGE_ID, proof.get("baseImageId")),
+    require(isinstance(proof, dict) and type(proof.get("formatVersion")) is int, "Unsupported PostgreSQL proof")
+    version = (proof["formatVersion"], proof.get("method"))
+    require(version in ((1, METHOD), (2, ALPINE_METHOD)), "Unsupported PostgreSQL proof")
+    alpine = version == (2, ALPINE_METHOD)
+    reference, user = (ALPINE_BASE_REFERENCE, "70:70") if alpine else (BASE_REFERENCE, "999:999")
+    require(proof.get("baseReference") == reference and matches(IMAGE_ID, proof.get("baseImageId")),
             "Unexpected PostgreSQL proof base")
-    require(proof.get("candidateUser") == "999:999", "PostgreSQL candidate must run as 999:999")
+    require(proof.get("candidateUser") == user, "Unexpected PostgreSQL candidate user")
     binding = proof.get("candidate")
     require(isinstance(binding, dict) and set(binding) == set(BINDINGS), "Incomplete PostgreSQL proof identity")
     require(all(matches(IMAGE_ID if key.endswith(("Id", "Digest")) else SHA256, binding[key])
@@ -101,6 +113,12 @@ def validate_proof(proof, image):
     require(isinstance(base_layers, list) and base_layers and isinstance(candidate_layers, list)
             and all(matches(IMAGE_ID, digest) for digest in candidate_layers)
             and candidate_layers[:-1] == base_layers, "PostgreSQL image must add one layer to the pinned base")
+    if alpine:
+        require(proof.get("officialBaseImageId") in ALPINE_BASE_IDS, "Unexpected official Alpine image")
+        require(proof["baseImageId"] == image.get("packagesImageId"), "Unexpected Alpine package image")
+        official_layers = proof.get("officialBaseLayers")
+        require(isinstance(official_layers, list) and official_layers and base_layers[:-1] == official_layers,
+                "Unexpected Alpine package layer")
     base, candidate = proof.get("baseFiles"), proof.get("candidateFiles")
     validate_inventory(base)
     validate_inventory(candidate)
@@ -109,6 +127,7 @@ def validate_proof(proof, image):
     require(any(entry[0] == "elf" for entry in candidate.values()), "Candidate ELF inventory is empty")
     require(candidate.keys() == base.keys() - {GOSU} and all(base[path] == entry for path, entry in candidate.items()),
             "PostgreSQL filesystem difference is more than removing gosu")
+    return "alpine" if alpine else "debian"
 
 
 def export_inventory(run, image_id, expected_container_image_id, cache, export):
@@ -133,16 +152,27 @@ def export_inventory(run, image_id, expected_container_image_id, cache, export):
         export.unlink(missing_ok=True)
 
 
-def produce_proof(run, candidate, image, cache, directory):
-    base = json.loads(run(["docker", "image", "inspect", BASE_REFERENCE]))[0]
+def produce_proof(run, candidate, image, cache, directory, *, packages=None):
+    alpine = packages is not None
+    reference, user = (ALPINE_BASE_REFERENCE, "70:70") if alpine else (BASE_REFERENCE, "999:999")
+    official = json.loads(run(["docker", "image", "inspect", reference]))[0]
+    base = packages if alpine else official
     require(base["Os"] == candidate["Os"] == "linux" and base["Architecture"] == candidate["Architecture"],
             "Unexpected PostgreSQL candidate platform")
-    require(candidate["Config"] == {**base["Config"], "User": "999:999"}, "Unexpected PostgreSQL image configuration")
-    proof = {"formatVersion": 1, "method": METHOD, "baseReference": BASE_REFERENCE, "baseImageId": base["Id"],
+    require(candidate["Config"] == {**base["Config"], "User": user}, "Unexpected PostgreSQL image configuration")
+    if alpine:
+        require(official["Id"] in ALPINE_BASE_IDS and official["Os"] == "linux"
+                and official["Architecture"] == base["Architecture"] == "amd64", "Unexpected official Alpine image")
+        require(base["Config"] == official["Config"]
+                and base["RootFS"]["Layers"][:-1] == official["RootFS"]["Layers"], "Unexpected Alpine package layer")
+    proof = {"formatVersion": 2 if alpine else 1, "method": ALPINE_METHOD if alpine else METHOD,
+             "baseReference": reference, "baseImageId": base["Id"],
              "baseLayers": base["RootFS"]["Layers"], "candidateLayers": candidate["RootFS"]["Layers"],
              "candidateUser": candidate["Config"]["User"], "candidate": {key: image[key] for key in BINDINGS},
              "baseFiles": export_inventory(run, base["Id"], None, cache, directory / "base-rootfs.tar"),
              "candidateFiles": export_inventory(run, candidate["Id"], image["rehearsedContainerImageId"],
                                                 cache, directory / "candidate-rootfs.tar")}
+    if alpine:
+        proof.update(officialBaseImageId=official["Id"], officialBaseLayers=official["RootFS"]["Layers"])
     validate_proof(proof, image)
     return json.dumps(proof, sort_keys=True, separators=(",", ":")).encode()

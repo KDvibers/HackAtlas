@@ -23,3 +23,5 @@ GRANT CONNECT ON DATABASE hackatlas TO hackatlas_runtime;
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
 GRANT USAGE, CREATE ON SCHEMA public TO hackatlas_migrator;
 SQL
+
+touch "$PGDATA/.hackatlas-alpine-volume"

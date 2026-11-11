@@ -34,7 +34,7 @@ sys.path.insert(0, str(RELEASE / "ops"))
 from restore_review import approval_sql
 from restic_tool import verify_binary
 sys.path.insert(0, str(ROOT / "scripts/security"))
-from postgres_no_go import BASE_REFERENCE
+from postgres_no_go import ALPINE_BASE_REFERENCE
 from recovery_archive_checks import RecoveryArchiveChecks
 SERVICES = {"init-volumes", "postgres", "migrate", "app", "proxy"}
 SECRET_FILES = ("postgres-admin-password", "migrator-password", "runtime-password")
@@ -213,10 +213,15 @@ class Rehearsal:
         postgres_tag = self.env["HACKATLAS_POSTGRES_IMAGE"]
         validate_postgres_image(config, postgres_tag)
         self.passed("effective Compose exposes only two loopback proxy ports")
-        self.run("Pull pinned PostgreSQL Bookworm base", ["docker", "pull", BASE_REFERENCE], timeout=600)
+        self.run("Pull pinned PostgreSQL Alpine base",
+                 ["docker", "pull", "--platform", "linux/amd64", ALPINE_BASE_REFERENCE], timeout=600)
         # Build directly so Compose does not add image labels to the base configuration.
-        self.run("Build PostgreSQL without gosu", ["docker", "build", "--network", "none",
-                 "--tag", postgres_tag, str(RELEASE / "postgres")], timeout=900)
+        packages_tag = self.project + "-postgres-packages:local"
+        docker_build = ["docker", "build", "--platform", "linux/amd64"]
+        for target, tag in (("packages", packages_tag), ("release", postgres_tag)):
+            self.run("Build PostgreSQL Alpine " + target,
+                     [*docker_build, "--target", target, "--tag", tag, str(RELEASE / "postgres")],
+                     timeout=900, log_stdout_on_failure=True)
         self.dc("Build exact tested application and proxy images", "--progress", "plain", "build", "app", "proxy",
                 timeout=900, log_stdout_on_failure=True)
         self.report["images"] = {}
@@ -225,6 +230,8 @@ class Rehearsal:
             tag = self.env[variable]
             inspect = json.loads(self.run("Inspect built " + service, ["docker", "image", "inspect", tag]).stdout)[0]
             self.report["images"][service] = {"tag": tag, "id": inspect["Id"]}
+        packages = json.loads(self.run("Inspect PostgreSQL package stage", ["docker", "image", "inspect", packages_tag]).stdout)[0]
+        self.report["images"]["postgres"]["packagesImageId"] = packages["Id"]
         self.started = True
         self.dc("Start isolated database", "up", "-d", "--wait", "--wait-timeout", str(self.timeout), "postgres", timeout=self.timeout + 60)
         self.dc("Run migrations as separate migrator role", "--profile", "ops", "run", "--rm", "migrate", timeout=self.timeout)
@@ -259,7 +266,7 @@ class Rehearsal:
         return result if allow_failure else result.stdout.strip()
 
     def inspect_runtime(self):
-        for service, uid in (("app", "10001:10001"), ("proxy", "10001:10001"), ("postgres", "999:999")):
+        for service, uid in (("app", "10001:10001"), ("proxy", "10001:10001"), ("postgres", "70:70")):
             identifier = self.dc("Find owned " + service, "ps", "-q", service).stdout.strip()
             container = json.loads(self.run("Inspect owned " + service, ["docker", "inspect", identifier]).stdout)[0]
             validate_owned([container], self.project)

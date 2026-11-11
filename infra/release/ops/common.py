@@ -30,7 +30,7 @@ def client_command(container, tool, role="admin", arguments=()):
     secret = "postgres-admin-password" if role == "admin" else "migrator-password"
     # Password is read inside the container, never a Docker environment entry or CLI argument.
     shell = 'PGPASSWORD=$(cat /run/secrets/' + secret + '); export PGPASSWORD; exec "$@"'
-    return ["docker", "exec", "-i", "--user", "999:999", container, "/bin/sh", "-ec", shell,
+    return ["docker", "exec", "-i", "--user", "70:70", container, "/bin/sh", "-ec", shell,
             "release-db-client", tool, "--host=127.0.0.1", "--username=hackatlas_" + role, *arguments]
 
 

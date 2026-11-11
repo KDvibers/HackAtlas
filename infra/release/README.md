@@ -16,15 +16,17 @@
 | Компонент | Источник образа | Назначение |
 |---|---|---|
 | Java runtime | `eclipse-temurin:21.0.13_9-jre-noble@sha256:03fedab2c0d7355868b5ba5330d64088b956a0bfac48f904e5c57207e261e2c9` | Только JRE и уже проверенный JAR |
-| PostgreSQL | [Локальный образ](postgres/Dockerfile) на базе `postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5` | База под UID/GID 999, клиенты backup/restore и подготовка томов |
+| PostgreSQL | [Локальный образ](postgres/Dockerfile) на базе `postgres:17.11-alpine3.24@sha256:4717f90960a225c2d1c5dac50508c401230f693ff626e06e84e6db0a68ded508` для Linux amd64 | База под UID/GID 70, клиенты backup/restore и подготовка томов |
 | Caddy base | `caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee` | HTTPS и reverse proxy |
 
-Digest фиксирует содержимое, tag показывает версию. Caddy собирается из этого
-официального образа с точечными обновлениями `brotli-libs=1.2.1-r0`,
-`curl=8.23.0-r0` и `libcurl=8.23.0-r0` из подписанных Alpine repositories
-(CVE-2026-111497 и curl advisories, включая CVE-2026-92392), а также `setcap -r /usr/bin/caddy`:
-file capability официального бинарника мешает запуску с `cap_drop: ALL`.
-Внутри контейнера используются непривилегированные порты 8080/8443. Alpine может
+Digest фиксирует содержимое, tag показывает версию. Runtime Caddy сохраняет
+официальный базовый образ и обновления `brotli-libs=1.2.1-r0`,
+`curl=8.23.0-r0` и `libcurl=8.23.0-r0` из подписанных репозиториев Alpine
+(CVE-2026-111497 и curl advisories, включая CVE-2026-92392). Бинарник
+Caddy 2.11.9 собирается стандартным набором модулей на Go 1.27.4 из
+закреплённого builder-образа. В runtime копируется бинарник без file
+capabilities. Внутри контейнера используются порты 8080/8443 и
+`cap_drop: ALL`. Alpine может
 обновить зависимости закреплённых пакетов при сборке. Итоговые версии проверяются
 по фактическому образу. Java Dockerfile копирует только JAR из `backend/target`;
 исходники, Maven, `.env` и секреты в build context не попадают.
@@ -42,28 +44,37 @@ Ubuntu 24.04. Перед установкой источники APT перев�
 Источники проверки версий:
 [официальный Caddy tag](https://hub.docker.com/v2/repositories/library/caddy/tags/2.11.9-alpine),
 [официальный Temurin tag](https://hub.docker.com/v2/repositories/library/eclipse-temurin/tags/21.0.13_9-jre-noble),
-[официальный PostgreSQL tag](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-bookworm),
+[официальный PostgreSQL tag](https://hub.docker.com/v2/repositories/library/postgres/tags/17.11-alpine3.24),
 [Temurin Dockerfile](https://github.com/adoptium/containers/blob/main/21/jre/ubuntu/noble/Dockerfile).
 
 На 30.10.2026 официальный Docker tag для [Temurin 21.0.13+9](https://github.com/adoptium/temurin21-binaries/releases/tag/jdk-21.0.13%2B9)
 доступен: закреплена публикация от 29 октября. Прямое `java -version` подтвердило
 `Temurin-21.0.13+9`; host SDK не менялся. Trivy не распознаёт установленный из tar
 JRE как отдельный пакет, поэтому реальная версия runtime по-прежнему проверяется
-отдельно. PostgreSQL 17.11 закреплён на пересборке от 28 октября. Локальный
-Dockerfile удаляет `/usr/local/bin/gosu` и задаёт `USER 999:999`. Оба сервиса
+отдельно. Стадия `packages` образа PostgreSQL устанавливает
+`krb5-libs=1.22.3-r0`, `libxslt=1.1.43-r4` и `zlib=1.4-r0` из
+подписанного репозитория Alpine 3.24. Стадия `release` удаляет
+`/usr/local/bin/gosu` и задаёт `USER 70:70`. PostgreSQL и `init-volumes`
 получают один тег из `HACKATLAS_POSTGRES_IMAGE` с `pull_policy: never`.
-`init-volumes` запускает только свой shell entrypoint с доступом для
-подготовки корней томов, затем PostgreSQL работает от `999:999`.
 
 Caddy 2.11.9 включает исправления [2.11.8](https://github.com/caddyserver/caddy/releases/tag/v2.11.8)
 и [2.11.9](https://github.com/caddyserver/caddy/releases/tag/v2.11.9). Официальный
 Linux amd64 manifest `sha256:fc9cbc100585871d18d4e451cca7021785c90a7006087427ae5ceb3e4efe6424`.
-В собранном бинарнике проверены Go `1.27.3` и `golang.org/x/net` `v0.60.0`.
+Сборка проверяет контрольные суммы из [go.sum](proxy/caddy-build/go.sum).
+Версии `golang.org/x/net v0.62.0` и `golang.org/x/crypto v0.59.0`
+закреплены в [go.mod](proxy/caddy-build/go.mod). Переход на
+`go-jose/v4 v4.1.9` использует Smallstep crypto `v0.92.0` и
+псевдоверсию Smallstep Certificates, закреплённую на коммите upstream.
+[Go 1.27.4](https://go.dev/doc/devel/release#go1.27.minor),
+[Smallstep Certificates](https://github.com/smallstep/certificates/commit/6d5a251fbe010383c93ead1ab451a329986b80ca).
 
-PostgreSQL 17.11 остаётся [актуальным minor в ветке 17](https://www.postgresql.org/support/versioning/).
-Закреплён свежий официальный build образа от 21.10.2026; index digest сверён с
-registry manifest и Docker Hub metadata. Это обновление образа той же версии БД,
-которое также требует повторной проверки миграций и восстановления.
+Для переноса с Bookworm используйте отдельный Compose project с новым томом
+Alpine и логический backup старой БД. Для источника используйте команды
+из checkout, которым был развёрнут Bookworm. Инициализатор отклоняет непустой
+PostgreSQL-том без метки Alpine или с чужим UID до изменения прав. Не
+переносите каталог PGDATA между образами и сохраняйте исходный том.
+Перед переключением нужны проверка карантинного восстановления и
+независимая сверка истории удалений для отката.
 
 ## Изоляция и доступ
 
@@ -74,7 +85,7 @@ registry manifest и Docker Hub metadata. Это обновление образ
 не ниже 2.24.4. Фиксированных `container_name` нет: уникальный project отделяет
 сети, volumes и контейнеры каждой репетиции.
 
-Java и Caddy работают под UID/GID 10001, PostgreSQL — 999. У долгоживущих
+Java и Caddy работают под UID/GID 10001, PostgreSQL — 70. У долгоживущих
 сервисов read-only rootfs, `cap_drop: ALL`, `no-new-privileges`, ограниченные tmpfs,
 CPU, память, PID и размер Docker logs (3 × 10 MiB). Единственный root-процесс —
 короткий `init-volumes`: без сети, только с правами смены владельцев трёх volumes
@@ -142,8 +153,8 @@ release_project=hackatlas-b4-local
 
 compose=(docker compose --env-file /dev/null --project-name "$release_project"
   -f infra/release/compose.yaml -f infra/release/compose.local.yaml)
-docker pull postgres:17.11-bookworm@sha256:839fbb5a4942a7758dd93e18b42ea5649807491a0545b5eeeb8f0b8bb11857a5
-docker build --network none --tag "$HACKATLAS_POSTGRES_IMAGE" infra/release/postgres
+docker pull --platform linux/amd64 postgres:17.11-alpine3.24@sha256:4717f90960a225c2d1c5dac50508c401230f693ff626e06e84e6db0a68ded508
+docker build --platform linux/amd64 --target release --tag "$HACKATLAS_POSTGRES_IMAGE" infra/release/postgres
 "${compose[@]}" config --quiet
 "${compose[@]}" build app proxy
 "${compose[@]}" up --detach --wait postgres

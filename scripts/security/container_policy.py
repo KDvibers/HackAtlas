@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import sys
 
-from postgres_no_go import PROOF_FILE, validate_proof
+from postgres_no_go import ALPINE_PACKAGES, PROOF_FILE, validate_proof
 
 SCANNER_VERSION = "0.76.1"
 SCANNER_IMAGE = "aquasec/trivy@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c"
@@ -82,12 +82,18 @@ def evaluate_report(report, expected_config_digest, *, now):
 def postgres_coverage(image, report, summary, raw_proof):
     require(isinstance(raw_proof, bytes), "PostgreSQL proof is missing")
     require(hashlib.sha256(raw_proof).hexdigest() == image["noGoProofSha256"], "PostgreSQL proof hash mismatch")
-    require(summary["types"] == ["debian"] and not any(result.get("Type") == "gobinary" for result in report["Results"]),
-            "Trivy report contradicts the PostgreSQL no-Go proof")
     try:
-        validate_proof(json.loads(raw_proof), image)
+        distro = validate_proof(json.loads(raw_proof), image)
     except (ValueError, TypeError, KeyError) as error:
         raise PolicyError(str(error)) from error
+    require(summary["types"] == [distro] and not any(result.get("Type") == "gobinary" for result in report["Results"]),
+            "Trivy report contradicts the PostgreSQL no-Go proof")
+    if distro == "alpine":
+        packages = [p for result in report["Results"] if result.get("Class") == "os-pkgs" and result.get("Type") == "alpine"
+                    for p in result["Packages"] if p["Name"] in ALPINE_PACKAGES]
+        require(len(packages) == len(ALPINE_PACKAGES) and {p["Name"]: p["Version"] for p in packages} == ALPINE_PACKAGES,
+                "Unexpected Alpine package versions in the PostgreSQL report")
+        return "Pinned Alpine filesystem proof: only gosu was removed after the package update."
     return "Pinned Bookworm filesystem proof: only gosu was removed from the rehearsed PostgreSQL image."
 
 

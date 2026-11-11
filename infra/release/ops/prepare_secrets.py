@@ -22,7 +22,7 @@ def main():
         path = directory / name
         with path.open("x", encoding="ascii") as output:
             output.write(secrets.token_hex(32) + "\n")
-        # Parent is 0700; mounted individual files must be readable by PG999 and Java10001.
+        # Parent is 0700. Mounted files must be readable by PostgreSQL and Java.
         path.chmod(0o444)
     print(json.dumps({"directory": str(directory), "created": 3, "valuesPrinted": False}))
 

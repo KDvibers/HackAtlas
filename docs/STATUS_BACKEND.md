@@ -1,5 +1,74 @@
 # BACKEND: статус
 
+## B4 — сборка Caddy 2.11.9 с обновлёнными Go-зависимостями, 11 ноября 2026
+
+[PR #59](https://github.com/KDvibers/HackAtlas/pull/59) подтверждён на
+[External release readiness](https://github.com/KDvibers/HackAtlas/actions/runs/43079915331)
+для `3bfbef0`. GitHub прошёл Maven и все 12 проверок репетиции.
+Аудит принял доказательство для точного образа PostgreSQL Alpine
+`sha256:19103363ed6650ef424d6b93d03ba28eaa51d8117d54d986867a18ae9f34ff39`.
+В PostgreSQL и backend отсутствовали `CRITICAL`, `HIGH` и `UNKNOWN`.
+Общий запуск завершился ошибкой на прежнем Caddy и отдельном аудите restic.
+
+Ветка `fix/release-caddy-go-dependencies` создана от проверенного `3bfbef0`.
+[Сборка прокси](../infra/release/proxy/Dockerfile) сохраняет релизный
+Caddy `v2.11.9` и официальный runtime Alpine. Стандартный бинарник
+собирается на закреплённом Go `1.27.4` с `go mod verify` и
+`go build -mod=readonly`. `x/net v0.62.0` и `x/crypto v0.59.0`
+закреплены в [Go-модуле](../infra/release/proxy/caddy-build/go.mod).
+`go-jose/v4 v4.1.9` пришёл с обновлением Smallstep crypto и закреплённым
+коммитом Smallstep Certificates, который использует upstream Caddy.
+[Go 1.27.4](https://go.dev/doc/devel/release#go1.27.minor),
+[Smallstep Certificates](https://github.com/smallstep/certificates/commit/6d5a251fbe010383c93ead1ab451a329986b80ca).
+
+В образе репетиции `sha256:b55f6e2bcfb7153e6aa39daff4297a7c21ed1b3c5345434dfae0e2c85e817e02`
+сверены версии встроенных модулей и одинаковый набор из 136 модулей Caddy.
+Оба Caddyfile прошли валидацию. Подтверждены UID/GID `10001:10001`
+и отсутствие file capabilities. В бинарнике нет зависимости `go-jose/v3`.
+
+В WSL под UID 1000 прошли 358 тестов Maven, 96 тестов скриптов,
+OpenAPI и 13 примеров, OSV по 111 зависимостям и все 12 проверок
+релизной репетиции, включая HTTPS и восстановление в карантин.
+Отдельный запрос к тому же образу подтвердил HTTP/2 с проверкой TLS.
+Полный Trivy точных образов показал `evidenceComplete=true` и
+`containerGatePassed=true`. У Caddy, PostgreSQL и backend по 0
+`CRITICAL`, `HIGH` и `UNKNOWN`. Локальные отчёты находятся в
+`backend/target/release-caddy-go-*`.
+
+Для публикации остаются проверка этой ветки на GitHub, отдельный
+аудит restic и согласованный staging. Последний GitHub-аудит restic
+показал 23 `HIGH`, 2 `UNKNOWN` и неполный инвентарь Go.
+
+## B4 — Alpine без gosu в релизном Compose, 11 ноября 2026
+
+Интеграция на `feat/release-postgres-alpine` от `main` `48f2e5b`
+после [PR #57](https://github.com/KDvibers/HackAtlas/pull/57).
+Релизный Compose и `External release readiness` используют
+PostgreSQL 17.11 Alpine 3.24 для Linux amd64. Стадия пакетов закрепляет
+`krb5-libs=1.22.3-r0`, `libxslt=1.1.43-r4` и `zlib=1.4-r0`.
+Релизная стадия удаляет `gosu` и задаёт UID/GID `70:70`.
+Инициализатор отказывает для непустого тома Bookworm до изменения прав.
+Новый том заполняется логическим backup с восстановлением в карантин.
+
+Аудит v2 сверяет закреплённый Alpine, ID стадии пакетов, цепочку слоёв,
+пользователя, инвентарь файлов и версии пакетов Trivy. Доказательство
+привязано к ID образа и контейнера, config digest и SHA-256 архива и отчёта.
+Репетиция `hackatlas-b4-7ebb6cf870b6` использовала образ
+`sha256:18840cdb0b4b854822537c1f019184413b1ccb0eb89b5760f1323fef41ed4218`.
+Аудит подтвердил `evidenceComplete=true`. У PostgreSQL и backend
+0 `CRITICAL`, 0 `HIGH` и 0 `UNKNOWN`. Caddy блокирует выпуск
+(2 `HIGH`, 2 `UNKNOWN`). Отдельный аудит restic блокируется из-за
+23 `HIGH`, 2 `UNKNOWN` и отсутствия версии собственного Go-модуля.
+
+Проверки в WSL под UID 1000: 358 Maven-тестов, 55 тестов B4, 41 тест
+аудита, OpenAPI и 13 примеров, OSV по 111 зависимостям, 12 шагов
+репетиции с HTTPS и восстановлением в карантин. Дополнительный
+Docker-прогон подтвердил отказ для временного тома с UID/GID `999:999`
+и сохранение метаданных и контрольной суммы. Отчёты находятся в
+`backend/target/release-postgres-alpine-*`. Следующая проверка на GitHub
+доступна после публикации ветки. Операционный переход с Bookworm требует
+нового тома, проверки восстановления и независимой сверки истории удалений.
+
 ## B4 — локальная репетиция PostgreSQL на Alpine, 11 ноября 2026
 
 [Отчёт о репетиции](research/2026-11-11-postgres-alpine-rehearsal.md).
@@ -11,10 +80,8 @@ Compose под UID/GID `70:70` прошёл HTTPS, Flyway и карантинн�
 и изменения после переключения. Старые сессии отозваны. Сравненные выдачи
 поиска, сортировки, страниц и метаданных фильтров совпали.
 
-Следующий отдельный шаг — воспроизводимый образ Alpine и его проверка
-штатной политикой релиза, включая доказательство отсутствия Go.
-Откат после переключения требует независимой сверки удалений. В
-релизной конфигурации PostgreSQL сейчас используется Bookworm.
+На этапе репетиции релизная конфигурация использовала Bookworm.
+Откат после переключения требует независимой сверки удалений.
 
 Проверка приватности восстановления, 10 ноября 2026. В закрытом N2 на `main`
 `1f381a5` локально воспроизведена разница во времени `password-reset/verify`

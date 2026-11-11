@@ -34,7 +34,7 @@ def evidence():
     return manifest, reports
 
 
-def no_go_fixture(directory, *, change=lambda manifest, proof, reports: None):
+def no_go_fixture(directory, *, alpine=False, change=lambda manifest, proof, reports: None):
     manifest, reports = evidence()
     reports["postgres"]["Results"].pop()
     for name, report in reports.items():
@@ -56,6 +56,22 @@ def no_go_fixture(directory, *, change=lambda manifest, proof, reports: None):
         "baseFiles": {**copy.deepcopy(files), "usr/local/bin/gosu": ["go-elf", 0o755, 0, 0, "f" * 64]},
         "candidateFiles": copy.deepcopy(files),
     }
+    if alpine:
+        reports["postgres"]["Results"][0] = {"Class": "os-pkgs", "Type": "alpine", "Packages": [
+            {"Name": "krb5-libs", "Version": "1.22.3-r0"},
+            {"Name": "libxslt", "Version": "1.1.43-r4"},
+            {"Name": "zlib", "Version": "1.4-r0"},
+        ]}
+        proof.update(
+            formatVersion=2, method="postgres-alpine-rootfs-diff-v2",
+            baseReference="postgres:17.11-alpine3.24@sha256:4717f90960a225c2d1c5dac50508c401230f693ff626e06e84e6db0a68ded508",
+            officialBaseImageId="sha256:4717f90960a225c2d1c5dac50508c401230f693ff626e06e84e6db0a68ded508",
+            officialBaseLayers=proof["baseLayers"][:],
+            baseLayers=[*proof["baseLayers"], "sha256:" + "2" * 64], candidateUser="70:70",
+        )
+        proof["candidateLayers"] = [*proof["baseLayers"], "sha256:" + "1" * 64]
+        postgres["packagesImageId"] = proof["baseImageId"]
+        proof["candidate"]["reportSha256"] = hashlib.sha256(json.dumps(reports["postgres"]).encode()).hexdigest()
     change(manifest, proof, reports)
     for name, report in reports.items():
         raw = json.dumps(report).encode()
@@ -165,6 +181,46 @@ class ContainerPolicyTest(unittest.TestCase):
             result = evaluate_directory(directory, now=NOW)
             self.assertFalse(result["containerGatePassed"])
             self.assertEqual(1, result["images"]["postgres"]["severityCounts"]["CRITICAL"])
+
+    def test_alpine_proof_accepts_bound_inventory_and_keeps_os_findings(self):
+        def add_finding(manifest, proof, reports):
+            report = reports["postgres"]
+            report["Results"][0]["Vulnerabilities"] = [
+                {"VulnerabilityID": "CVE-test", "PkgName": "libxslt", "InstalledVersion": "1.1.43-r4",
+                 "Severity": "HIGH"}]
+            proof["candidate"]["reportSha256"] = hashlib.sha256(json.dumps(report).encode()).hexdigest()
+
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            no_go_fixture(directory, alpine=True, change=add_finding)
+            result = evaluate_directory(directory, now=NOW)
+            self.assertFalse(result["containerGatePassed"])
+            self.assertEqual(1, result["images"]["postgres"]["severityCounts"]["HIGH"])
+            self.assertIn("Alpine", result["images"]["postgres"]["coverageNotes"][0])
+
+    def test_alpine_proof_refuses_wrong_packages_layers_and_identity(self):
+        def alter_report(key, value):
+            def change(manifest, proof, reports):
+                report = reports["postgres"]
+                report["Results"][0][key] = value
+                proof["candidate"]["reportSha256"] = hashlib.sha256(json.dumps(report).encode()).hexdigest()
+            return change
+
+        cases = (
+            (alter_report("Packages", [{"Name": "zlib", "Version": "1.3.2-r1"}]), "package versions"),
+            (alter_report("Type", "debian"), "contradicts"),
+            (lambda m, p, r: p.update(officialBaseImageId="sha256:" + "f" * 64), "official Alpine"),
+            (lambda m, p, r: p["officialBaseLayers"].clear(), "Alpine package layer"),
+            (lambda m, p, r: p.update(baseImageId="sha256:" + "d" * 64), "Alpine package image"),
+            (lambda m, p, r: p["candidate"].update(rehearsedContainerImageId="sha256:" + "f" * 64), "audited image"),
+            (lambda m, p, r: p["candidateFiles"].clear(), "inventory"),
+        )
+        for change, message in cases:
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                no_go_fixture(directory, alpine=True, change=change)
+                with self.assertRaisesRegex(PolicyError, message):
+                    evaluate_directory(directory, now=NOW)
 
     def test_missing_or_modified_postgres_proof_is_incomplete(self):
         for change in (lambda file: file.unlink(), lambda file: file.write_bytes(file.read_bytes() + b" ")):

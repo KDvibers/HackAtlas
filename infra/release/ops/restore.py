@@ -49,7 +49,7 @@ def main():
             raise ValueError("Backup checksum mismatch; no database was created.")
         snapshot.seek(0)
         listed = subprocess.run(
-            ["docker", "exec", "-i", "--user", "999:999", container, "pg_restore", "--list"],
+            ["docker", "exec", "-i", "--user", "70:70", container, "pg_restore", "--list"],
             stdin=snapshot, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=120,
         )
         if listed.returncode:
