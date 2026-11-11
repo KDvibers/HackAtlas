@@ -404,11 +404,16 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             text = { Text(body, color = AtlasColors.TextSecondary) }, containerColor = AtlasColors.SurfaceRaised,
             titleContentColor = AtlasColors.TextPrimary,
             confirmButton = { TextButton(onClick = acknowledge) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
-    } else if(dialog=="discardProfile") {
-        AlertDialog(onDismissRequest={dialog=null},title={Text(stringResource(Res.string.profile_discard_title))},
-            text={Text(stringResource(Res.string.profile_discard_body))},containerColor=AtlasColors.SurfaceRaised,titleContentColor=AtlasColors.TextPrimary,
-            confirmButton={TextButton(onClick={dialog=null;editor?.close();route="profile"}){Text(stringResource(Res.string.profile_discard))}},
-            dismissButton={TextButton(onClick={dialog=null}){Text(stringResource(Res.string.profile_continue_edit))}})
+    } else if (dialog == "discardProfile") {
+        ProfileEditDiscardDialog(
+            confirmLabel = stringResource(Res.string.profile_discard),
+            onConfirm = {
+                dialog = null
+                editor?.close()
+                route = "profile"
+            },
+            onDismiss = { dialog = null },
+        )
     } else if (dialog == "logout" && auth != null) {
         AlertDialog(onDismissRequest = { dialog = null },
             title = { Text(stringResource(Res.string.auth_logout_title)) },
@@ -420,9 +425,17 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             dismissButton = { TextButton(onClick = { dialog = null }) {
                 Text(stringResource(Res.string.auth_cancel), color = AtlasColors.TextSecondary)
             } })
+    } else if (dialog == "settings") {
+        SettingsDialog(
+            onOpenTypography = {
+                previousRoute = route
+                route = "typography"
+                dialog = null
+            },
+            onDismiss = { dialog = null },
+        )
     } else if (dialog != null) {
         val title = stringResource(when (dialog) {
-            "settings" -> Res.string.settings
             "about" -> if (bundled) Res.string.demo_dialog_title else Res.string.server_demo_title
             else -> Res.string.feature_pending_title
         })
@@ -432,8 +445,7 @@ private fun CatalogApp(app: AppState, ready: BootstrapState.Ready, initialRoute:
             })
         AlertDialog(onDismissRequest = { dialog = null }, title = { Text(title) }, text = { Text(body, color = AtlasColors.TextSecondary) },
             containerColor = AtlasColors.SurfaceRaised, titleContentColor = AtlasColors.TextPrimary,
-            confirmButton = { TextButton(onClick = { dialog = null }) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } },
-            dismissButton = if (dialog == "settings") ({ TextButton(onClick = { previousRoute = route; route = "typography"; dialog = null }) { Text(stringResource(Res.string.typography), color = AtlasColors.Cyan) } }) else null)
+            confirmButton = { TextButton(onClick = { dialog = null }) { Text(stringResource(Res.string.understood), color = AtlasColors.Primary) } })
     }
 }
 
