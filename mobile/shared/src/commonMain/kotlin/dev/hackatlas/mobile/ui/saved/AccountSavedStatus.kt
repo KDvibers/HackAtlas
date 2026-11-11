@@ -1,8 +1,6 @@
 package dev.hackatlas.mobile.ui.saved
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -11,7 +9,13 @@ import dev.hackatlas.mobile.data.SavedGuestEvent
 import dev.hackatlas.mobile.data.auth.*
 import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.resources.*
+import dev.hackatlas.mobile.ui.CatalogueColors
 import dev.hackatlas.mobile.ui.DisplayFormat
+import dev.hackatlas.mobile.ui.ProfileHeader
+import dev.hackatlas.mobile.ui.ProfileIdentity
+import dev.hackatlas.mobile.ui.ProfileList
+import dev.hackatlas.mobile.ui.ProfilePanel
+import dev.hackatlas.mobile.ui.ProfilePrimaryAction
 import dev.hackatlas.mobile.ui.StatePanel
 import dev.hackatlas.mobile.ui.auth.*
 import org.jetbrains.compose.resources.stringResource
@@ -75,14 +79,28 @@ fun AccountSavedStatus(store: AccountSavedStore, state: AccountSavedUiState, gue
 
 @Composable
 fun UnverifiedAccountProfile(auth: AuthStore, state: AuthUiState, onLogout: () -> Unit, savedContent: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        PixelHeading(stringResource(Res.string.profile))
-        Text(stringResource(Res.string.account_unverified_profile), style = MaterialTheme.typography.titleLarge)
-        Text(stringResource(if (state.privateAccess == null) Res.string.account_unverified_body
-            else Res.string.n2_private_unknown), color = AtlasColors.TextSecondary)
-        AuthFeedback(state)
-        TextButton(onClick = auth::refresh, enabled = state.busy == null) { Text(stringResource(Res.string.auth_retry_session)) }
-        TextButton(onClick = onLogout, enabled = state.busy == null) { Text(stringResource(Res.string.auth_logout_device)) }
-        savedContent()
+    ProfileList {
+        item(key = "heading") { ProfileHeader() }
+        item(key = "session") {
+            ProfilePanel {
+                ProfileIdentity(stringResource(Res.string.account_unverified_profile))
+                Text(
+                    stringResource(if (state.privateAccess == null) Res.string.account_unverified_body else Res.string.n2_private_unknown),
+                    color = CatalogueColors.Muted, style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+        item(key = "actions") {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AuthFeedback(state)
+                ProfilePrimaryAction(stringResource(Res.string.auth_retry_session), auth::refresh, enabled = state.busy == null)
+                TextButton(
+                    onClick = onLogout, enabled = state.busy == null,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+                    colors = ButtonDefaults.textButtonColors(contentColor = CatalogueColors.Muted),
+                ) { Text(stringResource(Res.string.auth_logout_device)) }
+            }
+        }
+        item(key = "saved-status") { savedContent() }
     }
 }

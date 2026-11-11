@@ -1,114 +1,77 @@
 package dev.hackatlas.mobile.ui
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import dev.hackatlas.mobile.design.*
+import dev.hackatlas.mobile.design.AtlasIcon
 import dev.hackatlas.mobile.domain.*
 import dev.hackatlas.mobile.data.SavedGuestEvent
 import dev.hackatlas.mobile.resources.*
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ProfileScreen(profile: DemoProfile, saved: List<Hackathon>, format: DisplayFormat, onOpen: (Hackathon) -> Unit, onRemove: (Hackathon) -> Unit, onAllSaved: () -> Unit, onSettings: () -> Unit, onEdit: () -> Unit, onDemo: () -> Unit) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PixelHeading(stringResource(Res.string.profile), Modifier.weight(1f), fontSize = 29.sp)
-                IconAction(AtlasIcon.Settings, stringResource(Res.string.settings), onSettings)
-            }
-            Text(stringResource(Res.string.profile_subtitle), color = AtlasColors.TextSecondary, fontSize = 11.sp, lineHeight = 16.sp)
-        }
-        item { ProfileCard(profile, onEdit, onDemo) }
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlineIcon(AtlasIcon.Sparkles, Modifier.size(19.dp), AtlasColors.Primary)
-                Spacer(Modifier.width(8.dp))
-                SectionTitle(stringResource(Res.string.interests))
-                Spacer(Modifier.weight(1f))
-                Text(stringResource(Res.string.edit), Modifier.heightIn(min = 48.dp).wrapContentHeight().clickable(role = Role.Button, onClick = onEdit).padding(vertical = 15.dp), fontSize = 12.sp, lineHeight = 16.sp, color = AtlasColors.Primary)
-            }
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                profile.interests.forEach { InterestChip(it.label) }
-            }
-        }
-        item {
-            HorizontalDivider(color = AtlasColors.Border.copy(alpha = .5f))
-            Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlineIcon(AtlasIcon.Bookmark, Modifier.size(19.dp), AtlasColors.Primary)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(Res.string.saved_hackathons), Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                Row(Modifier.heightIn(min = 48.dp).clickable(role = Role.Button, onClick = onAllSaved), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(Res.string.all), color = AtlasColors.Primary, fontSize = 12.sp)
-                    OutlineIcon(AtlasIcon.ChevronRight, Modifier.size(16.dp), AtlasColors.Primary)
-                }
-            }
-        }
-        if (saved.isEmpty()) item { Text(stringResource(Res.string.empty_saved_body), color = AtlasColors.TextSecondary, fontSize = 13.sp) }
-        items(saved.take(3), key = { it.savedKey().listKey() }) { HackathonMiniCard(it, format, { onOpen(it) }, { onRemove(it) }, showDemoLabel = false) }
-    }
-}
-
-@Composable
-private fun ProfileCard(profile: DemoProfile, onEdit: () -> Unit, onDemo: () -> Unit) {
-    val shape = RoundedCornerShape(14.dp)
-    Column(Modifier.fillMaxWidth().clip(shape).background(Brush.verticalGradient(listOf(AtlasColors.SurfaceRaised, AtlasColors.Surface))).border(1.dp, AtlasColors.Border, shape).padding(15.dp)) {
-        Box {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                Box(Modifier.size(80.dp).background(Brush.radialGradient(listOf(AtlasColors.Primary.copy(alpha = .22f), AtlasColors.Primary.copy(alpha = 0f)))), contentAlignment = Alignment.Center) {
-                    Image(painterResource(Res.drawable.demo_avatar), contentDescription = null, Modifier.size(75.dp).clip(CircleShape).border(1.dp, AtlasColors.Primary.copy(alpha = .8f), CircleShape), contentScale = ContentScale.Crop)
-                }
-                Spacer(Modifier.width(10.dp))
-                Column(Modifier.weight(1f).padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Row(Modifier.padding(end = 35.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(profile.displayName, style = MaterialTheme.typography.titleLarge, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text(stringResource(Res.string.demo_label), color = AtlasColors.Primary, fontSize = 8.sp, lineHeight = 12.sp)
+fun ProfileScreen(
+    profile: DemoProfile,
+    saved: List<Hackathon>,
+    format: DisplayFormat,
+    onOpen: (Hackathon) -> Unit,
+    onRemove: (Hackathon) -> Unit,
+    onAllSaved: () -> Unit,
+    onSettings: () -> Unit,
+    onEdit: () -> Unit,
+    onDemo: () -> Unit,
+) {
+    ProfileList {
+        item(key = "heading") { ProfileHeader(onSettings, onDemo) }
+        item(key = "profile") {
+            ProfilePanel {
+                Row(verticalAlignment = Alignment.Top) {
+                    Box(Modifier.weight(1f)) {
+                        ProfileIdentity(
+                            profile.displayName, initial = profile.displayName.take(1).uppercase(),
+                            hooded = profile.avatar == Avatar.HOODED,
+                        ) {
+                            val details = listOfNotNull(profile.roleLabel, profile.city).filter { it.isNotBlank() }
+                            if (details.isNotEmpty()) {
+                                Text(
+                                    details.joinToString(" · "), color = CatalogueColors.Muted,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
                     }
-                    Text(listOfNotNull(profile.roleLabel, profile.city).joinToString(" · "), color = AtlasColors.TextSecondary, fontSize = 11.sp, lineHeight = 15.sp)
-                    Spacer(Modifier.height(5.dp))
-                    Row(Modifier.fillMaxWidth()) {
-                        ProfileStat(profile.appliedCount, stringResource(Res.string.applied_stat), Modifier.weight(1f))
-                        ProfileStat(profile.interestsCount, stringResource(Res.string.interests_stat), Modifier.weight(1f))
-                        ProfileStat(profile.savedCount, stringResource(Res.string.saved_stat), Modifier.weight(1f))
-                    }
+                    IconAction(AtlasIcon.Edit, stringResource(Res.string.edit_profile), onEdit, tint = CatalogueColors.Lime)
                 }
+                ProfileStatistics(
+                    listOf(
+                        profile.appliedCount to stringResource(Res.string.applied_stat),
+                        profile.interestsCount to stringResource(Res.string.interests_stat),
+                        profile.savedCount to stringResource(Res.string.saved_stat),
+                    ),
+                )
             }
-            IconAction(AtlasIcon.Edit, stringResource(Res.string.edit_profile), onEdit, modifier = Modifier.align(Alignment.TopEnd).offset(x = 9.dp, y = (-9).dp))
         }
-        Spacer(Modifier.height(13.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlineIcon(AtlasIcon.Sparkles, Modifier.size(17.dp), AtlasColors.Primary)
-            Text(stringResource(Res.string.profile_motto), color = AtlasColors.Cyan.copy(alpha = .8f), fontSize = 10.sp, lineHeight = 16.sp, letterSpacing = .5.sp)
+        item(key = "interests") { ProfileInterests(profile.interests.map { it.label }, onEdit) }
+        item(key = "saved-heading") {
+            ProfileSectionHeading(
+                AtlasIcon.Bookmark, stringResource(Res.string.saved_hackathons), stringResource(Res.string.all), onAllSaved,
+            )
         }
-    }
-}
-
-@Composable
-internal fun ProfileStat(value: Int, label: String, modifier: Modifier) {
-    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(value.toString(), color = AtlasColors.Primary, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
-        Text(label, color = AtlasColors.TextMuted, fontSize = 9.sp, lineHeight = 13.sp)
+        if (saved.isEmpty()) {
+            item(key = "saved-empty") {
+                Text(
+                    stringResource(Res.string.empty_saved_body), color = CatalogueColors.Muted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+        items(saved.take(3), key = { it.savedKey().listKey() }) { event ->
+            HackathonMiniCard(event, format, { onOpen(event) }, { onRemove(event) }, showDemoLabel = false)
+        }
     }
 }
 
@@ -116,36 +79,36 @@ internal fun ProfileStat(value: Int, label: String, modifier: Modifier) {
 fun GuestProfileScreen(snapshots: List<SavedGuestEvent>, format: DisplayFormat, onOpen: (SavedGuestEvent) -> Unit,
     onRemove: (SavedGuestEvent) -> Unit, onAllSaved: () -> Unit, onSettings: () -> Unit,
     authActions: @Composable () -> Unit = {}) {
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(15.dp)) {
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                PixelHeading(stringResource(Res.string.profile), Modifier.weight(1f), fontSize = 29.sp)
-                IconAction(AtlasIcon.Settings, stringResource(Res.string.settings), onSettings)
-            }
-            Text(stringResource(Res.string.profile_subtitle), color = AtlasColors.TextSecondary, fontSize = 11.sp, lineHeight = 16.sp)
-        }
-        item {
-            val shape = RoundedCornerShape(14.dp)
-            Column(Modifier.fillMaxWidth().clip(shape).background(AtlasColors.Surface).border(1.dp, AtlasColors.Border, shape).padding(15.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    OutlineIcon(AtlasIcon.User, Modifier.size(48.dp), AtlasColors.Primary)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        SectionTitle(stringResource(Res.string.guest_profile))
-                        Text(stringResource(Res.string.guest_saved_count, snapshots.size), color = AtlasColors.Primary, fontSize = 16.sp)
-                    }
+    ProfileList {
+        item(key = "heading") { ProfileHeader(onSettings) }
+        item(key = "guest") {
+            ProfilePanel {
+                ProfileIdentity(stringResource(Res.string.guest_profile)) {
+                    Text(
+                        stringResource(Res.string.guest_saved_count, snapshots.size), color = CatalogueColors.Lime,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
                 }
-                Text(stringResource(Res.string.guest_profile_body), color = AtlasColors.TextSecondary, fontSize = 13.sp, lineHeight = 19.sp)
-                Text(stringResource(Res.string.profile_motto), color = AtlasColors.Cyan, fontSize = 10.sp, lineHeight = 16.sp)
+                Text(
+                    stringResource(Res.string.guest_profile_body), color = CatalogueColors.Muted,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
-        item { authActions() }
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(Res.string.saved_hackathons), Modifier.weight(1f), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                androidx.compose.material3.TextButton(onClick = onAllSaved) { Text(stringResource(Res.string.all), color = AtlasColors.Primary) }
+        item(key = "auth") { authActions() }
+        item(key = "saved-heading") {
+            ProfileSectionHeading(
+                AtlasIcon.Bookmark, stringResource(Res.string.saved_hackathons), stringResource(Res.string.all), onAllSaved,
+            )
+        }
+        if (snapshots.isEmpty()) {
+            item(key = "saved-empty") {
+                Text(
+                    stringResource(Res.string.empty_saved_body), color = CatalogueColors.Muted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
         }
-        if (snapshots.isEmpty()) item { Text(stringResource(Res.string.empty_saved_body), color = AtlasColors.TextSecondary, fontSize = 13.sp) }
         items(snapshots.take(3), key = { it.key.listKey() }) { snapshot ->
             HackathonMiniCard(snapshot.detail.hackathon, format, { onOpen(snapshot) }, { onRemove(snapshot) })
         }
