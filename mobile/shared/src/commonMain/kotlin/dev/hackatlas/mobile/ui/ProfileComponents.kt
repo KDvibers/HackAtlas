@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
@@ -64,9 +65,12 @@ internal fun ProfileHeader(onSettings: (() -> Unit)? = null, onDemo: (() -> Unit
 }
 
 @Composable
-internal fun ProfilePanel(content: @Composable ColumnScope.() -> Unit) {
+internal fun ProfilePanel(
+    containerColor: Color = CatalogueColors.Surface,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
-        Modifier.fillMaxWidth().clip(WaveCardShape).background(CatalogueColors.Surface)
+        Modifier.fillMaxWidth().clip(WaveCardShape).background(containerColor)
             .border(1.dp, CatalogueColors.Border.copy(alpha = .65f), WaveCardShape).padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         content = content,

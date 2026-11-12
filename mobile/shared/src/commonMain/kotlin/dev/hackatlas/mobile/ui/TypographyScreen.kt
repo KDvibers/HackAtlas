@@ -1,41 +1,71 @@
 package dev.hackatlas.mobile.ui
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import dev.hackatlas.mobile.design.*
 import dev.hackatlas.mobile.resources.*
+import dev.hackatlas.mobile.ui.auth.AuthScreenLayout
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun TypographyScreen(onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(19.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconAction(AtlasIcon.Back, stringResource(Res.string.back), onBack)
-            SectionTitle(stringResource(Res.string.typography))
+    val typography = MaterialTheme.typography
+    val headingModifier = Modifier.semantics { heading() }
+
+    AuthScreenLayout(stringResource(Res.string.typography), onBack) {
+        Text(
+            stringResource(Res.string.typography_subtitle),
+            color = CatalogueColors.Muted, style = typography.bodyMedium,
+        )
+        ProfilePanel {
+            Text(
+                stringResource(Res.string.pixel_font_label), headingModifier,
+                color = CatalogueColors.Lime, style = typography.titleMedium,
+            )
+            PixelFontSample(stringResource(Res.string.hackathons), typography.displayLarge.fontSize)
+            PixelFontSample(stringResource(Res.string.profile), typography.displayLarge.fontSize)
+            PixelFontSample(stringResource(Res.string.saved), typography.displaySmall.fontSize)
+            Text(
+                stringResource(Res.string.font_sample), color = CatalogueColors.Text,
+                style = typography.displaySmall.copy(fontSize = 16.sp, lineHeight = 24.sp),
+            )
+            PixelFontSample(stringResource(Res.string.font_money), 20.sp)
         }
-        Text(stringResource(Res.string.typography_subtitle), style = MaterialTheme.typography.bodyMedium, color = AtlasColors.TextSecondary)
-        TechLabel(stringResource(Res.string.pixel_font_label))
-        PixelHeading(stringResource(Res.string.hackathons), fontSize = 29.sp)
-        PixelHeading(stringResource(Res.string.profile), fontSize = 29.sp)
-        PixelHeading(stringResource(Res.string.saved), fontSize = 23.sp)
-        PixelHeading(stringResource(Res.string.font_sample), fontSize = 16.sp)
-        PixelHeading(stringResource(Res.string.font_money), fontSize = 20.sp)
-        HorizontalDivider(color = AtlasColors.Border)
-        TechLabel(stringResource(Res.string.event_font_label))
-        Text("AI Sprint 2026", style = MaterialTheme.typography.titleLarge, fontSize = 28.sp)
-        TechLabel(stringResource(Res.string.body_font_label))
-        Text(stringResource(Res.string.font_body_sample), style = MaterialTheme.typography.bodyLarge, fontSize = 16.sp, lineHeight = 24.sp)
-        Text(stringResource(Res.string.font_money), style = MaterialTheme.typography.bodyLarge, fontSize = 22.sp)
-        Text(stringResource(Res.string.font_note), style = MaterialTheme.typography.bodySmall, color = AtlasColors.TextMuted, lineHeight = 18.sp)
-        Spacer(Modifier.height(12.dp))
+        ProfilePanel(containerColor = CatalogueColors.Violet) {
+            Text(
+                stringResource(Res.string.event_font_label), headingModifier,
+                color = CatalogueColors.Text, style = typography.titleMedium,
+            )
+            Text("AI Sprint 2026", color = CatalogueColors.Text, style = typography.headlineLarge)
+        }
+        ProfilePanel {
+            Text(
+                stringResource(Res.string.body_font_label), headingModifier,
+                color = CatalogueColors.Turquoise, style = typography.titleMedium,
+            )
+            Text(stringResource(Res.string.font_body_sample), color = CatalogueColors.Text, style = typography.bodyLarge)
+            Text(
+                stringResource(Res.string.font_money), color = CatalogueColors.Text,
+                style = typography.bodyLarge.copy(fontSize = 22.sp, lineHeight = 30.sp),
+            )
+        }
     }
+}
+
+@Composable
+private fun PixelFontSample(text: String, maxFontSize: TextUnit) {
+    Text(
+        text, Modifier.fillMaxWidth(),
+        color = CatalogueColors.Text,
+        style = MaterialTheme.typography.displaySmall.copy(lineHeight = TextUnit.Unspecified),
+        autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = maxFontSize, stepSize = 1.sp),
+        maxLines = 1,
+    )
 }
