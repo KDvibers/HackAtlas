@@ -17,29 +17,36 @@ from run_container_audit import run, cleanup_cache
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'infra/release/ops'))
-from restic_tool import VERSION, verify_binary
+from restic_tool import GO_VERSION, VERSION, verify_binary
 from restore_review import require, timestamp
 
 
 def evaluate(report):
     require(isinstance(report, dict), 'Expected an audit object.')
     results = report.get('Results', [])
-    require(isinstance(results, list) and len(results) == 1 and results[0].get('Type') == 'gobinary',
+    require(isinstance(results, list) and len(results) == 1
+            and isinstance(results[0], dict) and results[0].get('Type') == 'gobinary',
             'Expected exactly one scanned Go binary.')
     packages = results[0].get('Packages')
     require(isinstance(packages, list) and packages and all(isinstance(p, dict) for p in packages),
             'Go package inventory is missing or malformed.')
-    require({'github.com/restic/restic', 'stdlib'} <= {p.get('Name') for p in packages},
-            'Restic main module or Go standard library is missing.')
+    versions = {}
+    for name in ('github.com/restic/restic', 'stdlib'):
+        matches = [p.get('Version') for p in packages if p.get('Name') == name]
+        require(len(matches) == 1, 'Expected exactly one inventory entry for ' + name + '.')
+        versions[name] = matches[0]
+    versions_match = versions['github.com/restic/restic'] == 'v' + VERSION and versions['stdlib'] == 'v' + GO_VERSION
     gaps = [p.get('Name') for p in packages if not isinstance(p.get('Version'), str)
             or not re.fullmatch(r'v?\d+\.\d+\.\d+(?:[+-].*)?', p['Version'])]
     vulnerabilities = results[0].get('Vulnerabilities', [])
     require(isinstance(vulnerabilities, list) and all(isinstance(v, dict) for v in vulnerabilities),
             'Malformed vulnerability inventory.')
     counts = Counter(v.get('Severity', 'UNKNOWN') for v in vulnerabilities)
-    blocked = bool(gaps) or any(severity not in ('LOW', 'MEDIUM') for severity in counts)
+    blocked = bool(gaps) or not versions_match or any(severity not in ('LOW', 'MEDIUM') for severity in counts)
     return {'packages': len(packages), 'counts': dict(counts), 'unversionedPackages': gaps,
-            'inventoryComplete': not gaps, 'dependencyGatePassed': not blocked, 'publicReleaseReady': False}
+            'inventoryComplete': not gaps, 'resticModuleVersion': versions['github.com/restic/restic'],
+            'goVersion': versions['stdlib'], 'versionsMatchPin': versions_match,
+            'dependencyGatePassed': not blocked, 'publicReleaseReady': False}
 
 
 def main():
